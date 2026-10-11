@@ -72,6 +72,7 @@ export type Run = {
   snatchAt: number | null;
   snatchTime: number;
   caughtY: number;
+  placed: number;
 };
 
 export function groundY(): number {
@@ -110,6 +111,7 @@ export function createRun(seed = 1, mode: ModeId = 'starter'): Run {
     snatchAt: null,
     snatchTime: -1,
     caughtY: WORLD.readyY,
+    placed: 0,
   };
 }
 
@@ -125,11 +127,13 @@ const TALON_Y = 40;
 
 // Starter tightens every 5 pipes, by 30px of distance and 30px of opening.
 // The floor is the original distance and opening. Normal stays on that floor.
-// Hard picks a new distance and opening for each gate, anywhere in that range.
+// Hard never goes easier than that floor. Each gate is the original size or tighter,
+// and its hole can sit anywhere in the gap.
 const EASE_EVERY = 5;
 const EASE_STEP = 30;
 const EASE_STEPS = 4;
-const EASE_SPAN = EASE_STEPS * EASE_STEP;
+const HARD_SPACE = 64;
+const HARD_OPEN = 48;
 
 function easeLeft(cleared: number): number {
   const steps = Math.min(EASE_STEPS, Math.max(0, Math.floor(cleared / EASE_EVERY)));
@@ -142,13 +146,13 @@ function roll(origin: number, index: number, salt: number): number {
 
 export function pipeSpacing(cleared: number, mode: ModeId = 'starter', origin = 1): number {
   if (mode === 'normal') return WORLD.spacing;
-  if (mode === 'hard') return WORLD.spacing + roll(origin, cleared, 0x51a7c0de) * EASE_SPAN;
+  if (mode === 'hard') return WORLD.spacing - roll(origin, cleared, 0x51a7c0de) * HARD_SPACE;
   return WORLD.spacing + easeLeft(cleared);
 }
 
 export function pipeOpening(cleared: number, mode: ModeId = 'starter', origin = 1): number {
   if (mode === 'normal') return WORLD.gap;
-  if (mode === 'hard') return WORLD.gap + roll(origin, cleared, 0xc0ffee21) * EASE_SPAN;
+  if (mode === 'hard') return WORLD.gap - roll(origin, cleared, 0xc0ffee21) * HARD_OPEN;
   return WORLD.gap + easeLeft(cleared);
 }
 
@@ -220,17 +224,23 @@ function nextGap(run: Run, around: number, open: number): number {
   const min = WORLD.margin + half;
   const max = groundY() - WORLD.margin - half;
   const raw = min + rand(run) * (max - min);
+  if (run.mode === 'hard') return raw;
   return clamp(raw, Math.max(min, around - WORLD.gapStep), Math.min(max, around + WORLD.gapStep));
 }
 
 function spawn(run: Run): void {
   const last = run.gates[run.gates.length - 1];
-  const open = pipeOpening(run.score, run.mode, run.origin);
+  // Hard gates can arrive before the previous one scores, and old gates leave
+  // the list, so the roll follows how many have been placed. Starter and normal
+  // still follow the cleared score.
+  const slot = run.mode === 'hard' ? Math.max(0, run.placed - 1) : run.score;
+  const open = pipeOpening(slot, run.mode, run.origin);
   if (!last) {
     run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY, open), open, scored: false });
+    run.placed += 1;
     return;
   }
-  const spacing = pipeSpacing(run.score, run.mode, run.origin);
+  const spacing = pipeSpacing(slot, run.mode, run.origin);
   if (last.x <= WORLD.w + 36 - spacing) {
     run.gates.push({
       x: last.x + spacing,
@@ -238,6 +248,7 @@ function spawn(run: Run): void {
       open,
       scored: false,
     });
+    run.placed += 1;
   }
 }
 

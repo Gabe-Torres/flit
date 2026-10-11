@@ -415,22 +415,40 @@ function clearedLayout(seed: number, mode: 'starter' | 'normal' | 'hard', pipes:
 }
 
 {
-  const wide = pipeSpacing(0, 'starter');
-  const tall = pipeOpening(0, 'starter');
-  const layout = clearedLayout(11, 'hard', 36);
-  assert(layout.gaps.length >= 36, `hard lays out the gates (${layout.gaps.length})`);
-  const span = wide - WORLD.spacing;
-  assert(layout.gaps.every((gap) => gap >= WORLD.spacing - 0.01 && gap <= wide + 0.01), 'hard distances stay between large and small');
-  assert(layout.opens.every((open) => open >= WORLD.gap - 0.01 && open <= tall + 0.01), 'hard openings stay between large and small');
-  assert(Math.min(...layout.gaps) < WORLD.spacing + span * 0.35, 'a hard run includes a small distance');
-  assert(Math.max(...layout.gaps) > WORLD.spacing + span * 0.65, 'a hard run includes a large distance');
-  assert(Math.min(...layout.opens) < WORLD.gap + span * 0.35, 'a hard run includes a small opening');
-  assert(Math.max(...layout.opens) > WORLD.gap + span * 0.65, 'a hard run includes a large opening');
-  assert(layout.jumps.every((jump) => jump <= WORLD.gapStep + 0.01), 'hard holes still move by a step');
-  for (let i = 0; i < layout.gaps.length; i++) {
-    assert(Math.abs(layout.gaps[i] - pipeSpacing(i, 'hard', 11)) < 0.05, `hard gate ${i + 1} keeps its rolled distance`);
-    assert(Math.abs(layout.opens[i] - pipeOpening(i, 'hard', 11)) < 0.05, `hard gate ${i + 1} keeps its rolled opening`);
+  const spaces = Array.from({ length: 80 }, (_, i) => pipeSpacing(i, 'hard', 11));
+  const opens = Array.from({ length: 80 }, (_, i) => pipeOpening(i, 'hard', 11));
+  assert(spaces.every((gap) => gap >= WORLD.spacing - 64 - 0.01 && gap <= WORLD.spacing + 0.01), 'hard distances stay at or inside the original');
+  assert(opens.every((open) => open >= WORLD.gap - 48 - 0.01 && open <= WORLD.gap + 0.01), 'hard openings stay at or inside the original');
+  assert(Math.min(...spaces) < WORLD.spacing - 64 * 0.65, 'a hard run includes a close distance');
+  assert(Math.max(...spaces) > WORLD.spacing - 64 * 0.35, 'a hard run still includes a wider distance');
+  assert(Math.min(...opens) < WORLD.gap - 48 * 0.65, 'a hard run includes a short opening');
+  assert(Math.max(...opens) > WORLD.gap - 48 * 0.35, 'a hard run still includes a taller opening');
+  const run = createRun(11, 'hard');
+  run.phase = 'play';
+  run.snatchAt = null;
+  const known = new Set<object>();
+  let count = 0;
+  const jumps: number[] = [];
+  for (let guard = 0; count < 24 && guard < 12000; guard++) {
+    const ahead = run.gates.find((gate) => gate.x + WORLD.pipeW >= WORLD.birdX - 40);
+    run.bird.y = ahead ? ahead.gapY : WORLD.readyY;
+    run.bird.vy = 0;
+    step(run, 1 / 60);
+    for (const gate of run.gates) {
+      if (known.has(gate)) continue;
+      known.add(gate);
+      if (count > 0) {
+        const prev = run.gates[run.gates.indexOf(gate) - 1];
+        const gap = gate.x - prev.x;
+        jumps.push(Math.abs(gate.gapY - prev.gapY));
+        assert(Math.abs(gap - pipeSpacing(count - 1, 'hard', 11)) < 0.05, `hard gate ${count} keeps its rolled distance (${gap})`);
+        assert(Math.abs(gate.open - pipeOpening(count - 1, 'hard', 11)) < 0.05, `hard gate ${count} keeps its rolled opening (${gate.open})`);
+      }
+      count += 1;
+    }
   }
+  assert(count >= 24, `hard lays out the gates (${count})`);
+  assert(Math.max(...jumps) > WORLD.gapStep, 'a hard hole can jump farther than the original step');
 }
 
 {
