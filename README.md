@@ -6,7 +6,7 @@ Tap to flap. Slip through the gaps. See how long you last.
 
 ![Title screen on a clear day. A yellow finch hangs in the sky, and a ruby peeks out of the dirt.](docs/load.png)
 
-Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pixijs.com/) draws the bird, the gates, and the field. The sound is synthesized. The published game is still one HTML file.
+Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pixijs.com/) draws the bird, the gates, and the field. The sound is synthesized. [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) caches the page so a home-screen install still runs offline. The published game is still one HTML file.
 
 ## How to play
 

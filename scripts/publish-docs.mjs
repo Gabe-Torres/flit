@@ -1,4 +1,4 @@
-import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,7 +19,13 @@ const files = [
 ];
 
 await mkdir(docs, { recursive: true });
+for (const name of await readdir(docs)) {
+  if (/^workbox-.*\.js$/.test(name)) await unlink(path.join(docs, name));
+}
 for (const file of files) {
   await copyFile(path.join(dist, file), path.join(docs, file));
+}
+for (const name of await readdir(dist)) {
+  if (/^workbox-.*\.js$/.test(name)) await copyFile(path.join(dist, name), path.join(docs, name));
 }
 await writeFile(path.join(docs, '.nojekyll'), '');

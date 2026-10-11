@@ -267,11 +267,11 @@ window.addEventListener('resize', resize);
 window.visualViewport?.addEventListener('resize', resize);
 window.addEventListener('contextmenu', (event) => event.preventDefault());
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
-      // The game still runs if the worker cannot install.
-    });
+if (import.meta.env.PROD && 'caches' in window) {
+  void caches.keys().then((keys) => {
+    for (const key of keys) {
+      if (key.startsWith('flit-v')) void caches.delete(key);
+    }
   });
 }
 
