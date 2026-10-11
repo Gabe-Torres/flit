@@ -4,6 +4,7 @@ import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
 import { MODES, WORLD, createRun, flap, flightFacts, isModeId, step, type ModeId, type Run } from './sim.ts';
 import { fieldName } from './holiday.ts';
+import { THEMES, isThemeId, type ThemeId } from './themes.ts';
 import { weatherById } from './weather.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
@@ -14,7 +15,8 @@ const rosterQuery = document.querySelector<HTMLElement>('#roster');
 const birdNameQuery = document.querySelector<HTMLElement>('#bird-name');
 const birdsQuery = document.querySelector<HTMLElement>('#birds');
 const modesQuery = document.querySelector<HTMLElement>('#modes');
-if (!canvas || !statusEl || !pauseQuery || !muteQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery) {
+const themesQuery = document.querySelector<HTMLElement>('#themes');
+if (!canvas || !statusEl || !pauseQuery || !muteQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery || !themesQuery) {
   throw new Error('Flit is missing a page element');
 }
 const view = canvas;
@@ -25,11 +27,13 @@ const roster = rosterQuery;
 const birdNameEl = birdNameQuery;
 const birdsEl = birdsQuery;
 const modesEl = modesQuery;
+const themesEl = themesQuery;
 
 const audio = createAudio();
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let modeId = readMode();
+let themeId = readTheme();
 let run: Run = createRun(mixSeed(), modeId);
 let bests = readBests();
 let birdId = readBird();
@@ -105,6 +109,28 @@ function modeName(id: ModeId): string {
   return MODES.find((mode) => mode.id === id)?.name ?? 'Easy';
 }
 
+function readTheme(): ThemeId {
+  try {
+    const saved = localStorage.getItem('flit-theme');
+    if (saved && isThemeId(saved)) return saved;
+  } catch {
+    // Storage can be blocked. Classic is the default.
+  }
+  return 'classic';
+}
+
+function writeTheme(id: ThemeId): void {
+  try {
+    localStorage.setItem('flit-theme', id);
+  } catch {
+    // The choice still lasts for this visit.
+  }
+}
+
+function themeName(id: ThemeId): string {
+  return THEMES.find((theme) => theme.id === id)?.name ?? 'Classic';
+}
+
 function bestKey(id: ModeId): string {
   return `flit-best-${id}`;
 }
@@ -164,6 +190,20 @@ function chooseMode(id: ModeId): void {
   describe();
 }
 
+function paintTheme(): void {
+  for (const button of themesEl.querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', button.dataset.theme === themeId ? 'true' : 'false');
+  }
+}
+
+function chooseTheme(id: ThemeId): void {
+  if (id === themeId) return;
+  themeId = id;
+  writeTheme(id);
+  paintTheme();
+  describe();
+}
+
 function paintRoster(): void {
   const open = run.phase === 'ready' || run.phase === 'over';
   roster.classList.toggle('is-hidden', !open);
@@ -203,7 +243,7 @@ function describe(): void {
   }
   if (run.phase === 'ready') {
     const name = birdById(birdId).name;
-    const lead = `Flit. ${name}. ${modeName(modeId)}. ${sky}. ${controls.speak}`;
+    const lead = `Flit. ${name}. ${modeName(modeId)}. ${themeName(themeId)}. ${sky}. ${controls.speak}`;
     const modeBest = bests[modeId];
     setStatus(modeBest > 0 ? `${lead} Best ${modeBest}.` : lead);
     return;
@@ -216,7 +256,7 @@ function describe(): void {
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
     const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
-    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${bests[run.mode]}. ${modeName(run.mode)}. ${sky}. ${controls.againSpeak}`);
+    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${bests[run.mode]}. ${modeName(run.mode)}. ${themeName(themeId)}. ${sky}. ${controls.againSpeak}`);
     return;
   }
   setStatus(`Score ${run.score}. ${sky}.`);
@@ -328,6 +368,15 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
+for (const theme of THEMES) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.theme = theme.id;
+  button.textContent = theme.name;
+  button.addEventListener('click', () => chooseTheme(theme.id));
+  themesEl.append(button);
+}
+
 for (const mode of MODES) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -365,6 +414,7 @@ paintMute();
 paintPause();
 paintBird();
 paintMode();
+paintTheme();
 paintRoster();
 resize();
 describe();
@@ -388,6 +438,10 @@ if (import.meta.env.DEV) {
         return modeId;
       },
       chooseMode,
+      get theme() {
+        return themeId;
+      },
+      chooseTheme,
     },
   });
 }
@@ -451,6 +505,7 @@ function frame(now: number): void {
     particles,
     bird: birdId,
     controls: hints(),
+    theme: themeId,
   });
   requestAnimationFrame(frame);
 }

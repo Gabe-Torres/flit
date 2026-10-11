@@ -3,6 +3,7 @@ import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
 import { fieldName } from './holiday.ts';
 import { WORLD, flightFacts, groundY, snatchPose, type Run } from './sim.ts';
+import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor, weatherById } from './weather.ts';
 import { drawAtmosphere, drawClouds, drawSeason, drawSky, drawTornado } from './weather-draw.ts';
 
@@ -28,6 +29,7 @@ export type RenderState = {
   particles: Particle[];
   bird: BirdId;
   controls: ControlHints;
+  theme: ThemeId;
 };
 
 export type Stage = {
@@ -251,7 +253,11 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
     drawSeason(scenery, season, holiday, weather, run.time, run.scroll, box, floor, state.reduceMotion);
     drawTornado(scenery, weather, run.time, box, floor);
-    for (const gate of run.gates) drawGate(gateLayer, gate.x, gate.gapY, gate.open, box, floor);
+    const themeTime = state.reduceMotion ? 0 : run.time;
+    if (run.phase === 'ready') drawThemedGate(gateLayer, state.theme, 326, 300, 156, box.top, floor, themeTime);
+    for (const gate of run.gates) {
+      drawThemedGate(gateLayer, state.theme, gate.x, gate.gapY, gate.open, box.top, floor, themeTime);
+    }
     drawGround(ground, run, box, floor, land);
     drawAtmosphere(atmosphere, weather, run.time, run.scroll, box, floor, state.reduceMotion);
 
@@ -419,28 +425,6 @@ function drawPterodactyl(g: Graphics, flap: number, grabbed: boolean): void {
   claws(6, footY + 2);
 }
 
-function drawGate(g: Graphics, x: number, gapY: number, open: number, box: Box, floor: number): void {
-  const openTop = gapY - open / 2;
-  const openBot = gapY + open / 2;
-  const lip = 28;
-  const inset = 7;
-  const w = WORLD.pipeW;
-  const shaft = (sy: number, sh: number) => {
-    if (sh <= 1) return;
-    g.rect(x + inset, sy, w - inset * 2, sh).fill(0x4aaa52);
-    g.rect(x + inset + 6, sy, 6, sh).fill({ color: 0xffffff, alpha: 0.28 });
-    g.rect(x + w - inset - 8, sy, 5, sh).fill({ color: 0x1e5c30, alpha: 0.18 });
-  };
-  shaft(box.top - 20, openTop - lip - (box.top - 20));
-  shaft(openBot + lip, floor - (openBot + lip) + 4);
-  const cap = (cy: number) => {
-    g.roundRect(x, cy, w, lip, 8).fill(0x349443).stroke({ width: 3, color: 0x1e5c30 });
-    g.rect(x + 8, cy + 5, 7, lip - 10).fill({ color: 0xffffff, alpha: 0.35 });
-  };
-  cap(openTop - lip);
-  cap(openBot);
-}
-
 type Labels = {
   title: Text;
   flyHint: Text;
@@ -543,9 +527,9 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   g.rect(box.left, box.top, wide, tall).fill({ color: 0x14283c, alpha: 0.28 });
   const award = medalFor(run.score);
   const cardW = 304;
-  const cardH = award ? 412 : 308;
+  const cardH = award ? 388 : 300;
   const x = (WORLD.w - cardW) / 2;
-  const y = award ? 64 : 136;
+  const y = award ? 48 : 124;
   card(g, x, y, cardW, cardH);
   labels.overTitle.text = run.snatchTime >= 0 ? 'SNATCHED' : 'GAME OVER';
   labels.overTitle.position.set(cx, y + 42);
@@ -560,13 +544,13 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
     labels.medalName.text = award.name;
     labels.medalName.position.set(cx, y + 152);
   }
-  const scoreY = award ? y + 214 : y + 112;
+  const scoreY = award ? y + 200 : y + 108;
   labels.overScore.text = String(run.score);
   labels.overScore.position.set(cx, scoreY);
   labels.overBest.text = `BEST  ${state.best}`;
   labels.overBest.position.set(cx, scoreY + 50);
   const facts = flightFacts(run);
   labels.overStats.text = `${facts.taps}  ·  ${facts.pipes}\n${facts.seconds}`;
-  labels.overStats.position.set(cx, scoreY + 108);
-  labels.retry.position.set(cx, y + cardH - 32);
+  labels.overStats.position.set(cx, scoreY + 100);
+  labels.retry.position.set(cx, y + cardH - 30);
 }
