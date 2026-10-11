@@ -12,7 +12,7 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 
 The bird falls. You keep it in the air.
 
-- On the title, pick a bird: finch, eagle, flamingo, penguin, cardinal, or blue jay. The choice stays in this browser.
+- On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, dodo, pterodactyl, drone, kiwi, or weka. The choice stays in this browser.
 - Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
 - Tap, click, or press Space, Up, or W to flap.
 - Each gate you clear is one point.

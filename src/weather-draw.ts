@@ -110,7 +110,7 @@ function tornado(g: Graphics, x: number, floor: number, time: number): void {
     const t = i / 15;
     const y = floor - 4 - t * 250;
     const sway = Math.sin(time * 5 + i * 0.65) * (5 + t * 16);
-    const rx = 36 * (1 - t) * (1 - t) + 5;
+    const rx = 36 * t * t + 5;
     const color = i % 2 === 0 ? 0x55636c : 0x8d9aa2;
     g.ellipse(x + sway, y, rx, 7).fill({ color, alpha: 0.58 + (1 - t) * 0.28 });
   }
