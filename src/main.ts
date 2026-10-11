@@ -506,6 +506,8 @@ function frame(now: number): void {
     bird: birdId,
     controls: hints(),
     theme: themeId,
+    modeName: modeName(modeId),
+    modeBest: bests[modeId],
   });
   requestAnimationFrame(frame);
 }

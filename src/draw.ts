@@ -30,6 +30,8 @@ export type RenderState = {
   bird: BirdId;
   controls: ControlHints;
   theme: ThemeId;
+  modeName: string;
+  modeBest: number;
 };
 
 export type Stage = {
@@ -42,7 +44,7 @@ type Box = { left: number; top: number; right: number; bottom: number };
 const INK = 0x2b2118;
 const CREAM = 0xfffdf6;
 
-function outlined(text: string, size: number, fill: number, stroke = INK): Text {
+function outlined(text: string, size: number, fill: number, stroke = INK, left = false): Text {
   const label = new Text({
     text,
     style: {
@@ -50,11 +52,11 @@ function outlined(text: string, size: number, fill: number, stroke = INK): Text 
       fontSize: size,
       fill,
       stroke: { color: stroke, width: Math.max(4, size / 9) },
-      align: 'center',
+      align: left ? 'left' : 'center',
       padding: Math.ceil(size / 6),
     },
   });
-  label.anchor.set(0.5);
+  label.anchor.set(left ? 0 : 0.5, left ? 0 : 0.5);
   return label;
 }
 
@@ -194,7 +196,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
 
   const title = outlined('FLIT', 92, CREAM);
   const flyHint = plain('tap to fly', 26, INK);
-  const bestHint = plain('', 20, 0x6d5848);
+  const modeName = outlined('Easy', 18, CREAM, INK, true);
+  const modeScore = outlined('0', 32, CREAM, INK, true);
   const scoreText = outlined('0', 64, CREAM);
   const pauseTitle = outlined('PAUSED', 40, CREAM);
   const pauseHint = plain('tap to resume', 20, 0x6d5848);
@@ -210,7 +213,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     uiGfx,
     title,
     flyHint,
-    bestHint,
+    modeName,
+    modeScore,
     scoreText,
     pauseTitle,
     pauseHint,
@@ -287,7 +291,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     drawUi(uiGfx, state, box, {
       title,
       flyHint,
-      bestHint,
+      modeName,
+      modeScore,
       scoreText,
       pauseTitle,
       pauseHint,
@@ -428,7 +433,8 @@ function drawPterodactyl(g: Graphics, flap: number, grabbed: boolean): void {
 type Labels = {
   title: Text;
   flyHint: Text;
-  bestHint: Text;
+  modeName: Text;
+  modeScore: Text;
   scoreText: Text;
   pauseTitle: Text;
   pauseHint: Text;
@@ -457,7 +463,6 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
 
   labels.title.visible = ready;
   labels.flyHint.visible = ready;
-  labels.bestHint.visible = ready && state.best > 0;
   labels.scoreText.visible = playing;
   labels.pauseTitle.visible = state.paused;
   labels.pauseHint.visible = state.paused;
@@ -476,28 +481,40 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.retry.style.fontSize = controls.touch ? 18 : 16;
   labels.weatherLabel.visible = true;
   const skyLine = `${fieldName(run.season, run.holiday)}  ·  ${weatherById(run.weather).name}`;
-  const reserve = 116;
-  const edge = box.right - reserve;
+  const rightReserve = 116;
+  const leftReserve = 128;
+  const edge = box.right - rightReserve;
   labels.weatherLabel.text = skyLine;
   let skySize = 22;
   labels.weatherLabel.style.fontSize = skySize;
-  const room = Math.max(120, edge - box.left - 16);
-  while (skySize > 14 && labels.weatherLabel.width > room) {
+  const room = Math.max(80, edge - box.left - leftReserve);
+  while (skySize > 13 && labels.weatherLabel.width > room) {
     skySize -= 1;
     labels.weatherLabel.style.fontSize = skySize;
   }
   const half = labels.weatherLabel.width / 2;
   const mid = (box.left + box.right) / 2;
-  labels.weatherLabel.position.set(Math.min(mid, edge - half), box.top + 30);
+  const leftLimit = box.left + leftReserve + half;
+  const rightLimit = edge - half;
+  const skyX = leftLimit <= rightLimit ? Math.min(rightLimit, Math.max(leftLimit, mid)) : mid;
+  labels.weatherLabel.position.set(skyX, box.top + 30);
+
+  const cornerClear = !over || box.top < -48;
+  labels.modeName.visible = cornerClear;
+  labels.modeScore.visible = cornerClear;
+  if (cornerClear) {
+    labels.modeName.text = state.modeName;
+    labels.modeScore.text = String(state.modeBest);
+    const hudX = box.left + 16;
+    const hudY = box.top + 10;
+    labels.modeName.position.set(hudX, hudY);
+    labels.modeScore.position.set(hudX, hudY + 24);
+  }
 
   if (ready) {
     labels.title.position.set(cx, 128);
     labels.flyHint.position.set(cx, 214);
     labels.flyHint.alpha = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(run.time * 3));
-    if (state.best > 0) {
-      labels.bestHint.text = `best ${state.best}`;
-      labels.bestHint.position.set(cx, 256);
-    }
   }
 
   if (playing) {

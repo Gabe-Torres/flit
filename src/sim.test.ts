@@ -488,9 +488,10 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard' | 'random'
 }
 
 {
-  assert(THEMES.map((theme) => theme.id).join() === 'classic,roman,colony,reef', 'maps stay in menu order');
+  assert(THEMES.map((theme) => theme.id).join() === 'classic,roman,colony,reef,mars', 'maps stay in menu order');
+  assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman,Colony,Coral,Mars', 'map names stay with their gates');
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
-  assert(!isThemeId('starter') && !isThemeId('pipes'), 'unknown maps fall through');
+  assert(!isThemeId('starter') && !isThemeId('pipes') && !isThemeId('lunar'), 'unknown maps fall through');
 }
 
 if (failed > 0) {
