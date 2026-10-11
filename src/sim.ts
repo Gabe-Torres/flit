@@ -40,6 +40,18 @@ export type Gate = {
   scored: boolean;
 };
 
+export type ModeId = 'starter' | 'normal' | 'hard';
+
+export const MODES: { id: ModeId; name: string }[] = [
+  { id: 'starter', name: 'Starter' },
+  { id: 'normal', name: 'Normal' },
+  { id: 'hard', name: 'Hard' },
+];
+
+export function isModeId(id: string): id is ModeId {
+  return MODES.some((mode) => mode.id === id);
+}
+
 export type Run = {
   phase: Phase;
   bird: Bird;
@@ -48,6 +60,8 @@ export type Run = {
   scroll: number;
   time: number;
   seed: number;
+  origin: number;
+  mode: ModeId;
   shake: number;
   sinceFlap: number;
   weather: WeatherId;
@@ -74,7 +88,7 @@ export function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
-export function createRun(seed = 1): Run {
+export function createRun(seed = 1, mode: ModeId = 'starter'): Run {
   const safe = seed >>> 0 || 1;
   return {
     phase: 'ready',
@@ -84,6 +98,8 @@ export function createRun(seed = 1): Run {
     scroll: 0,
     time: 0,
     seed: safe,
+    origin: safe,
+    mode,
     shake: 0,
     sinceFlap: 10,
     weather: weatherForSeed(safe),
@@ -107,28 +123,38 @@ export const SNATCH_DURATION = SNATCH_APPROACH + SNATCH_CARRY;
 const TALON_X = -6;
 const TALON_Y = 40;
 
-// Every 10 pipes, the next gate sits 30px closer and its opening is 30px shorter.
-// WORLD.spacing and WORLD.gap are the tightest.
-const EASE_EVERY = 10;
+// Starter tightens every 5 pipes, by 30px of distance and 30px of opening.
+// The floor is the original distance and opening. Normal stays on that floor.
+// Hard picks a new distance and opening for each gate, anywhere in that range.
+const EASE_EVERY = 5;
 const EASE_STEP = 30;
 const EASE_STEPS = 4;
+const EASE_SPAN = EASE_STEPS * EASE_STEP;
 
 function easeLeft(cleared: number): number {
   const steps = Math.min(EASE_STEPS, Math.max(0, Math.floor(cleared / EASE_EVERY)));
   return (EASE_STEPS - steps) * EASE_STEP;
 }
 
-export function pipeSpacing(cleared: number): number {
+function roll(origin: number, index: number, salt: number): number {
+  return mix(origin ^ Math.imul(index + 1, 0x9e3779b1) ^ salt) / 4294967296;
+}
+
+export function pipeSpacing(cleared: number, mode: ModeId = 'starter', origin = 1): number {
+  if (mode === 'normal') return WORLD.spacing;
+  if (mode === 'hard') return WORLD.spacing + roll(origin, cleared, 0x51a7c0de) * EASE_SPAN;
   return WORLD.spacing + easeLeft(cleared);
 }
 
-export function pipeOpening(cleared: number): number {
+export function pipeOpening(cleared: number, mode: ModeId = 'starter', origin = 1): number {
+  if (mode === 'normal') return WORLD.gap;
+  if (mode === 'hard') return WORLD.gap + roll(origin, cleared, 0xc0ffee21) * EASE_SPAN;
   return WORLD.gap + easeLeft(cleared);
 }
 
-export function pipesClearTime(pipes = SNATCH_PIPE_LIMIT): number {
+export function pipesClearTime(pipes = SNATCH_PIPE_LIMIT, mode: ModeId = 'starter', origin = 1): number {
   let travel = WORLD.firstX + WORLD.pipeW - WORLD.birdX;
-  for (let i = 0; i < pipes - 1; i++) travel += pipeSpacing(i);
+  for (let i = 0; i < pipes - 1; i++) travel += pipeSpacing(i, mode, origin);
   return travel / WORLD.scroll;
 }
 
@@ -139,9 +165,9 @@ function mix(n: number): number {
   return (x ^ (x >>> 16)) >>> 0;
 }
 
-export function planSnatch(seed: number): number | null {
+export function planSnatch(seed: number, mode: ModeId = 'starter'): number | null {
   if (mix(seed ^ 0xa5a5a5a5) >= SNATCH_CHANCE_NUMERATOR) return null;
-  const latest = pipesClearTime();
+  const latest = pipesClearTime(SNATCH_PIPE_LIMIT, mode, seed);
   const when = 0.55 + (mix(seed ^ 0x3c6ef372) / 4294967296) * (latest - 0.55);
   return when;
 }
@@ -199,12 +225,12 @@ function nextGap(run: Run, around: number, open: number): number {
 
 function spawn(run: Run): void {
   const last = run.gates[run.gates.length - 1];
-  const open = pipeOpening(run.score);
+  const open = pipeOpening(run.score, run.mode, run.origin);
   if (!last) {
     run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY, open), open, scored: false });
     return;
   }
-  const spacing = pipeSpacing(run.score);
+  const spacing = pipeSpacing(run.score, run.mode, run.origin);
   if (last.x <= WORLD.w + 36 - spacing) {
     run.gates.push({
       x: last.x + spacing,
@@ -250,7 +276,7 @@ export function flap(run: Run): boolean {
   if (run.phase === 'dying' || run.phase === 'snatched' || run.phase === 'over') return false;
   if (run.phase === 'ready') {
     run.phase = 'play';
-    run.snatchAt = planSnatch(run.seed);
+    run.snatchAt = planSnatch(run.origin, run.mode);
   }
   run.taps += 1;
   run.bird.vy = WORLD.flap;

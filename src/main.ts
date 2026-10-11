@@ -2,7 +2,7 @@ import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
-import { WORLD, createRun, flap, flightFacts, step, type Run } from './sim.ts';
+import { MODES, WORLD, createRun, flap, flightFacts, isModeId, step, type ModeId, type Run } from './sim.ts';
 import { fieldName } from './holiday.ts';
 import { weatherById } from './weather.ts';
 
@@ -13,7 +13,8 @@ const muteQuery = document.querySelector<HTMLButtonElement>('#mute');
 const rosterQuery = document.querySelector<HTMLElement>('#roster');
 const birdNameQuery = document.querySelector<HTMLElement>('#bird-name');
 const birdsQuery = document.querySelector<HTMLElement>('#birds');
-if (!canvas || !statusEl || !pauseQuery || !muteQuery || !rosterQuery || !birdNameQuery || !birdsQuery) {
+const modesQuery = document.querySelector<HTMLElement>('#modes');
+if (!canvas || !statusEl || !pauseQuery || !muteQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery) {
   throw new Error('Flit is missing a page element');
 }
 const view = canvas;
@@ -23,11 +24,13 @@ const muteBtn = muteQuery;
 const roster = rosterQuery;
 const birdNameEl = birdNameQuery;
 const birdsEl = birdsQuery;
+const modesEl = modesQuery;
 
 const audio = createAudio();
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-let run: Run = createRun(mixSeed());
+let modeId = readMode();
+let run: Run = createRun(mixSeed(), modeId);
 let best = readNumber('flit-best');
 let birdId = readBird();
 let paused = false;
@@ -76,6 +79,28 @@ function writeBird(id: BirdId): void {
   }
 }
 
+function readMode(): ModeId {
+  try {
+    const saved = localStorage.getItem('flit-mode');
+    if (saved && isModeId(saved)) return saved;
+  } catch {
+    // Storage can be blocked. Starter is the default.
+  }
+  return 'starter';
+}
+
+function writeMode(id: ModeId): void {
+  try {
+    localStorage.setItem('flit-mode', id);
+  } catch {
+    // The choice still lasts for this visit.
+  }
+}
+
+function modeName(id: ModeId): string {
+  return MODES.find((mode) => mode.id === id)?.name ?? 'Starter';
+}
+
 function forecast(): string {
   return `${fieldName(run.season, run.holiday)} · ${weatherById(run.weather).name}`;
 }
@@ -97,6 +122,21 @@ function chooseBird(id: BirdId): void {
   birdId = id;
   writeBird(id);
   paintBird();
+  describe();
+}
+
+function paintMode(): void {
+  for (const button of modesEl.querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', button.dataset.mode === modeId ? 'true' : 'false');
+  }
+}
+
+function chooseMode(id: ModeId): void {
+  if (id === modeId) return;
+  modeId = id;
+  writeMode(id);
+  if (run.phase === 'ready') run.mode = id;
+  paintMode();
   describe();
 }
 
@@ -139,7 +179,7 @@ function describe(): void {
   }
   if (run.phase === 'ready') {
     const name = birdById(birdId).name;
-    const lead = `Flit. ${name}. ${sky}. ${controls.speak}`;
+    const lead = `Flit. ${name}. ${modeName(modeId)}. ${sky}. ${controls.speak}`;
     setStatus(best > 0 ? `${lead} Best ${best}.` : lead);
     return;
   }
@@ -151,7 +191,7 @@ function describe(): void {
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
     const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
-    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${sky}. ${controls.againSpeak}`);
+    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${modeName(run.mode)}. ${sky}. ${controls.againSpeak}`);
     return;
   }
   setStatus(`Score ${run.score}. ${sky}.`);
@@ -173,7 +213,7 @@ function puff(count: number, life: number, spread: number): void {
 }
 
 function resetRun(andFly: boolean): void {
-  run = createRun(mixSeed());
+  run = createRun(mixSeed(), modeId);
   particles = [];
   pop = 0;
   squash = 0;
@@ -263,6 +303,15 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
+for (const mode of MODES) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.mode = mode.id;
+  button.textContent = mode.name;
+  button.addEventListener('click', () => chooseMode(mode.id));
+  modesEl.append(button);
+}
+
 for (const bird of BIRDS) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -290,6 +339,7 @@ if (import.meta.env.PROD && 'caches' in window) {
 paintMute();
 paintPause();
 paintBird();
+paintMode();
 paintRoster();
 resize();
 describe();
@@ -309,6 +359,10 @@ if (import.meta.env.DEV) {
         return birdId;
       },
       choose: chooseBird,
+      get mode() {
+        return modeId;
+      },
+      chooseMode,
     },
   });
 }

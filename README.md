@@ -13,9 +13,10 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 The bird falls. You keep it in the air.
 
 - On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, dodo, pterodactyl, drone, lunar lander, kiwi, or weka. The choice stays in this browser.
+- On the title, pick a difficulty. Starter begins with far gates and a tall opening. Every 5 you clear, the next ones sit a little closer and the opening gets a little shorter. After 20, they match the original. Normal is that original distance and opening from the first gate. Hard rolls every gate on its own, so a large distance and a tall opening can be followed by a small one. The choice stays in this browser.
 - The field follows the real date where you are: spring, summer, autumn, or winter. On a holiday it dresses for that day: New Year, Valentine's Day, St. Patrick's Day, Easter weekend, the week of Halloween, Thanksgiving and the Friday after, and the week of Christmas.
 - Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
-- Each gate you clear is one point. The gates start far apart, and the opening starts tall. Every 10 you clear, the next ones sit a little closer and the opening gets a little shorter. After 40, they are as close and as narrow as they get.
+- Each gate you clear is one point.
 - A gate or the ground ends the run.
 - Before you clear 25 pipes, there is a 1 in 100 chance a pterodactyl flies in, grabs you, and carries you away. After 25 pipes it does not come.
 - After the score card, flap again to fly. The card lists your taps, the pipes you cleared, and your time in the air.
