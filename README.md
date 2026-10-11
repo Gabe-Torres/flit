@@ -33,7 +33,7 @@ On a computer:
 - Click the screen, or press Space, Up, or W, to flap. The same control starts a run, resumes a pause, and starts the next run after the score card.
 - P pauses. M mutes. R returns to the title. The buttons in the corner pause and mute too.
 
-The best score stays in this browser. A run of 5 earns bronze, 10 silver, 20 gold, and 40 a ruby. A few more rubies are buried in the dirt. They are just sitting there.
+The best score stays in this browser. A run of 30 earns bronze, 70 silver, and 100 a ruby. A few more rubies are buried in the dirt. They are just sitting there.
 
 On a phone, open the play link in the browser. A texted HTML file is only a preview, and the game will not start from it. Open the play link once while you are online, then add it to the home screen. The icon is the yellow bird. After that the game runs with the network off.
 

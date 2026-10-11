@@ -101,10 +101,9 @@ function star(g: Graphics, x: number, y: number, r: number, color: number): void
 }
 
 function medalFor(score: number): { name: string; fill: number; rim: number } | null {
-  if (score >= 40) return { name: 'ruby', fill: 0xe85d75, rim: 0x9d2944 };
-  if (score >= 20) return { name: 'gold', fill: 0xf2c14b, rim: 0xa67c12 };
-  if (score >= 10) return { name: 'silver', fill: 0xd5dbe3, rim: 0x7d8794 };
-  if (score >= 5) return { name: 'bronze', fill: 0xe0a36a, rim: 0x8a5a32 };
+  if (score >= 100) return { name: 'ruby', fill: 0xe85d75, rim: 0x9d2944 };
+  if (score >= 70) return { name: 'silver', fill: 0xd5dbe3, rim: 0x7d8794 };
+  if (score >= 30) return { name: 'bronze', fill: 0xe0a36a, rim: 0x8a5a32 };
   return null;
 }
 
