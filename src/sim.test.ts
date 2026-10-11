@@ -6,6 +6,7 @@ import {
   flightFacts,
   groundY,
   hits,
+  pipeOpening,
   pipeSpacing,
   pipesClearTime,
   planSnatch,
@@ -108,7 +109,7 @@ function playable(): ReturnType<typeof createRun> {
 {
   const run = playable();
   run.bird.y = 320;
-  run.gates = [{ x: WORLD.birdX - 20, gapY: 320, scored: false }];
+  run.gates = [{ x: WORLD.birdX - 20, gapY: 320, open: WORLD.gap, scored: false }];
   assert(!hits(run), 'the gap is safe');
   step(run, 0);
   assert(run.phase === 'play', 'passing the gap does not crash');
@@ -117,7 +118,7 @@ function playable(): ReturnType<typeof createRun> {
 {
   const run = playable();
   run.bird.y = 320;
-  run.gates = [{ x: WORLD.birdX - 20, gapY: 320 + 150, scored: false }];
+  run.gates = [{ x: WORLD.birdX - 20, gapY: 320 + 150, open: WORLD.gap, scored: false }];
   assert(hits(run), 'the gate body is solid');
   step(run, 0);
   assert(run.phase === 'dying', 'hitting a gate ends the flight');
@@ -134,7 +135,7 @@ function playable(): ReturnType<typeof createRun> {
 {
   const run = playable();
   run.bird.y = 320;
-  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 320, scored: false }];
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 320, open: WORLD.gap, scored: false }];
   step(run, 0);
   assert(run.score === 1, 'clearing a gate scores');
   assert(run.phase === 'play', 'a score stays in play');
@@ -146,7 +147,7 @@ function playable(): ReturnType<typeof createRun> {
 {
   const run = playable();
   run.bird.y = 200;
-  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 420, scored: false }];
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 420, open: WORLD.gap, scored: false }];
   step(run, 0);
   assert(run.phase === 'dying', 'overlapping the lip crashes');
   assert(run.score === 0, 'crashing on the score line does not score');
@@ -200,6 +201,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(run.phase === 'play', 'a centered bird keeps flying');
   assert(run.score < 10, `the opening is still the wide stretch (${run.score})`);
   assert(run.gates.length >= 2, 'gates keep coming');
+  assert(run.gates.every((gate) => gate.open === pipeOpening(0)), 'early openings stay tall');
   for (let i = 1; i < run.gates.length; i++) {
     const gap = run.gates[i].x - run.gates[i - 1].x;
     assert(Math.abs(gap - pipeSpacing(0)) < 0.05, `early gates stay wide (${gap})`);
@@ -219,6 +221,17 @@ function playable(): ReturnType<typeof createRun> {
   assert(pipeSpacing(39) === WORLD.spacing + tighten, 'pipe 39 is one step easier than the floor');
   assert(pipeSpacing(40) === WORLD.spacing, 'pipe 40 is the closest the gates get');
   assert(pipeSpacing(80) === WORLD.spacing, 'later pipes stay at the closest distance');
+  assert(pipeOpening(0) === WORLD.gap + (pipeSpacing(0) - WORLD.spacing), 'the opening eases by the same amount');
+  assert(pipeOpening(0) === pipeOpening(9), 'the first ten pipes share an opening');
+  assert(pipeOpening(0) - pipeOpening(10) === pipeSpacing(0) - pipeSpacing(10), 'each ten pipes shortens the opening like the distance');
+  assert(pipeOpening(40) === WORLD.gap, 'pipe 40 is the narrowest opening');
+  assert(pipeOpening(80) === WORLD.gap, 'later openings stay narrow');
+  const runWide = playable();
+  runWide.bird.y = 320 + 100;
+  runWide.gates = [{ x: WORLD.birdX - 20, gapY: 320, open: pipeOpening(0), scored: false }];
+  assert(!hits(runWide), 'the early opening clears a bird 100px off center');
+  runWide.gates[0].open = pipeOpening(40);
+  assert(hits(runWide), 'the final opening hits that same bird');
 
   const run = createRun(9);
   run.phase = 'play';
@@ -229,7 +242,12 @@ function playable(): ReturnType<typeof createRun> {
     run.bird.y = ahead ? ahead.gapY : WORLD.readyY;
     run.bird.vy = 0;
     const count = run.gates.length;
+    const cleared = run.score;
     step(run, 1 / 60);
+    if (run.gates.length > count) {
+      const born = run.gates[run.gates.length - 1];
+      assert(born.open === pipeOpening(cleared), `a new gate keeps the opening for ${cleared} pipes (${born.open})`);
+    }
     if (run.gates.length > count && run.gates.length >= 2) {
       const next = run.gates[run.gates.length - 1];
       const prev = run.gates[run.gates.length - 2];
@@ -279,7 +297,7 @@ function playable(): ReturnType<typeof createRun> {
   const run = playable();
   run.bird.y = 300;
   run.snatchAt = 0;
-  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 300, scored: false }];
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 300, open: WORLD.gap, scored: false }];
   step(run, 0);
   assert(run.phase === 'snatched', 'a due grab happens before scoring');
   assert(run.score === 0, 'the grab skips the pipe');
@@ -292,7 +310,7 @@ function playable(): ReturnType<typeof createRun> {
 {
   const run = playable();
   run.bird.y = 280;
-  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 280, scored: false }];
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 280, open: WORLD.gap, scored: false }];
   run.snatchAt = 0;
   run.score = 16;
   step(run, 0);
@@ -303,7 +321,7 @@ function playable(): ReturnType<typeof createRun> {
 {
   const run = playable();
   run.bird.y = 280;
-  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 280, scored: false }];
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 280, open: WORLD.gap, scored: false }];
   run.snatchAt = 10;
   run.score = 24;
   step(run, 0);

@@ -251,7 +251,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
     drawSeason(scenery, season, weather, run.time, run.scroll, box, floor, state.reduceMotion);
     drawTornado(scenery, weather, run.time, box, floor);
-    for (const gate of run.gates) drawGate(gateLayer, gate.x, gate.gapY, box, floor);
+    for (const gate of run.gates) drawGate(gateLayer, gate.x, gate.gapY, gate.open, box, floor);
     drawGround(ground, run, box, floor, land);
     drawAtmosphere(atmosphere, weather, run.time, run.scroll, box, floor, state.reduceMotion);
 
@@ -419,9 +419,9 @@ function drawPterodactyl(g: Graphics, flap: number, grabbed: boolean): void {
   claws(6, footY + 2);
 }
 
-function drawGate(g: Graphics, x: number, gapY: number, box: Box, floor: number): void {
-  const openTop = gapY - WORLD.gap / 2;
-  const openBot = gapY + WORLD.gap / 2;
+function drawGate(g: Graphics, x: number, gapY: number, open: number, box: Box, floor: number): void {
+  const openTop = gapY - open / 2;
+  const openBot = gapY + open / 2;
   const lip = 28;
   const inset = 7;
   const w = WORLD.pipeW;

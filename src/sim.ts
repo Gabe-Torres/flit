@@ -35,6 +35,7 @@ export type Bird = {
 export type Gate = {
   x: number;
   gapY: number;
+  open: number;
   scored: boolean;
 };
 
@@ -103,14 +104,23 @@ export const SNATCH_DURATION = SNATCH_APPROACH + SNATCH_CARRY;
 const TALON_X = -6;
 const TALON_Y = 40;
 
-// Gates open wide and move 30px closer every 10 pipes cleared. WORLD.spacing is the tightest.
-const SPACING_EVERY = 10;
-const SPACING_TIGHTEN = 30;
-const SPACING_STEPS = 4;
+// Every 10 pipes, the next gate sits 30px closer and its opening is 30px shorter.
+// WORLD.spacing and WORLD.gap are the tightest.
+const EASE_EVERY = 10;
+const EASE_STEP = 30;
+const EASE_STEPS = 4;
+
+function easeLeft(cleared: number): number {
+  const steps = Math.min(EASE_STEPS, Math.max(0, Math.floor(cleared / EASE_EVERY)));
+  return (EASE_STEPS - steps) * EASE_STEP;
+}
 
 export function pipeSpacing(cleared: number): number {
-  const steps = Math.min(SPACING_STEPS, Math.max(0, Math.floor(cleared / SPACING_EVERY)));
-  return WORLD.spacing + (SPACING_STEPS - steps) * SPACING_TIGHTEN;
+  return WORLD.spacing + easeLeft(cleared);
+}
+
+export function pipeOpening(cleared: number): number {
+  return WORLD.gap + easeLeft(cleared);
 }
 
 export function pipesClearTime(pipes = SNATCH_PIPE_LIMIT): number {
@@ -176,8 +186,8 @@ function rand(run: Run): number {
   return run.seed / 4294967296;
 }
 
-function nextGap(run: Run, around: number): number {
-  const half = WORLD.gap / 2;
+function nextGap(run: Run, around: number, open: number): number {
+  const half = open / 2;
   const min = WORLD.margin + half;
   const max = groundY() - WORLD.margin - half;
   const raw = min + rand(run) * (max - min);
@@ -186,15 +196,17 @@ function nextGap(run: Run, around: number): number {
 
 function spawn(run: Run): void {
   const last = run.gates[run.gates.length - 1];
+  const open = pipeOpening(run.score);
   if (!last) {
-    run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY), scored: false });
+    run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY, open), open, scored: false });
     return;
   }
   const spacing = pipeSpacing(run.score);
   if (last.x <= WORLD.w + 36 - spacing) {
     run.gates.push({
       x: last.x + spacing,
-      gapY: nextGap(run, last.gapY),
+      gapY: nextGap(run, last.gapY, open),
+      open,
       scored: false,
     });
   }
@@ -223,8 +235,8 @@ export function hits(run: Run): boolean {
   if (y + r >= groundY()) return true;
   const x = WORLD.birdX;
   for (const gate of run.gates) {
-    const openTop = gate.gapY - WORLD.gap / 2;
-    const openBot = gate.gapY + WORLD.gap / 2;
+    const openTop = gate.gapY - gate.open / 2;
+    const openBot = gate.gapY + gate.open / 2;
     if (circleHits(x, y, r, gate.x, -400, WORLD.pipeW, openTop + 400)) return true;
     if (circleHits(x, y, r, gate.x, openBot, WORLD.pipeW, 4000)) return true;
   }

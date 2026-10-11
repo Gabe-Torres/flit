@@ -15,7 +15,7 @@ The bird falls. You keep it in the air.
 - On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, dodo, pterodactyl, drone, kiwi, or weka. The choice stays in this browser.
 - The field follows the season: spring, summer, autumn, or winter.
 - Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
-- Each gate you clear is one point. The gates start far apart. Every 10 you clear, the next ones sit a little closer. After 40, they are as close as they get.
+- Each gate you clear is one point. The gates start far apart, and the opening starts tall. Every 10 you clear, the next ones sit a little closer and the opening gets a little shorter. After 40, they are as close and as narrow as they get.
 - A gate or the ground ends the run.
 - Before you clear 25 pipes, there is a 1 in 100 chance a pterodactyl flies in, grabs you, and carries you away. After 25 pipes it does not come.
 - After the score card, flap again to fly. The card lists your taps, the pipes you cleared, and your time in the air.
