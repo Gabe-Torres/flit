@@ -209,6 +209,15 @@ export function snatchPose(
   };
 }
 
+export type MedalName = 'bronze' | 'silver' | 'ruby';
+
+export function medalForScore(score: number): MedalName | null {
+  if (score >= 100) return 'ruby';
+  if (score >= 70) return 'silver';
+  if (score >= 30) return 'bronze';
+  return null;
+}
+
 export function flightFacts(run: Run): { taps: string; pipes: string; seconds: string } {
   const seconds = (Math.round(run.playTime * 10) / 10).toFixed(1);
   return {

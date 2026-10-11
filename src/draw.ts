@@ -2,7 +2,7 @@ import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
 import { fieldName } from './holiday.ts';
-import { WORLD, flightFacts, groundY, snatchPose, type Run } from './sim.ts';
+import { WORLD, flightFacts, groundY, medalForScore, snatchPose, type MedalName, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor, weatherById } from './weather.ts';
 import { drawAtmosphere, drawClouds, drawSeason, drawSky, drawTornado } from './weather-draw.ts';
@@ -104,15 +104,15 @@ function star(g: Graphics, x: number, y: number, r: number, color: number): void
   g.poly(points, true).fill(color);
 }
 
-function medalFor(score: number): { name: string; fill: number; rim: number } | null {
-  if (score >= 100) return { name: 'ruby', fill: 0xe85d75, rim: 0x9d2944 };
-  if (score >= 70) return { name: 'silver', fill: 0xd5dbe3, rim: 0x7d8794 };
-  if (score >= 30) return { name: 'bronze', fill: 0xe0a36a, rim: 0x8a5a32 };
+function medalFor(score: number): { name: MedalName; fill: number; rim: number } | null {
+  const name = medalForScore(score);
+  if (name === 'ruby') return { name, fill: 0xe85d75, rim: 0x9d2944 };
+  if (name === 'silver') return { name, fill: 0xd5dbe3, rim: 0x7d8794 };
+  if (name === 'bronze') return { name, fill: 0xe0a36a, rim: 0x8a5a32 };
   return null;
 }
 
-function drawRubyMedal(g: Graphics, x: number, y: number): void {
-  const s = 3.7;
+function drawRubyMedal(g: Graphics, x: number, y: number, s = 3.7): void {
   const cut = [
     x,
     y - 8 * s,
@@ -133,8 +133,18 @@ function drawRubyMedal(g: Graphics, x: number, y: number): void {
     color: 0xfffdf6,
     alpha: 0.92,
   });
-  g.poly(cut, true).stroke({ width: 3, color: 0x9d2944, join: 'round' });
-  star(g, x + 6.4 * s, y - 9.2 * s, 3.4, 0xfffdf6);
+  g.poly(cut, true).stroke({ width: Math.max(1.6, s * 0.8), color: 0x9d2944, join: 'round' });
+  star(g, x + 6.4 * s, y - 9.2 * s, Math.max(2.2, s * 0.9), 0xfffdf6);
+}
+
+function drawHudMedal(g: Graphics, x: number, y: number, award: { name: MedalName; fill: number; rim: number }): void {
+  if (award.name === 'ruby') {
+    drawRubyMedal(g, x, y + 1, 1.55);
+    return;
+  }
+  g.circle(x, y, 11).fill(award.rim);
+  g.circle(x, y, 8).fill(award.fill);
+  star(g, x, y - 0.3, 4.4, CREAM);
 }
 
 function fit(cssW: number, cssH: number): { scale: number; ox: number; oy: number; box: Box } {
@@ -479,10 +489,34 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.pauseHint.style.fontSize = controls.touch ? 20 : 18;
   labels.retry.text = controls.retry;
   labels.retry.style.fontSize = controls.touch ? 18 : 16;
+  const hudMedal = medalFor(state.modeBest);
+  const cornerClear = !over || box.top < -48;
+  labels.modeName.visible = cornerClear;
+  labels.modeScore.visible = cornerClear;
+  let hudMedalAt: { x: number; y: number } | null = null;
+  let hudRight = box.left + 108;
+  if (cornerClear) {
+    labels.modeName.text = state.modeName;
+    labels.modeScore.text = String(state.modeBest);
+    const hudX = box.left + 16;
+    const hudY = box.top + 10;
+    labels.modeName.position.set(hudX, hudY);
+    labels.modeScore.position.set(hudX, hudY + 24);
+    const pad = Math.ceil(Number(labels.modeScore.style.fontSize) / 6);
+    hudRight = hudX + Math.max(labels.modeName.width, labels.modeScore.width - pad);
+    if (hudMedal) {
+      hudMedalAt = {
+        x: hudX + labels.modeScore.width - pad + 22,
+        y: hudY + 24 + labels.modeScore.height / 2,
+      };
+      hudRight = Math.max(hudRight, hudMedalAt.x + 18);
+    }
+  }
+
   labels.weatherLabel.visible = true;
   const skyLine = `${fieldName(run.season, run.holiday)}  ·  ${weatherById(run.weather).name}`;
   const rightReserve = 116;
-  const leftReserve = 128;
+  const leftReserve = cornerClear ? Math.max(128, hudRight - box.left + 12) : 128;
   const edge = box.right - rightReserve;
   labels.weatherLabel.text = skyLine;
   let skySize = 22;
@@ -498,18 +532,6 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   const rightLimit = edge - half;
   const skyX = leftLimit <= rightLimit ? Math.min(rightLimit, Math.max(leftLimit, mid)) : mid;
   labels.weatherLabel.position.set(skyX, box.top + 30);
-
-  const cornerClear = !over || box.top < -48;
-  labels.modeName.visible = cornerClear;
-  labels.modeScore.visible = cornerClear;
-  if (cornerClear) {
-    labels.modeName.text = state.modeName;
-    labels.modeScore.text = String(state.modeBest);
-    const hudX = box.left + 16;
-    const hudY = box.top + 10;
-    labels.modeName.position.set(hudX, hudY);
-    labels.modeScore.position.set(hudX, hudY + 24);
-  }
 
   if (ready) {
     labels.title.position.set(cx, 128);
@@ -539,7 +561,10 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
     labels.pauseHint.position.set(cx, cardY + 80);
   }
 
-  if (!over) return;
+  if (!over) {
+    if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal);
+    return;
+  }
 
   g.rect(box.left, box.top, wide, tall).fill({ color: 0x14283c, alpha: 0.28 });
   const award = medalFor(run.score);
@@ -566,6 +591,9 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.overScore.position.set(cx, scoreY);
   labels.overBest.text = `BEST  ${state.best}`;
   labels.overBest.position.set(cx, scoreY + 50);
+  const bestMedal = medalFor(state.best);
+  if (bestMedal) drawHudMedal(g, cx + labels.overBest.width / 2 + 16, scoreY + 50, bestMedal);
+  if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal);
   const facts = flightFacts(run);
   labels.overStats.text = `${facts.taps}  ·  ${facts.pipes}\n${facts.seconds}`;
   labels.overStats.position.set(cx, scoreY + 100);

@@ -4,6 +4,7 @@ import {
   createRun,
   flap,
   flightFacts,
+  medalForScore,
   groundY,
   hits,
   pipeOpening,
@@ -492,6 +493,13 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard' | 'random'
   assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman,Colony,Coral,Mars', 'map names stay with their gates');
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
   assert(!isThemeId('starter') && !isThemeId('pipes') && !isThemeId('lunar'), 'unknown maps fall through');
+}
+
+{
+  assert(medalForScore(0) === null && medalForScore(29) === null, 'a short best has no medal');
+  assert(medalForScore(30) === 'bronze' && medalForScore(69) === 'bronze', '30 earns bronze');
+  assert(medalForScore(70) === 'silver' && medalForScore(99) === 'silver', '70 earns silver');
+  assert(medalForScore(100) === 'ruby', '100 earns a ruby');
 }
 
 if (failed > 0) {

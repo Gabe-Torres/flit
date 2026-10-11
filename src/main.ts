@@ -2,7 +2,7 @@ import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
-import { MODES, WORLD, createRun, flap, flightFacts, isModeId, step, type ModeId, type Run } from './sim.ts';
+import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, step, type ModeId, type Run } from './sim.ts';
 import { fieldName } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
 import { weatherById } from './weather.ts';
@@ -151,6 +151,11 @@ function shownBest(): number {
   return bests[run.phase === 'ready' ? modeId : run.mode];
 }
 
+function bestLine(score: number): string {
+  const medal = medalForScore(score);
+  return medal ? `Best ${score}, ${medal}` : `Best ${score}`;
+}
+
 function forecast(): string {
   return `${fieldName(run.season, run.holiday)} · ${weatherById(run.weather).name}`;
 }
@@ -245,7 +250,7 @@ function describe(): void {
     const name = birdById(birdId).name;
     const lead = `Flit. ${name}. ${modeName(modeId)}. ${themeName(themeId)}. ${sky}. ${controls.speak}`;
     const modeBest = bests[modeId];
-    setStatus(modeBest > 0 ? `${lead} Best ${modeBest}.` : lead);
+    setStatus(modeBest > 0 ? `${lead} ${bestLine(modeBest)}.` : lead);
     return;
   }
   if (run.phase === 'snatched') {
@@ -256,7 +261,7 @@ function describe(): void {
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
     const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
-    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${bests[run.mode]}. ${modeName(run.mode)}. ${themeName(themeId)}. ${sky}. ${controls.againSpeak}`);
+    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. ${bestLine(bests[run.mode])}. ${modeName(run.mode)}. ${themeName(themeId)}. ${sky}. ${controls.againSpeak}`);
     return;
   }
   setStatus(`Score ${run.score}. ${sky}.`);
