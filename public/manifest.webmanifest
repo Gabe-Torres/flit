@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Flit",
   "short_name": "Flit",
-  "description": "Tap to flap through the gaps.",
+  "description": "Flap through the gaps.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

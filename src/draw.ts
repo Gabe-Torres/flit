@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
+import type { ControlHints } from './controls.ts';
 import { seasonById } from './season.ts';
 import { WORLD, flightFacts, groundY, snatchPose, type Run } from './sim.ts';
 import { terrainFor, weatherById } from './weather.ts';
@@ -26,6 +27,7 @@ export type RenderState = {
   reduceMotion: boolean;
   particles: Particle[];
   bird: BirdId;
+  controls: ControlHints;
 };
 
 export type Stage = {
@@ -481,6 +483,13 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.overBest.visible = over;
   labels.overStats.visible = over;
   labels.retry.visible = over;
+  const controls = state.controls;
+  labels.flyHint.text = controls.fly;
+  labels.flyHint.style.fontSize = controls.touch ? 26 : 22;
+  labels.pauseHint.text = controls.resume;
+  labels.pauseHint.style.fontSize = controls.touch ? 20 : 18;
+  labels.retry.text = controls.retry;
+  labels.retry.style.fontSize = controls.touch ? 18 : 16;
   labels.weatherLabel.visible = true;
   labels.weatherLabel.text = `${seasonById(run.season).name}  ·  ${weatherById(run.weather).name}`;
   labels.weatherLabel.position.set((box.left + box.right) / 2, box.top + 30);
@@ -508,7 +517,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
 
   if (state.paused) {
     g.rect(box.left, box.top, wide, tall).fill({ color: 0x14283c, alpha: 0.28 });
-    const cardW = 250;
+    const cardW = state.controls.touch ? 250 : 330;
     const cardH = 112;
     const cardX = (WORLD.w - cardW) / 2;
     const cardY = 132;

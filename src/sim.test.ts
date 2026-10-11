@@ -13,6 +13,7 @@ import {
   snatchPose,
   step,
 } from './sim.ts';
+import { controlHints } from './controls.ts';
 import { seasonForDate } from './season.ts';
 import { WEATHERS, terrainFor, weatherForSeed } from './weather.ts';
 
@@ -312,6 +313,22 @@ function playable(): ReturnType<typeof createRun> {
   run.snatchAt = 0;
   step(run, 0.05);
   assert(run.phase === 'play', 'a later roll cannot bring it back');
+}
+
+{
+  const phone = controlHints(true);
+  const computer = controlHints(false);
+  assert(phone.touch && phone.fly === 'tap to fly', 'a phone says tap');
+  assert(phone.resume === 'tap to resume' && phone.retry === 'tap to try again', 'a phone stays on tap');
+  assert(!phone.speak.includes('Space') && !phone.againSpeak.includes('Space'), 'a phone leaves the keyboard out');
+  assert(!computer.touch && computer.fly === 'click or space to fly', 'a computer says click or space');
+  assert(computer.resume === 'click or space to resume', 'a computer resumes with click or space');
+  assert(computer.retry === 'click or space to try again', 'a computer retries with click or space');
+  assert(
+    computer.speak.includes('Space') && computer.speak.includes('Up') && computer.speak.includes('W'),
+    'a computer names the flap keys',
+  );
+  assert(computer.resumeSpeak.includes('Space') && computer.againSpeak.includes('Space'), 'pause and retry name the keys');
 }
 
 if (failed > 0) {

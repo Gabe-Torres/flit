@@ -1,6 +1,6 @@
 # Flit
 
-Tap to flap. Slip through the gaps. See how long you last.
+Flap through the gaps. See how long you last.
 
 **[Play the game](https://gabe-torres.github.io/flit/)**
 
@@ -15,11 +15,21 @@ The bird falls. You keep it in the air.
 - On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, dodo, pterodactyl, drone, kiwi, or weka. The choice stays in this browser.
 - The field follows the season: spring, summer, autumn, or winter.
 - Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
-- Tap, click, or press Space, Up, or W to flap.
 - Each gate you clear is one point. The gates start far apart. Every 10 you clear, the next ones sit a little closer. After 40, they are as close as they get.
 - A gate or the ground ends the run.
 - Before you clear 25 pipes, there is a 1 in 100 chance a pterodactyl flies in, grabs you, and carries you away. After 25 pipes it does not come.
-- After the score card, tap or press Space to fly again. The card lists your taps, the pipes you cleared, and your time in the air.
+- After the score card, flap again to fly. The card lists your taps, the pipes you cleared, and your time in the air.
+
+## Controls
+
+On a phone:
+
+- Tap the screen to flap. The same tap starts a run, resumes a pause, and starts the next run after the score card.
+- The buttons in the corner pause and mute.
+
+On a computer:
+
+- Click the screen, or press Space, Up, or W, to flap. The same control starts a run, resumes a pause, and starts the next run after the score card.
 - P pauses. M mutes. R returns to the title. The buttons in the corner pause and mute too.
 
 The best score stays in this browser. A run of 5 earns bronze, 10 silver, 20 gold, and 40 a ruby. A few more rubies are buried in the dirt. They are just sitting there.

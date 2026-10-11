@@ -1,4 +1,5 @@
 import { createAudio } from './audio.ts';
+import { controlHints } from './controls.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
 import { WORLD, createRun, flap, flightFacts, step, type Run } from './sim.ts';
@@ -123,17 +124,23 @@ function setStatus(text: string): void {
   statusNode.textContent = text;
 }
 
+function hints() {
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
+  const hoverNone = window.matchMedia('(hover: none)').matches;
+  return controlHints(coarse && hoverNone);
+}
+
 function describe(): void {
   const sky = forecast();
+  const controls = hints();
   if (paused) {
-    setStatus(`Paused. Score ${run.score}. ${sky}.`);
+    setStatus(`Paused. Score ${run.score}. ${sky}. ${controls.resumeSpeak}`);
     return;
   }
   if (run.phase === 'ready') {
     const name = birdById(birdId).name;
-    setStatus(
-      best > 0 ? `Flit. ${name}. ${sky}. Tap to fly. Best ${best}.` : `Flit. ${name}. ${sky}. Tap to fly.`,
-    );
+    const lead = `Flit. ${name}. ${sky}. ${controls.speak}`;
+    setStatus(best > 0 ? `${lead} Best ${best}.` : lead);
     return;
   }
   if (run.phase === 'snatched') {
@@ -144,7 +151,7 @@ function describe(): void {
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
     const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
-    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${sky}.`);
+    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${sky}. ${controls.againSpeak}`);
     return;
   }
   setStatus(`Score ${run.score}. ${sky}.`);
@@ -364,6 +371,7 @@ function frame(now: number): void {
     reduceMotion,
     particles,
     bird: birdId,
+    controls: hints(),
   });
   requestAnimationFrame(frame);
 }
