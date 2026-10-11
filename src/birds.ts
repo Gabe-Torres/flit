@@ -10,6 +10,7 @@ export const BIRD_IDS = [
   'dodo',
   'pterodactyl',
   'drone',
+  'lander',
   'kiwi',
   'weka',
 ] as const;
@@ -145,6 +146,23 @@ export const BIRDS: readonly BirdKind[] = [
         `<ellipse cx="27" cy="26" rx="3.6" ry="1.3" fill="#c5ced8"/>` +
         `<rect x="10" y="13" width="12" height="9" rx="3" fill="#3a4250" stroke="${STROKE}" stroke-width="1.3"/>` +
         `<circle cx="18" cy="17.5" r="2.3" fill="#7ec8e3" stroke="${INK}" stroke-width="0.8"/>`,
+    ),
+  },
+  {
+    id: 'lander',
+    name: 'Lunar lander',
+    feather: '#e7c56a',
+    icon: icon(
+      `<path d="M11 18 7 26M21 18 25 26" stroke="#5c656e" stroke-width="1.6" stroke-linecap="round"/>` +
+        `<ellipse cx="7" cy="27" rx="2.6" ry="1.2" fill="#8a939e" stroke="${INK}" stroke-width="0.7"/>` +
+        `<ellipse cx="25" cy="27" rx="2.6" ry="1.2" fill="#8a939e" stroke="${INK}" stroke-width="0.7"/>` +
+        `<path d="M14.2 22 16 27.5 17.8 22Z" fill="#f08a2a"/>` +
+        `<rect x="8" y="14" width="16" height="8" rx="1.4" fill="#e7b84a" stroke="${STROKE}" stroke-width="1.2"/>` +
+        `<rect x="10" y="16.2" width="12" height="1.8" fill="#f6d98a"/>` +
+        `<rect x="11" y="6" width="10" height="8" rx="1.4" fill="#e8eef4" stroke="${STROKE}" stroke-width="1.2"/>` +
+        `<rect x="13.2" y="8.2" width="5.6" height="3.2" rx="0.6" fill="#163044"/>` +
+        `<path d="M16 6V2.4" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>` +
+        `<circle cx="16" cy="2.2" r="1.3" fill="#e23d3d"/>`,
     ),
   },
   {
@@ -337,6 +355,31 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     rotor(22, -12, 1.1);
     rotor(-18, 14, 2.2);
     rotor(18, 14, 3.4);
+    return;
+  }
+
+  if (id === 'lander') {
+    wing.rotation = 0;
+    const strut = { width: 2.2, color: 0x5c656e, cap: 'round' as const };
+    body.moveTo(-8, 2).lineTo(-16, 14).stroke(strut);
+    body.moveTo(8, 2).lineTo(16, 14).stroke(strut);
+    body.ellipse(-16, 15, 4, 1.5).fill(0x8a939e).stroke({ ...OUTLINE, width: 1.3 });
+    body.ellipse(16, 15, 4, 1.5).fill(0x8a939e).stroke({ ...OUTLINE, width: 1.3 });
+    const burn = 0.65 + 0.35 * Math.sin(wingPhase * 9);
+    body.poly([-3.4, 8, 0, 8 + 12 * burn, 3.4, 8], true).fill({ color: 0xf08a2a, alpha: 0.92 });
+    body.poly([-1.6, 8, 0, 8 + 7 * burn, 1.6, 8], true).fill(0xfff6d0);
+    body.roundRect(-13, -4, 26, 12, 2).fill(0xe7b84a).stroke(OUTLINE);
+    body.rect(-9, -1, 18, 2.4).fill(0xf6d98a);
+    body.rect(-11, 4, 22, 1.6).fill(0xc48a12);
+    body.roundRect(-7, -16, 14, 13, 2).fill(0xe8eef4).stroke(OUTLINE);
+    body.roundRect(-4, -12, 8, 5, 1).fill(0x163044);
+    body.rect(-2.4, -11, 2.4, 2.2).fill(0x7ec8e3);
+    body.moveTo(3, -14).lineTo(9, -20).stroke({ width: 1.6, color: 0x2b2118, cap: 'round' });
+    body.ellipse(11, -21, 4.2, 2).fill(0xe8eef4).stroke({ ...OUTLINE, width: 1.3 });
+    body.moveTo(-10, 6).lineTo(-18, 16).stroke({ width: 2.4, color: 0x3a4250, cap: 'round' });
+    body.moveTo(10, 6).lineTo(18, 16).stroke({ width: 2.4, color: 0x3a4250, cap: 'round' });
+    body.ellipse(-18, 17, 4.4, 1.7).fill(0x5c656e).stroke({ ...OUTLINE, width: 1.4 });
+    body.ellipse(18, 17, 4.4, 1.7).fill(0x5c656e).stroke({ ...OUTLINE, width: 1.4 });
     return;
   }
 
