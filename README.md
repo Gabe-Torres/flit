@@ -4,7 +4,7 @@ Tap to flap. Slip through the gaps. See how long you last.
 
 **[Play the game](https://gabe-torres.github.io/flit/)**
 
-![Title screen: a yellow finch hangs in a blue sky. Six birds line the bottom so you can choose who flies.](docs/load.png)
+![Title screen on a clear day. A yellow finch hangs in the sky, and six birds line the bottom.](docs/load.png)
 
 Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pixijs.com/) draws the bird, the gates, and the field. The sound is synthesized. The published game is still one HTML file.
 
@@ -13,6 +13,7 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 The bird falls. You keep it in the air.
 
 - On the title, pick a bird: finch, eagle, flamingo, penguin, cardinal, or blue jay. The choice stays in this browser.
+- Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
 - Tap, click, or press Space, Up, or W to flap.
 - Each gate you clear is one point.
 - A gate or the ground ends the run.

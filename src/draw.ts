@@ -1,6 +1,8 @@
-import { Application, Container, FillGradient, Graphics, Text } from 'pixi.js';
+import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import { WORLD, groundY, type Run } from './sim.ts';
+import { terrainFor, weatherById } from './weather.ts';
+import { drawAtmosphere, drawClouds, drawSky, drawTornado } from './weather-draw.ts';
 
 export type Particle = {
   x: number;
@@ -34,16 +36,6 @@ type Box = { left: number; top: number; right: number; bottom: number };
 
 const INK = 0x2b2118;
 const CREAM = 0xfffdf6;
-const SKY = new FillGradient({
-  type: 'linear',
-  start: { x: 0, y: 0 },
-  end: { x: 0, y: 1 },
-  colorStops: [
-    { offset: 0, color: 0x67c4f6 },
-    { offset: 0.55, color: 0xb7e6fb },
-    { offset: 1, color: 0xffe7b8 },
-  ],
-});
 
 function outlined(text: string, size: number, fill: number, stroke = INK): Text {
   const label = new Text({
@@ -74,13 +66,6 @@ function plain(text: string, size: number, fill: number): Text {
   });
   label.anchor.set(0.5);
   return label;
-}
-
-function cloud(g: Graphics, x: number, y: number, s: number): void {
-  const white = { color: 0xffffff, alpha: 0.94 };
-  g.ellipse(x, y, 28 * s, 16 * s).fill(white);
-  g.ellipse(x + 22 * s, y + 4 * s, 20 * s, 13 * s).fill(white);
-  g.ellipse(x - 20 * s, y + 6 * s, 16 * s, 11 * s).fill(white);
 }
 
 function hill(
@@ -167,13 +152,14 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const scenery = new Graphics();
   const gateLayer = new Graphics();
   const ground = new Graphics();
+  const atmosphere = new Graphics();
   const fx = new Graphics();
   const bird = new Container();
   const wing = new Graphics();
   const body = new Graphics();
   const uiGfx = new Graphics();
   bird.addChild(wing, body);
-  world.addChild(sky, scenery, gateLayer, ground, fx, bird);
+  world.addChild(sky, scenery, gateLayer, ground, atmosphere, fx, bird);
 
   const title = outlined('FLIT', 92, CREAM);
   const flyHint = plain('tap to fly', 26, INK);
@@ -186,7 +172,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const overScore = outlined('0', 54, INK, CREAM);
   const overBest = plain('', 22, 0x6d5848);
   const retry = plain('tap to try again', 18, 0x8a7362);
-  ui.addChild(uiGfx, title, flyHint, bestHint, scoreText, pauseTitle, pauseHint, overTitle, medalName, overScore, overBest, retry);
+  const weatherLabel = outlined('', 22, CREAM);
+  ui.addChild(uiGfx, title, flyHint, bestHint, scoreText, pauseTitle, pauseHint, overTitle, medalName, overScore, overBest, retry, weatherLabel);
   app.stage.addChild(world, ui);
 
   const render = (state: RenderState): void => {
@@ -205,14 +192,19 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     scenery.clear();
     gateLayer.clear();
     ground.clear();
+    atmosphere.clear();
     fx.clear();
     uiGfx.clear();
-    drawSky(sky, box, floor);
-    drawClouds(scenery, run, box);
-    hill(scenery, floor - 78, 0xc5e39a, 16, 90, run.scroll * 0.35, box.left, box.right, floor);
-    hill(scenery, floor - 36, 0x8bc56a, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
+    const weather = run.weather;
+    const land = terrainFor(weather);
+    drawSky(sky, weather, box, floor);
+    drawClouds(scenery, weather, run.scroll, box);
+    hill(scenery, floor - 78, land.hillFar, 16, 90, run.scroll * 0.35, box.left, box.right, floor);
+    hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
+    drawTornado(scenery, weather, run.time, box, floor);
     for (const gate of run.gates) drawGate(gateLayer, gate.x, gate.gapY, box, floor);
-    drawGround(ground, run, box, floor);
+    drawGround(ground, run, box, floor, land);
+    drawAtmosphere(atmosphere, weather, run.time, run.scroll, box, floor, state.reduceMotion);
 
     const altitude = Math.max(0, floor - run.bird.y);
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });
@@ -237,6 +229,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       overScore,
       overBest,
       retry,
+      weatherLabel,
     });
     app.render();
   };
@@ -247,39 +240,20 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   };
 }
 
-function drawSky(g: Graphics, box: Box, floor: number): void {
-  const top = Math.min(box.top, floor - 1);
-  g.rect(box.left, top, box.right - box.left, Math.max(1, floor - top)).fill(SKY);
-  if (box.bottom > floor) g.rect(box.left, floor, box.right - box.left, box.bottom - floor).fill(0xe3b45c);
-
-  const sunX = box.left + (box.right - box.left) * 0.2;
-  const sunY = box.top + (floor - box.top) * 0.2;
-  g.circle(sunX, sunY, 110).fill({ color: 0xffe896, alpha: 0.22 });
-  g.circle(sunX, sunY, 68).fill({ color: 0xffe896, alpha: 0.28 });
-  g.circle(sunX, sunY, 34).fill(0xffe38a);
-}
-
-function drawClouds(g: Graphics, run: Run, box: Box): void {
-  const band = 520;
-  const drift = run.scroll * 0.22;
-  const start = Math.floor((box.left + drift) / band) - 1;
-  const end = Math.floor((box.right + drift) / band) + 1;
-  for (let i = start; i <= end; i++) {
-    const origin = i * band - drift;
-    cloud(g, origin + 36, 38, 0.82);
-    cloud(g, origin + 250, 448, 0.7);
-    cloud(g, origin + 430, 34, 1);
-  }
-}
-
-function drawGround(g: Graphics, run: Run, box: Box, floor: number): void {
-  g.rect(box.left, floor, box.right - box.left, Math.max(4, box.bottom - floor + 4)).fill(0xe3b45c);
-  g.rect(box.left, floor, box.right - box.left, 18).fill(0x63b44a);
-  g.rect(box.left, floor + 16, box.right - box.left, 7).fill(0x4b9a38);
+function drawGround(
+  g: Graphics,
+  run: Run,
+  box: Box,
+  floor: number,
+  land: { dirt: number; grass: number; grassDark: number; tuft: number; lean: number },
+): void {
+  g.rect(box.left, floor, box.right - box.left, Math.max(4, box.bottom - floor + 4)).fill(land.dirt);
+  g.rect(box.left, floor, box.right - box.left, 18).fill(land.grass);
+  g.rect(box.left, floor + 16, box.right - box.left, 7).fill(land.grassDark);
 
   const tuft = 18;
   for (let x = box.left - (run.scroll % tuft) - tuft; x < box.right; x += tuft) {
-    g.poly([x, floor + 2, x + 5, floor - 8, x + 10, floor + 2], true).fill(0x7dcc55);
+    g.poly([x, floor + 2, x + 5 + land.lean, floor - 8, x + 10, floor + 2], true).fill(land.tuft);
   }
 
   const stone = 42;
@@ -327,6 +301,7 @@ type Labels = {
   overScore: Text;
   overBest: Text;
   retry: Text;
+  weatherLabel: Text;
 };
 
 function card(g: Graphics, x: number, y: number, w: number, h: number): void {
@@ -354,6 +329,9 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.overScore.visible = over;
   labels.overBest.visible = over;
   labels.retry.visible = over;
+  labels.weatherLabel.visible = true;
+  labels.weatherLabel.text = weatherById(run.weather).name;
+  labels.weatherLabel.position.set((box.left + box.right) / 2, box.top + 30);
 
   if (ready) {
     labels.title.position.set(cx, 128);

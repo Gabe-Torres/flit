@@ -2,6 +2,7 @@ import { createAudio } from './audio.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
 import { WORLD, createRun, flap, step, type Run } from './sim.ts';
+import { weatherById } from './weather.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
 const statusEl = document.querySelector<HTMLElement>('#status');
@@ -73,9 +74,13 @@ function writeBird(id: BirdId): void {
   }
 }
 
+function paintForecast(): void {
+  const text = `${birdById(birdId).name} · ${weatherById(run.weather).name}`;
+  if (birdNameEl.textContent !== text) birdNameEl.textContent = text;
+}
+
 function paintBird(): void {
-  const bird = birdById(birdId);
-  birdNameEl.textContent = bird.name;
+  paintForecast();
   for (const button of birdsEl.querySelectorAll('button')) {
     button.setAttribute('aria-pressed', button.dataset.bird === birdId ? 'true' : 'false');
   }
@@ -114,20 +119,23 @@ function setStatus(text: string): void {
 }
 
 function describe(): void {
+  const sky = weatherById(run.weather).name;
   if (paused) {
-    setStatus(`Paused. Score ${run.score}.`);
+    setStatus(`Paused. Score ${run.score}. ${sky}.`);
     return;
   }
   if (run.phase === 'ready') {
     const name = birdById(birdId).name;
-    setStatus(best > 0 ? `Flit. ${name}. Tap to fly. Best ${best}.` : `Flit. ${name}. Tap to fly.`);
+    setStatus(
+      best > 0 ? `Flit. ${name}. ${sky}. Tap to fly. Best ${best}.` : `Flit. ${name}. ${sky}. Tap to fly.`,
+    );
     return;
   }
   if (run.phase === 'over') {
-    setStatus(`Game over. Score ${run.score}. Best ${best}.`);
+    setStatus(`Game over. Score ${run.score}. Best ${best}. ${sky}.`);
     return;
   }
-  setStatus(`Score ${run.score}.`);
+  setStatus(`Score ${run.score}. ${sky}.`);
 }
 
 function puff(count: number, life: number, spread: number): void {
@@ -328,6 +336,7 @@ function frame(now: number): void {
   }
 
   describe();
+  paintForecast();
   paintRoster();
   stage?.render({
     run,

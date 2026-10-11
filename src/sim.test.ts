@@ -1,4 +1,5 @@
 import { WORLD, createRun, flap, groundY, hits, restY, step } from './sim.ts';
+import { WEATHERS, weatherForSeed } from './weather.ts';
 
 declare const process: { exit: (code: number) => never };
 
@@ -15,6 +16,12 @@ function playable(): ReturnType<typeof createRun> {
   run.phase = 'play';
   run.gates = [];
   return run;
+}
+
+{
+  const seen = new Set(Array.from({ length: 40 }, (_, i) => weatherForSeed(i + 1)));
+  assert(seen.size === WEATHERS.length, 'seeds cover every weather');
+  assert(createRun(4).weather === weatherForSeed(4), 'a run keeps its weather');
 }
 
 {
