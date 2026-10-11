@@ -105,6 +105,32 @@ function medalFor(score: number): { name: string; fill: number; rim: number } | 
   return null;
 }
 
+function drawRubyMedal(g: Graphics, x: number, y: number): void {
+  const s = 3.7;
+  const cut = [
+    x,
+    y - 8 * s,
+    x + 5.5 * s,
+    y - 2 * s,
+    x + 3.2 * s,
+    y + 5 * s,
+    x - 3.2 * s,
+    y + 5 * s,
+    x - 5.5 * s,
+    y - 2 * s,
+  ];
+  g.poly(cut, true).fill(0xe85d75);
+  g.poly([x, y - 8 * s, x - 5.5 * s, y - 2 * s, x - 3.2 * s, y + 5 * s, x, y + 1.4 * s], true).fill(0x9d2944);
+  g.poly([x, y - 8 * s, x + 5.5 * s, y - 2 * s, x + 2.4 * s, y + 0.6 * s, x, y - 1.2 * s], true).fill(0xff8fa6);
+  g.poly([x, y + 1.4 * s, x + 3.2 * s, y + 5 * s, x - 3.2 * s, y + 5 * s], true).fill(0xb1334c);
+  g.poly([x - 0.4 * s, y - 6.6 * s, x + 2.3 * s, y - 2.4 * s, x + 0.2 * s, y - 1.2 * s], true).fill({
+    color: 0xfffdf6,
+    alpha: 0.92,
+  });
+  g.poly(cut, true).stroke({ width: 3, color: 0x9d2944, join: 'round' });
+  star(g, x + 6.4 * s, y - 9.2 * s, 3.4, 0xfffdf6);
+}
+
 function fit(cssW: number, cssH: number): { scale: number; ox: number; oy: number; box: Box } {
   const worldAspect = WORLD.w / WORLD.h;
   const screenAspect = cssW / Math.max(1, cssH);
@@ -500,9 +526,12 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.overTitle.text = run.snatchTime >= 0 ? 'SNATCHED' : 'GAME OVER';
   labels.overTitle.position.set(cx, y + 42);
   if (award) {
-    g.circle(cx, y + 112, 28).fill(award.rim);
-    g.circle(cx, y + 112, 22).fill(award.fill);
-    star(g, cx, y + 110, 12, CREAM);
+    if (award.name === 'ruby') drawRubyMedal(g, cx, y + 116);
+    else {
+      g.circle(cx, y + 112, 28).fill(award.rim);
+      g.circle(cx, y + 112, 22).fill(award.fill);
+      star(g, cx, y + 110, 12, CREAM);
+    }
     labels.medalName.visible = true;
     labels.medalName.text = award.name;
     labels.medalName.position.set(cx, y + 152);
