@@ -110,8 +110,8 @@ function drawRoman(g: Graphics, gate: End): void {
   const topY = gate.ceil - 20;
   shaft(topY, gate.openTop - lip - topY);
   shaft(gate.openBot + lip, gate.floor - (gate.openBot + lip) + 4);
-  vine(gate.openTop - lip - 52);
-  vine(gate.openBot + lip + 36);
+  grow(topY + 10, gate.openTop - lip - 2);
+  grow(gate.openBot + lip + 6, gate.floor - 12);
   capital(g, x, gate.openTop - lip, true);
   capital(g, x, gate.openBot, false);
   base(g, x, gate.floor - 16);
@@ -134,15 +134,51 @@ function drawRoman(g: Graphics, gate: End): void {
     gfx.rect(cx, cy + 7, PIPE_W, 7).fill(shade).stroke(stroke);
   }
 
-  function vine(y0: number): void {
-    if (y0 < gate.ceil + 96 || y0 > gate.floor - 40) return;
-    const side = unit(gate.seed) > 0.5 ? 1 : -1;
-    const rootX = side > 0 ? x + PIPE_W - 8 : x + 8;
-    const leafX = rootX + side * 10;
+  function grow(yStart: number, yEnd: number): void {
+    const top = Math.max(yStart, gate.ceil + 96);
+    const bot = Math.min(yEnd, gate.floor - 40);
+    const step = 46;
+    const first: 1 | -1 = unit(gate.seed + yStart) > 0.5 ? 1 : -1;
+    let i = 0;
+    for (let y0 = top + 4; y0 + 36 <= bot; y0 += step) {
+      const side: 1 | -1 = i % 2 === 0 ? first : first === 1 ? -1 : 1;
+      vine(y0, side, i);
+      if (i % 2 === 0) climb(y0 + 8, i);
+      i += 1;
+    }
+  }
+
+  function vine(y0: number, side: 1 | -1, n: number): void {
+    const sway = Math.sin(gate.time * 1.6 + n * 1.7 + gate.seed) * 3;
+    const rootX = side > 0 ? x + PIPE_W - 7 : x + 7;
+    const reach = side * (11 + (n % 3) * 4);
+    const leafX = rootX + reach + sway;
+    const drop = 30 + (n % 2) * 6;
     g.moveTo(rootX, y0)
-      .quadraticCurveTo(leafX, y0 + 14, rootX, y0 + 30)
-      .stroke({ width: 3, color: 0x3c8f55, cap: 'round' });
-    g.ellipse(leafX, y0 + 12, 6, 3.4).fill(0x4aaa52).stroke({ width: 1.6, color: 0x1e5c30 });
+      .quadraticCurveTo(leafX, y0 + 12, rootX + side * 3 + sway * 0.35, y0 + drop)
+      .stroke({ width: 2.6, color: 0x2f7a48, cap: 'round' });
+    g.moveTo(rootX + side, y0 + 7)
+      .quadraticCurveTo(rootX + reach * 0.75, y0 + 18, rootX + side * 4, y0 + 26)
+      .stroke({ width: 2, color: 0x3c8f55, cap: 'round' });
+    leaf(leafX, y0 + 11, 6.4, 3.3, 0x4aaa52);
+    leaf(rootX + reach * 0.62, y0 + 21, 5.2, 2.8, 0x3d8f46);
+    leaf(rootX + side * 4 + sway * 0.3, y0 + drop - 3, 4.5, 2.5, 0x67c45a);
+  }
+
+  function climb(y0: number, n: number): void {
+    if (y0 < gate.ceil + 96 || y0 + 34 > gate.floor - 40) return;
+    const at = 0.28 + (n % 3) * 0.22;
+    const cx = x + PIPE_W * at;
+    const lean = Math.sin(gate.time * 1.4 + n) * 2;
+    g.moveTo(cx, y0)
+      .quadraticCurveTo(cx + 8 + lean, y0 + 16, cx - 3, y0 + 34)
+      .stroke({ width: 2.2, color: 0x2f7a48, cap: 'round' });
+    leaf(cx + 8 + lean, y0 + 14, 4.6, 2.5, 0x4aaa52);
+    leaf(cx - 7, y0 + 26, 4.2, 2.3, 0x67c45a);
+  }
+
+  function leaf(lx: number, ly: number, rx: number, ry: number, fill: number): void {
+    g.ellipse(lx, ly, rx, ry).fill(fill).stroke({ width: 1.3, color: 0x1e5c30 });
   }
 }
 
