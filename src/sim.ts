@@ -23,7 +23,7 @@ export const WORLD = {
   gapStep: 116,
 } as const;
 
-export type Phase = 'ready' | 'play' | 'dying' | 'over';
+export type Phase = 'ready' | 'play' | 'dying' | 'snatched' | 'over';
 
 export type Bird = {
   y: number;
@@ -50,6 +50,9 @@ export type Run = {
   weather: WeatherId;
   taps: number;
   playTime: number;
+  snatchAt: number | null;
+  snatchTime: number;
+  caughtY: number;
 };
 
 export function groundY(): number {
@@ -81,6 +84,66 @@ export function createRun(seed = 1): Run {
     weather: weatherForSeed(safe),
     taps: 0,
     playTime: 0,
+    snatchAt: null,
+    snatchTime: -1,
+    caughtY: WORLD.readyY,
+  };
+}
+
+// 0.0001% is 4295 / 2^32. One roll per run, timed anywhere before pipe 16.
+export const SNATCH_CHANCE_NUMERATOR = 4295;
+export const SNATCH_PIPE_LIMIT = 16;
+export const SNATCH_APPROACH = 0.92;
+export const SNATCH_CARRY = 1.28;
+export const SNATCH_DURATION = SNATCH_APPROACH + SNATCH_CARRY;
+const TALON_X = -6;
+const TALON_Y = 40;
+
+export function pipesClearTime(pipes = SNATCH_PIPE_LIMIT): number {
+  const first = (WORLD.firstX + WORLD.pipeW - WORLD.birdX) / WORLD.scroll;
+  return first + (pipes - 1) * (WORLD.spacing / WORLD.scroll);
+}
+
+function mix(n: number): number {
+  let x = n >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 0x7feb352d);
+  x = Math.imul(x ^ (x >>> 15), 0x846ca68b);
+  return (x ^ (x >>> 16)) >>> 0;
+}
+
+export function planSnatch(seed: number): number | null {
+  if (mix(seed ^ 0xa5a5a5a5) >= SNATCH_CHANCE_NUMERATOR) return null;
+  const latest = pipesClearTime();
+  const when = 0.55 + (mix(seed ^ 0x3c6ef372) / 4294967296) * (latest - 0.55);
+  return when;
+}
+
+export function snatchPose(
+  time: number,
+  caughtY: number,
+  entryX: number,
+): { birdX: number; birdY: number; dinoX: number; dinoY: number; grabbed: boolean; wing: number } {
+  const wing = Math.sin(time * 26);
+  const grabX = WORLD.birdX - TALON_X;
+  const grabY = caughtY - TALON_Y;
+  if (time < SNATCH_APPROACH) {
+    const u = time / SNATCH_APPROACH;
+    const ease = u * u * (3 - 2 * u);
+    const dinoX = entryX + (grabX - entryX) * ease;
+    const dinoY = caughtY - 190 + (grabY - (caughtY - 190)) * ease + Math.sin(u * Math.PI) * 80;
+    return { birdX: WORLD.birdX, birdY: caughtY, dinoX, dinoY, grabbed: false, wing };
+  }
+  const u = clamp((time - SNATCH_APPROACH) / SNATCH_CARRY, 0, 1);
+  const ease = 1 - (1 - u) * (1 - u);
+  const dinoX = grabX + (-260 - grabX) * ease;
+  const dinoY = grabY + (-200 - grabY) * ease;
+  return {
+    birdX: dinoX + TALON_X,
+    birdY: dinoY + TALON_Y,
+    dinoX,
+    dinoY,
+    grabbed: true,
+    wing,
   };
 }
 
@@ -153,8 +216,11 @@ export function hits(run: Run): boolean {
 }
 
 export function flap(run: Run): boolean {
-  if (run.phase === 'dying' || run.phase === 'over') return false;
-  if (run.phase === 'ready') run.phase = 'play';
+  if (run.phase === 'dying' || run.phase === 'snatched' || run.phase === 'over') return false;
+  if (run.phase === 'ready') {
+    run.phase = 'play';
+    run.snatchAt = planSnatch(run.seed);
+  }
   run.taps += 1;
   run.bird.vy = WORLD.flap;
   run.bird.rot = Math.min(run.bird.rot, -0.25);
@@ -201,6 +267,22 @@ export function step(run: Run, dt: number): void {
     return;
   }
 
+  if (run.phase === 'snatched') {
+    run.time += dt;
+    run.snatchTime += dt;
+    const pose = snatchPose(run.snatchTime, run.caughtY, 560);
+    run.bird.y = pose.birdY;
+    run.bird.vy = 0;
+    const tilt = pose.grabbed ? 0.65 : 0.1;
+    run.bird.rot += (tilt - run.bird.rot) * Math.min(1, dt * 8);
+    if (run.snatchTime >= SNATCH_DURATION) {
+      run.phase = 'over';
+      run.bird.y = -800;
+      run.bird.vy = 0;
+    }
+    return;
+  }
+
   if (run.phase === 'over') return;
 
   run.time += dt;
@@ -211,6 +293,16 @@ export function step(run: Run, dt: number): void {
   for (const gate of run.gates) gate.x -= WORLD.scroll * dt;
   run.gates = run.gates.filter((gate) => gate.x + WORLD.pipeW > -80);
   spawn(run);
+
+  if (run.score >= SNATCH_PIPE_LIMIT) run.snatchAt = null;
+  if (run.snatchAt != null && run.playTime >= run.snatchAt && run.score < SNATCH_PIPE_LIMIT) {
+    run.phase = 'snatched';
+    run.snatchTime = 0;
+    run.caughtY = run.bird.y;
+    run.bird.vy = 0;
+    run.shake = 0.28;
+    return;
+  }
 
   if (hits(run)) {
     run.phase = 'dying';
@@ -226,4 +318,5 @@ export function step(run: Run, dt: number): void {
       run.score += 1;
     }
   }
+  if (run.score >= SNATCH_PIPE_LIMIT) run.snatchAt = null;
 }

@@ -1,6 +1,6 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
-import { WORLD, flightFacts, groundY, type Run } from './sim.ts';
+import { WORLD, flightFacts, groundY, snatchPose, type Run } from './sim.ts';
 import { terrainFor, weatherById } from './weather.ts';
 import { drawAtmosphere, drawClouds, drawSky, drawTornado } from './weather-draw.ts';
 
@@ -154,12 +154,13 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const ground = new Graphics();
   const atmosphere = new Graphics();
   const fx = new Graphics();
+  const dino = new Graphics();
   const bird = new Container();
   const wing = new Graphics();
   const body = new Graphics();
   const uiGfx = new Graphics();
   bird.addChild(wing, body);
-  world.addChild(sky, scenery, gateLayer, ground, atmosphere, fx, bird);
+  world.addChild(sky, scenery, gateLayer, ground, atmosphere, fx, bird, dino);
 
   const title = outlined('FLIT', 92, CREAM);
   const flyHint = plain('tap to fly', 26, INK);
@@ -229,9 +230,21 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       fx.circle(p.x, p.y, p.r).fill({ color: p.color, alpha: Math.max(0, p.life / p.max) });
     }
 
-    bird.position.set(WORLD.birdX, run.bird.y);
-    bird.rotation = run.bird.rot;
+    dino.clear();
+    const carried = run.phase === 'snatched';
+    bird.visible = !(run.phase === 'over' && run.snatchTime >= 0);
     bird.scale.set(1 + state.squash * 0.12, 1 - state.squash * 0.16);
+    if (carried) {
+      const pose = snatchPose(run.snatchTime, run.caughtY, box.right + 130);
+      dino.position.set(pose.dinoX, pose.dinoY);
+      drawPterodactyl(dino, pose.wing, pose.grabbed);
+      bird.position.set(pose.birdX, pose.birdY);
+      bird.rotation = pose.grabbed ? 0.7 : run.bird.rot;
+    } else {
+      dino.position.set(0, 0);
+      bird.position.set(WORLD.birdX, run.bird.y);
+      bird.rotation = run.bird.rot;
+    }
     drawSpecies(body, wing, state.wing, state.bird);
 
     drawUi(uiGfx, state, box, {
@@ -329,6 +342,52 @@ function drawBuriedRuby(g: Graphics, x: number, y: number, scale: number, dirt: 
   if (sparkle > 0.35) star(g, x + 7 * s, y - 10 * s, 2.4 + sparkle * 1.6, 0xfffdf6);
 }
 
+function drawPterodactyl(g: Graphics, flap: number, grabbed: boolean): void {
+  const out = { width: 2.6, color: 0x6a3d16, join: 'round' as const, cap: 'round' as const };
+  const lift = flap * 36;
+  g.poly([12, -8, 92, -58 - lift * 0.8, 118, -6 - lift * 0.15, 28, 10], true).fill(0x8a4b2a).stroke(out);
+  g.poly([-10, -10, -86, -70 + lift, -128, -2 + lift * 0.12, -18, 12], true).fill(0xb56538).stroke(out);
+  g.moveTo(-8, -8)
+    .lineTo(-84, -60 + lift)
+    .stroke({ width: 5, color: 0x6b3a22, cap: 'round' });
+  g.circle(-84, -60 + lift, 3.4).fill(0xf2c14b);
+  g.ellipse(2, 2, 32, 14).fill(0xd4843f).stroke(out);
+  g.ellipse(8, 8, 17, 7).fill(0xf6d7a2);
+  g.poly([26, -2, 50, -14, 44, 10], true).fill(0xc47a3a).stroke(out);
+  g.moveTo(-20, -2)
+    .quadraticCurveTo(-36, -18, -48, -8)
+    .stroke({ width: 10, color: 0x6a3d16, cap: 'round' });
+  g.moveTo(-20, -2)
+    .quadraticCurveTo(-36, -18, -48, -8)
+    .stroke({ width: 6, color: 0xd4843f, cap: 'round' });
+  g.circle(-50, -10, 10).fill(0xd4843f).stroke(out);
+  g.poly([-48, -16, -32, -42, -38, -10], true).fill(0xe15a42).stroke(out);
+  g.poly([-56, -12, -96, -4, -56, -2], true).fill(0xf2c14b).stroke(out);
+  g.poly([-56, -1, -84, 4, -56, 6], true).fill(0xe7a23a).stroke(out);
+  g.circle(-52, -13, 3.2).fill(0xfffdf6).stroke({ width: 1.6, color: 0x6a3d16 });
+  g.circle(-53.2, -13, 1.5).fill(0x2b2118);
+  const footY = grabbed ? 34 : 20;
+  g.moveTo(-8, 12)
+    .lineTo(-12, footY)
+    .stroke({ width: 3.4, color: 0x6b3a22, cap: 'round' });
+  g.moveTo(10, 12)
+    .lineTo(6, footY + 2)
+    .stroke({ width: 3.4, color: 0x6b3a22, cap: 'round' });
+  const claws = (x: number, y: number) => {
+    g.moveTo(x, y)
+      .lineTo(x - 11, y + 8)
+      .stroke({ width: 2.7, color: 0x4a2a14, cap: 'round' });
+    g.moveTo(x, y)
+      .lineTo(x + 1, y + 10)
+      .stroke({ width: 2.7, color: 0x4a2a14, cap: 'round' });
+    g.moveTo(x, y)
+      .lineTo(x + 10, y + 5)
+      .stroke({ width: 2.7, color: 0x4a2a14, cap: 'round' });
+  };
+  claws(-12, footY);
+  claws(6, footY + 2);
+}
+
 function drawGate(g: Graphics, x: number, gapY: number, box: Box, floor: number): void {
   const openTop = gapY - WORLD.gap / 2;
   const openBot = gapY + WORLD.gap / 2;
@@ -376,7 +435,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   const { run } = state;
   const cx = WORLD.w / 2;
   const ready = run.phase === 'ready';
-  const playing = run.phase === 'play' || run.phase === 'dying';
+  const playing = run.phase === 'play' || run.phase === 'dying' || run.phase === 'snatched';
   const over = run.phase === 'over';
   const wide = box.right - box.left;
   const tall = box.bottom - box.top;
@@ -438,6 +497,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   const x = (WORLD.w - cardW) / 2;
   const y = award ? 64 : 136;
   card(g, x, y, cardW, cardH);
+  labels.overTitle.text = run.snatchTime >= 0 ? 'SNATCHED' : 'GAME OVER';
   labels.overTitle.position.set(cx, y + 42);
   if (award) {
     g.circle(cx, y + 112, 28).fill(award.rim);

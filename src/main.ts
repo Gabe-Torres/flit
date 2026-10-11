@@ -131,10 +131,15 @@ function describe(): void {
     );
     return;
   }
+  if (run.phase === 'snatched') {
+    setStatus(`A pterodactyl has you. Score ${run.score}. ${sky}.`);
+    return;
+  }
   if (run.phase === 'over') {
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
-    setStatus(`Game over. ${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${sky}.`);
+    const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
+    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${sky}.`);
     return;
   }
   setStatus(`Score ${run.score}. ${sky}.`);
@@ -311,6 +316,10 @@ function frame(now: number): void {
   if (run.phase === 'dying' && phase !== 'dying') {
     audio.hit();
     puff(14, 0.5, 160);
+  }
+  if (run.phase === 'snatched' && phase !== 'snatched') {
+    audio.snatch();
+    puff(12, 0.45, 140);
   }
   if (run.score !== score) {
     audio.score();

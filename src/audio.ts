@@ -21,6 +21,7 @@ export type Audio = {
   flap: () => void;
   score: () => void;
   hit: () => void;
+  snatch: () => void;
 };
 
 export function createAudio(): Audio {
@@ -106,6 +107,11 @@ export function createAudio(): Audio {
     hit() {
       noise(0.18, 0.07, 220);
       tone(196, 0.22, 'triangle', 0.07, -140);
+    },
+    snatch() {
+      noise(0.16, 0.04, 1700);
+      tone(420, 0.18, 'sawtooth', 0.03, 560);
+      tone(860, 0.24, 'triangle', 0.035, -280, 0.07);
     },
   };
 }

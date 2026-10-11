@@ -1,4 +1,17 @@
-import { WORLD, createRun, flap, flightFacts, groundY, hits, restY, step } from './sim.ts';
+import {
+  SNATCH_DURATION,
+  WORLD,
+  createRun,
+  flap,
+  flightFacts,
+  groundY,
+  hits,
+  pipesClearTime,
+  planSnatch,
+  restY,
+  snatchPose,
+  step,
+} from './sim.ts';
 import { WEATHERS, weatherForSeed } from './weather.ts';
 
 declare const process: { exit: (code: number) => never };
@@ -177,6 +190,66 @@ function playable(): ReturnType<typeof createRun> {
     const jump = Math.abs(run.gates[i].gapY - run.gates[i - 1].gapY);
     assert(jump <= WORLD.gapStep + 0.01, `gaps do not jump more than ${WORLD.gapStep} (${jump})`);
   }
+}
+
+{
+  assert(planSnatch(1) === null, 'an ordinary seed stays safe');
+  const at = planSnatch(88613);
+  assert(at != null && at >= 0.55 && at < pipesClearTime(), `the rare grab is before sixteen pipes (${at})`);
+  let invites = 0;
+  for (let seed = 1; seed <= 1000000; seed++) if (planSnatch(seed) != null) invites += 1;
+  assert(invites === 5, `the first million seeds invite the pterodactyl five times (${invites})`);
+}
+
+{
+  const run = createRun(88613);
+  flap(run);
+  assert(run.snatchAt != null, 'the rare run keeps its plan');
+  for (let guard = 0; run.phase === 'play' && guard < 4000; guard++) {
+    const ahead = run.gates.find((gate) => gate.x + WORLD.pipeW >= WORLD.birdX - 40);
+    run.bird.y = ahead ? ahead.gapY : 280;
+    run.bird.vy = 0;
+    step(run, 1 / 60);
+  }
+  assert(run.phase === 'snatched', 'the planned grab happens in flight');
+  assert(run.score < 16, `the grab is before sixteen pipes (${run.score})`);
+  const air = run.playTime;
+  const score = run.score;
+  assert(flap(run) === false, 'no flap in the talons');
+  for (let i = 0; i < 180; i++) step(run, 1 / 60);
+  assert(run.phase === 'over', 'the carry ends the run');
+  assert(run.score === score, 'a snatch adds no pipes');
+  assert(run.playTime === air, 'flight time stops when the talons close');
+  assert(run.bird.y < 0, 'the bird leaves with the pterodactyl');
+}
+
+{
+  const run = playable();
+  run.bird.y = 300;
+  run.snatchAt = 0;
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 300, scored: false }];
+  step(run, 0);
+  assert(run.phase === 'snatched', 'a due grab happens before scoring');
+  assert(run.score === 0, 'the grab skips the pipe');
+  const pose = snatchPose(0, run.caughtY, 700);
+  assert(pose.dinoX === 700 && !pose.grabbed, 'the pterodactyl starts off to the side');
+  const gone = snatchPose(SNATCH_DURATION, run.caughtY, 700);
+  assert(gone.grabbed && gone.birdX < -40, 'the pair flies off the screen');
+}
+
+{
+  const run = playable();
+  run.bird.y = 280;
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 280, scored: false }];
+  run.snatchAt = 10;
+  run.score = 15;
+  step(run, 0);
+  assert(run.score === 16, 'the sixteenth pipe still scores');
+  assert(run.phase === 'play', 'sixteen pipes is past the pterodactyl');
+  assert(run.snatchAt === null, 'the chance is over after sixteen pipes');
+  run.snatchAt = 0;
+  step(run, 0.05);
+  assert(run.phase === 'play', 'a later roll cannot bring it back');
 }
 
 if (failed > 0) {

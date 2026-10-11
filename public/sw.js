@@ -1,7 +1,7 @@
 // Caches the single-file game so a home-screen install still runs offline.
 // Paths are relative to this file, which sits next to index.html on Pages.
 
-const CACHE = 'flit-v7';
+const CACHE = 'flit-v8';
 const SHELL = [
   './',
   './index.html',
