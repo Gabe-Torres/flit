@@ -265,6 +265,50 @@ function drawGround(
     const x = i * stone - run.scroll;
     g.rect(x, floor + 36 + (i % 3) * 8, 8 + (i % 4) * 3, 4).fill({ color: 0x965a24, alpha: 0.28 });
   }
+
+  const gem = 96;
+  const gemFirst = Math.floor((box.left + run.scroll) / gem) - 1;
+  const gemLast = Math.floor((box.right + run.scroll) / gem) + 1;
+  for (let i = gemFirst; i <= gemLast; i++) {
+    const roll = hashUnit(i);
+    if (roll < 0.62) continue;
+    const x = i * gem - run.scroll + 22;
+    const depth = 28 + hashUnit(i + 101) * 42;
+    const big = roll > 0.93;
+    const scale = big ? 1.55 : roll > 0.82 ? 1.15 : 0.95;
+    const sparkle = big ? 0.55 + 0.45 * Math.sin(run.time * 4 + i) : 0;
+    const y = floor + depth;
+    drawBuriedRuby(g, x, y, scale, land.dirt, sparkle);
+    if (!big) continue;
+    g.moveTo(x - 9, y - 22)
+      .lineTo(x + 9, y - 12)
+      .stroke({ width: 2.2, color: 0x6a3d16, cap: 'round' });
+    g.moveTo(x - 9, y - 12)
+      .lineTo(x + 9, y - 22)
+      .stroke({ width: 2.2, color: 0x8a5a32, cap: 'round' });
+  }
+}
+
+function hashUnit(i: number): number {
+  let n = Math.imul(i | 0, 0x45d9f3b) >>> 0;
+  n = ((n >>> 16) ^ n) >>> 0;
+  n = Math.imul(n, 0x45d9f3b) >>> 0;
+  n = ((n >>> 16) ^ n) >>> 0;
+  return n / 4294967296;
+}
+
+function drawBuriedRuby(g: Graphics, x: number, y: number, scale: number, dirt: number, sparkle: number): void {
+  const s = scale;
+  g.ellipse(x, y + 4 * s, 13 * s, 5 * s).fill({ color: 0x6a3d16, alpha: 0.22 });
+  g.poly(
+    [x, y - 8 * s, x + 5.5 * s, y - 2 * s, x + 3.2 * s, y + 5 * s, x - 3.2 * s, y + 5 * s, x - 5.5 * s, y - 2 * s],
+    true,
+  )
+    .fill(0xe85d75)
+    .stroke({ width: 1.6, color: 0x9d2944 });
+  g.poly([x, y - 7 * s, x + 2.4 * s, y - 2 * s, x, y + 0.4 * s], true).fill({ color: 0xfff4f6, alpha: 0.82 });
+  g.ellipse(x, y + 6 * s, 12 * s, 3.4 * s).fill(dirt);
+  if (sparkle > 0.35) star(g, x + 7 * s, y - 10 * s, 2.4 + sparkle * 1.6, 0xfffdf6);
 }
 
 function drawGate(g: Graphics, x: number, gapY: number, box: Box, floor: number): void {

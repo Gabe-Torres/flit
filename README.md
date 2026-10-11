@@ -4,7 +4,7 @@ Tap to flap. Slip through the gaps. See how long you last.
 
 **[Play the game](https://gabe-torres.github.io/flit/)**
 
-![Title screen on a clear day. A yellow finch hangs in the sky, and six birds line the bottom.](docs/load.png)
+![Title screen on a clear day. A yellow finch hangs in the sky, and a ruby peeks out of the dirt.](docs/load.png)
 
 Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pixijs.com/) draws the bird, the gates, and the field. The sound is synthesized. The published game is still one HTML file.
 
@@ -20,7 +20,7 @@ The bird falls. You keep it in the air.
 - After the score card, tap or press Space to fly again.
 - P pauses. M mutes. R returns to the title. The buttons in the corner pause and mute too.
 
-The best score stays in this browser. A run of 5 earns bronze, 10 silver, 20 gold, and 40 a ruby.
+The best score stays in this browser. A run of 5 earns bronze, 10 silver, 20 gold, and 40 a ruby. A few more rubies are buried in the dirt. They are just sitting there.
 
 On a phone, open the play link in the browser. A texted HTML file is only a preview, and the game will not start from it. Open the play link once while you are online, then add it to the home screen. The icon is the yellow bird. After that the game runs with the network off.
 
