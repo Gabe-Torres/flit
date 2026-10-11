@@ -17,7 +17,7 @@ The bird falls. You keep it in the air.
 - Tap, click, or press Space, Up, or W to flap.
 - Each gate you clear is one point.
 - A gate or the ground ends the run.
-- After the score card, tap or press Space to fly again.
+- After the score card, tap or press Space to fly again. The card lists your taps, the pipes you cleared, and your time in the air.
 - P pauses. M mutes. R returns to the title. The buttons in the corner pause and mute too.
 
 The best score stays in this browser. A run of 5 earns bronze, 10 silver, 20 gold, and 40 a ruby. A few more rubies are buried in the dirt. They are just sitting there.

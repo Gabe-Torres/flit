@@ -1,7 +1,7 @@
 import { createAudio } from './audio.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
-import { WORLD, createRun, flap, step, type Run } from './sim.ts';
+import { WORLD, createRun, flap, flightFacts, step, type Run } from './sim.ts';
 import { weatherById } from './weather.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
@@ -132,7 +132,9 @@ function describe(): void {
     return;
   }
   if (run.phase === 'over') {
-    setStatus(`Game over. Score ${run.score}. Best ${best}. ${sky}.`);
+    const facts = flightFacts(run);
+    const seconds = facts.seconds.replace(/s$/, ' seconds');
+    setStatus(`Game over. ${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${sky}.`);
     return;
   }
   setStatus(`Score ${run.score}. ${sky}.`);

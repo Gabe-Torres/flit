@@ -1,4 +1,4 @@
-import { WORLD, createRun, flap, groundY, hits, restY, step } from './sim.ts';
+import { WORLD, createRun, flap, flightFacts, groundY, hits, restY, step } from './sim.ts';
 import { WEATHERS, weatherForSeed } from './weather.ts';
 
 declare const process: { exit: (code: number) => never };
@@ -31,6 +31,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(run.phase === 'ready', 'title stays ready');
   assert(run.gates.length === 0, 'title has no gates');
   assert(Math.abs(run.bird.y - y0) < 8, `title bob stays put (${run.bird.y})`);
+  assert(run.taps === 0 && run.playTime === 0, 'the title keeps flight stats at zero');
 }
 
 {
@@ -109,6 +110,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(run.phase === 'play', 'a score stays in play');
   step(run, 0);
   assert(run.score === 1, 'a gate scores once');
+  assert(flightFacts(run).pipes === '1 pipe', 'one cleared gate is one pipe');
 }
 
 {
@@ -130,6 +132,30 @@ function playable(): ReturnType<typeof createRun> {
   assert(run.phase === 'over', 'the bird lands, then the run is over');
   assert(run.bird.y === restY(), 'the bird rests on the ground');
   assert(flap(run) === false, 'no flap on the score card');
+  assert(run.taps === 0, 'a flap on the score card does not count');
+}
+
+{
+  const run = createRun(2);
+  assert(flap(run), 'a tap counts');
+  flap(run);
+  assert(run.taps === 2, 'two flaps are two taps');
+  assert(flightFacts(run).taps === '2 taps', 'tap wording is plural');
+  step(run, 0.02);
+  step(run, 0.02);
+  assert(Math.abs(run.playTime - 0.04) < 1e-6, `flight time tracks the air (${run.playTime})`);
+  run.bird.y = groundY() - WORLD.hitR + 3;
+  run.bird.vy = 0;
+  step(run, 0);
+  assert(run.phase === 'dying', 'the ground ends this counted flight');
+  const taps = run.taps;
+  const air = run.playTime;
+  assert(flap(run) === false, 'a fall is not a tap');
+  for (let i = 0; i < 40; i++) step(run, 1 / 60);
+  assert(run.taps === taps, 'taps freeze after the crash');
+  assert(run.playTime === air, 'flight time freezes after the crash');
+  assert(flightFacts({ ...run, taps: 1, score: 0, playTime: 1.04 }).seconds === '1.0s', 'time shows one decimal');
+  assert(flightFacts({ ...run, taps: 1, score: 0, playTime: 1.04 }).taps === '1 tap', 'one tap stays singular');
 }
 
 {

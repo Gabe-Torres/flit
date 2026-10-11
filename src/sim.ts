@@ -48,6 +48,8 @@ export type Run = {
   shake: number;
   sinceFlap: number;
   weather: WeatherId;
+  taps: number;
+  playTime: number;
 };
 
 export function groundY(): number {
@@ -77,6 +79,17 @@ export function createRun(seed = 1): Run {
     shake: 0,
     sinceFlap: 10,
     weather: weatherForSeed(safe),
+    taps: 0,
+    playTime: 0,
+  };
+}
+
+export function flightFacts(run: Run): { taps: string; pipes: string; seconds: string } {
+  const seconds = (Math.round(run.playTime * 10) / 10).toFixed(1);
+  return {
+    taps: run.taps === 1 ? '1 tap' : `${run.taps} taps`,
+    pipes: run.score === 1 ? '1 pipe' : `${run.score} pipes`,
+    seconds: `${seconds}s`,
   };
 }
 
@@ -142,6 +155,7 @@ export function hits(run: Run): boolean {
 export function flap(run: Run): boolean {
   if (run.phase === 'dying' || run.phase === 'over') return false;
   if (run.phase === 'ready') run.phase = 'play';
+  run.taps += 1;
   run.bird.vy = WORLD.flap;
   run.bird.rot = Math.min(run.bird.rot, -0.25);
   run.sinceFlap = 0;
@@ -190,6 +204,7 @@ export function step(run: Run, dt: number): void {
   if (run.phase === 'over') return;
 
   run.time += dt;
+  run.playTime += dt;
   run.sinceFlap += dt;
   run.scroll += WORLD.scroll * dt;
   integrate(run, dt);

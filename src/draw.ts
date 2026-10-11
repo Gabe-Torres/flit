@@ -1,6 +1,6 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
-import { WORLD, groundY, type Run } from './sim.ts';
+import { WORLD, flightFacts, groundY, type Run } from './sim.ts';
 import { terrainFor, weatherById } from './weather.ts';
 import { drawAtmosphere, drawClouds, drawSky, drawTornado } from './weather-draw.ts';
 
@@ -171,9 +171,26 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const medalName = plain('', 16, 0x6d5848);
   const overScore = outlined('0', 54, INK, CREAM);
   const overBest = plain('', 22, 0x6d5848);
+  const overStats = plain('', 18, 0x6d5848);
+  overStats.style.lineHeight = 26;
   const retry = plain('tap to try again', 18, 0x8a7362);
   const weatherLabel = outlined('', 22, CREAM);
-  ui.addChild(uiGfx, title, flyHint, bestHint, scoreText, pauseTitle, pauseHint, overTitle, medalName, overScore, overBest, retry, weatherLabel);
+  ui.addChild(
+    uiGfx,
+    title,
+    flyHint,
+    bestHint,
+    scoreText,
+    pauseTitle,
+    pauseHint,
+    overTitle,
+    medalName,
+    overScore,
+    overBest,
+    overStats,
+    retry,
+    weatherLabel,
+  );
   app.stage.addChild(world, ui);
 
   const render = (state: RenderState): void => {
@@ -228,6 +245,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       medalName,
       overScore,
       overBest,
+      overStats,
       retry,
       weatherLabel,
     });
@@ -344,6 +362,7 @@ type Labels = {
   medalName: Text;
   overScore: Text;
   overBest: Text;
+  overStats: Text;
   retry: Text;
   weatherLabel: Text;
 };
@@ -372,6 +391,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.medalName.visible = false;
   labels.overScore.visible = over;
   labels.overBest.visible = over;
+  labels.overStats.visible = over;
   labels.retry.visible = over;
   labels.weatherLabel.visible = true;
   labels.weatherLabel.text = weatherById(run.weather).name;
@@ -414,23 +434,26 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   g.rect(box.left, box.top, wide, tall).fill({ color: 0x14283c, alpha: 0.28 });
   const award = medalFor(run.score);
   const cardW = 304;
-  const cardH = award ? 356 : 252;
+  const cardH = award ? 412 : 308;
   const x = (WORLD.w - cardW) / 2;
-  const y = award ? 112 : 168;
+  const y = award ? 64 : 136;
   card(g, x, y, cardW, cardH);
-  labels.overTitle.position.set(cx, y + 46);
+  labels.overTitle.position.set(cx, y + 42);
   if (award) {
-    g.circle(cx, y + 120, 28).fill(award.rim);
-    g.circle(cx, y + 120, 22).fill(award.fill);
-    star(g, cx, y + 118, 12, CREAM);
+    g.circle(cx, y + 112, 28).fill(award.rim);
+    g.circle(cx, y + 112, 22).fill(award.fill);
+    star(g, cx, y + 110, 12, CREAM);
     labels.medalName.visible = true;
     labels.medalName.text = award.name;
-    labels.medalName.position.set(cx, y + 160);
+    labels.medalName.position.set(cx, y + 152);
   }
-  const scoreY = award ? y + 228 : y + 118;
+  const scoreY = award ? y + 214 : y + 112;
   labels.overScore.text = String(run.score);
   labels.overScore.position.set(cx, scoreY);
   labels.overBest.text = `BEST  ${state.best}`;
-  labels.overBest.position.set(cx, scoreY + 52);
+  labels.overBest.position.set(cx, scoreY + 50);
+  const facts = flightFacts(run);
+  labels.overStats.text = `${facts.taps}  ·  ${facts.pipes}\n${facts.seconds}`;
+  labels.overStats.position.set(cx, scoreY + 108);
   labels.retry.position.set(cx, y + cardH - 32);
 }
