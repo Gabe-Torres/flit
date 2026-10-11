@@ -4,14 +4,13 @@
 import type { Graphics } from 'pixi.js';
 import { WORLD } from './sim.ts';
 
-export type ThemeId = 'classic' | 'roman' | 'colony' | 'reef' | 'mars';
+export type ThemeId = 'classic' | 'roman' | 'colony' | 'reef';
 
 export const THEMES: { id: ThemeId; name: string }[] = [
   { id: 'classic', name: 'Classic' },
   { id: 'roman', name: 'Roman' },
   { id: 'colony', name: 'Colony' },
   { id: 'reef', name: 'Coral' },
-  { id: 'mars', name: 'Mars' },
 ];
 
 export function isThemeId(id: string): id is ThemeId {
@@ -60,10 +59,6 @@ export function drawThemedGate(
   }
   if (theme === 'reef') {
     drawReef(g, gate);
-    return;
-  }
-  if (theme === 'mars') {
-    drawMars(g, gate);
     return;
   }
   drawClassic(g, gate);
@@ -210,19 +205,16 @@ function drawColony(g: Graphics, gate: End): void {
     }
     g.circle(x + PIPE_W - 14, sy + 14, 3.2).fill({ color: 0xd23b2e, alpha: blink }).stroke({ width: 1.5, color: dark });
     if (Math.sin(time * 9 + gate.seed) > 0.72) g.circle(x + 30, sy + sh * 0.45, 2.2).fill(0xf2c14b);
-    if (sh > 120) {
+    if (sh > 96) {
       const lipY = toward > 0 ? gate.openTop : gate.openBot;
-      const bob = Math.sin(time * 2.2 + gate.seed) * 3;
-      xenomorph(g, x + 4, lipY - toward * 34 + bob, toward, -1, time);
+      const bob = Math.sin(time * 2.2 + gate.seed) * 5;
+      let cy = lipY - toward * 42 + bob;
+      const tail = cy - toward * 52;
+      const head = cy + toward * 26;
+      if (Math.max(tail, head) > 78 && Math.min(tail, head) < 196) cy = toward > 0 ? 52 : 222;
+      crawler(g, x + 8, cy, toward, -1, time);
     }
-    if (sh > 240) {
-      const face: 1 | -1 = toward > 0 ? -1 : 1;
-      const yy = sy + sh * 0.62;
-      if (yy > 188 && yy < gate.floor - 130) {
-        const hx = face > 0 ? x + PIPE_W - 4 : x + 4;
-        xenomorph(g, hx, yy, toward, face, time + 1.7);
-      }
-    }
+    if (sh > 190) crawler(g, x + PIPE_W - 6, sy + sh * 0.58, toward, 1, time + 1.7);
   };
   const topY = gate.ceil - 20;
   shaft(topY, gate.openTop - lip - topY, 1);
@@ -247,37 +239,46 @@ function drawColony(g: Graphics, gate: End): void {
   }
 }
 
-function xenomorph(g: Graphics, x: number, y: number, toward: 1 | -1, face: 1 | -1, time: number): void {
-  const stroke = { width: 2, color: 0x07080a, join: 'round' as const, cap: 'round' as const };
+function crawler(g: Graphics, x: number, y: number, toward: 1 | -1, face: 1 | -1, time: number): void {
+  const stroke = { width: 2.4, color: 0x0e1116, join: 'round' as const, cap: 'round' as const };
   const f = face;
   const t = toward;
-  const ink = 0x14181c;
-  const jaw = 1.5 + Math.sin(time * 7) * 1.5;
-
-  g.moveTo(x + f * 1, y)
-    .quadraticCurveTo(x + f * 14, y - t * 8, x + f * 24, y + t * 1)
-    .stroke({ width: 3.4, color: ink, cap: 'round' });
-
-  g.ellipse(x + f * 8, y + t * 1, 7, 4.6).fill(ink).stroke(stroke);
+  const reach = Math.sin(time * 3.1) * 5;
+  g.moveTo(x + f * 4, y - t * 6)
+    .quadraticCurveTo(x + f * 16, y - t * 30, x + f * 6, y - t * 52)
+    .stroke({ width: 5, color: 0x141820, cap: 'round' });
+  g.ellipse(x + f * 8, y - t * 4, 8, 13).fill(0x2c333c).stroke(stroke);
   for (let i = 0; i < 3; i++) {
-    const rx = x + f * (4 + i * 3.4);
-    g.moveTo(rx, y - t * 2.6)
-      .lineTo(rx, y + t * 3)
-      .stroke({ width: 1.1, color: 0x9aa6b2 });
+    const ry = y - t * (8 + i * 8);
+    g.moveTo(x + f * 2, ry)
+      .lineTo(x + f * 14, ry + t * 2)
+      .stroke({ width: 1.6, color: 0x6a7582 });
   }
-  g.moveTo(x + f * 4, y - t * 2)
-    .quadraticCurveTo(x + f * 8, y - t * 8, x + f * 12, y - t * 2)
-    .stroke({ width: 2, color: 0x0c0e12, cap: 'round' });
-
-  g.moveTo(x + f * 4, y + t * 3)
-    .lineTo(x - f * 4, y + t * 7)
-    .stroke({ width: 2.4, color: ink, cap: 'round' });
-
-  g.ellipse(x + f * 12, y + t * 13, 8.4, 12.4).fill(ink).stroke(stroke);
-  g.ellipse(x + f * 10, y + t * 8, 3, 5.2).fill({ color: 0xd5dee6, alpha: 0.9 });
-  g.ellipse(x + f * 12, y + t * 22, 3.6, 2.3).fill(0x07080a);
-  g.ellipse(x + f * 12, y + t * (26 + jaw * 0.4), 2, 3.6).fill(0xe8d8c0).stroke({ width: 1.1, color: 0x2a241c });
-  g.circle(x + f * 12, y + t * (28.2 + jaw * 0.4), 1.2).fill(0xc4473a);
+  g.poly(
+    [
+      x + f * 2,
+      y - t * 4,
+      x + f * 0,
+      y + t * 12,
+      x + f * 18,
+      y + t * (24 + reach * 0.15),
+      x + f * 34,
+      y + t * 10,
+      x + f * 24,
+      y - t * 8,
+      x + f * 10,
+      y - t * 16,
+    ],
+    true,
+  )
+    .fill(0x161b22)
+    .stroke(stroke);
+  g.ellipse(x + f * 16, y + t * 2, 7, 9).fill(0x3d4654);
+  g.poly([x + f * 16, y + t * 6, x + f * 32, y + t * 16, x + f * 18, y + t * 14], true).fill(0xdfe7a4);
+  g.moveTo(x + f * 4, y)
+    .lineTo(x + f * (20 + reach), y + t * 16)
+    .lineTo(x + f * (30 + reach), y + t * 22)
+    .stroke({ width: 3, color: 0x12161c, cap: 'round', join: 'round' });
 }
 
 function drawReef(g: Graphics, gate: End): void {
@@ -325,70 +326,6 @@ function drawReef(g: Graphics, gate: End): void {
         .quadraticCurveTo(rx + lean, root + away * 8, rx - 2, root + away * 15)
         .stroke({ width: 2.4, color: 0x7d4bb0, cap: 'round' });
     }
-  }
-}
-
-function drawMars(g: Graphics, gate: End): void {
-  const lip = 24;
-  const { x, time } = gate;
-  const rust = 0xc45c38;
-  const dust = 0xe8a888;
-  const dark = 0x6a2c1c;
-  const stroke = { width: 3, color: 0x3d1a12, join: 'round' as const, cap: 'round' as const };
-  const drift = Math.sin(time * 1.6 + gate.seed) * 3;
-  const shaft = (sy: number, sh: number) => {
-    if (sh <= 1) return;
-    g.roundRect(x + 6, sy, PIPE_W - 12, sh, 4).fill(rust).stroke(stroke);
-    g.rect(x + 12, sy, 6, sh).fill({ color: dust, alpha: 0.5 });
-    g.rect(x + PIPE_W - 16, sy, 4, sh).fill({ color: dark, alpha: 0.38 });
-    for (let yy = sy + 22; yy < sy + sh - 12; yy += 36) {
-      g.rect(x + 8, yy, PIPE_W - 16, 3).fill(dark);
-      g.circle(x + 16, yy + 10, 1.6).fill(0xf0d2b4);
-      g.circle(x + PIPE_W - 16, yy + 10, 1.6).fill(0xf0d2b4);
-    }
-    if (sh > 54) g.roundRect(x + 20, sy + 30, 20, 12, 2).fill(0xe2b340).stroke({ width: 1.6, color: 0x8a6412 });
-    g.circle(x - 10 + drift, sy + sh * 0.42, 3.1).fill({ color: 0xe7b89a, alpha: 0.5 });
-    g.circle(x + PIPE_W + 12 - drift, sy + sh * 0.66, 2.2).fill({ color: 0xe7b89a, alpha: 0.38 });
-  };
-  const topY = gate.ceil - 20;
-  shaft(topY, gate.openTop - lip - topY);
-  shaft(gate.openBot + lip, gate.floor - (gate.openBot + lip) + 4);
-  collar(g, x, gate.openTop - lip, true);
-  collar(g, x, gate.openBot, false);
-  const dishY = gate.openTop - 18;
-  if (dishY > gate.ceil + 96) {
-    g.moveTo(x + 8, dishY)
-      .lineTo(x - 16, dishY - 14)
-      .stroke({ width: 2.6, color: 0x3d1a12, cap: 'round' });
-    g.ellipse(x - 26, dishY - 16, 13, 5.2).fill(0xf4f7fb).stroke({ width: 2.2, color: 0x3d1a12 });
-    g.circle(x - 26, dishY - 16, 2.2).fill(0x163044);
-  }
-  const panelY = gate.openBot + 20;
-  if (panelY < gate.floor - 70) {
-    g.roundRect(x - 38, panelY, 34, 18, 3).fill(0x1d4e89).stroke({ width: 2.2, color: 0x163044 });
-    for (const px of [x - 26, x - 14]) {
-      g.moveTo(px, panelY + 2)
-        .lineTo(px, panelY + 16)
-        .stroke({ width: 1.4, color: 0x7ec8e3 });
-    }
-    g.moveTo(x - 36, panelY + 9)
-      .lineTo(x - 6, panelY + 9)
-      .stroke({ width: 1.4, color: 0x7ec8e3 });
-  }
-
-  function collar(gfx: Graphics, hx: number, hy: number, hanging: boolean): void {
-    gfx.roundRect(hx, hy, PIPE_W, lip, 6).fill(0xd46a42).stroke(stroke);
-    const band = hanging ? hy + lip - 7 : hy + 3;
-    gfx.rect(hx + 4, band, PIPE_W - 8, 4).fill(0xe2b340);
-    for (let i = 0; i < 3; i++) {
-      const py = hanging ? hy + 8 : hy + lip - 8;
-      gfx.ellipse(hx + 14 + i * 18, py, 4, 2.2).fill(0x3d1a12);
-    }
-    const flame = 0.65 + 0.35 * Math.sin(time * 8 + gate.seed);
-    const fy = hanging ? hy + 1 : hy + lip - 1;
-    const away = hanging ? -1 : 1;
-    gfx.poly([hx + 28, fy, hx + 35, fy + away * 11 * flame, hx + 42, fy], true).fill({ color: 0xf08a2a, alpha: 0.9 });
-    gfx.poly([hx + 31, fy, hx + 35, fy + away * 6 * flame, hx + 39, fy], true).fill(0xfff6d0);
   }
 }
 

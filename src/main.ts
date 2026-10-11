@@ -112,6 +112,10 @@ function modeName(id: ModeId): string {
 function readTheme(): ThemeId {
   try {
     const saved = localStorage.getItem('flit-theme');
+    if (saved === 'mars') {
+      localStorage.setItem('flit-theme', 'classic');
+      return 'classic';
+    }
     if (saved && isThemeId(saved)) return saved;
   } catch {
     // Storage can be blocked. Classic is the default.
