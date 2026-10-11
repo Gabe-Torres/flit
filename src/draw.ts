@@ -1,4 +1,5 @@
 import { Application, Container, FillGradient, Graphics, Text } from 'pixi.js';
+import { drawSpecies, type BirdId } from './birds.ts';
 import { WORLD, groundY, type Run } from './sim.ts';
 
 export type Particle = {
@@ -21,6 +22,7 @@ export type RenderState = {
   squash: number;
   reduceMotion: boolean;
   particles: Particle[];
+  bird: BirdId;
 };
 
 export type Stage = {
@@ -32,7 +34,6 @@ type Box = { left: number; top: number; right: number; bottom: number };
 
 const INK = 0x2b2118;
 const CREAM = 0xfffdf6;
-const OUTLINE = { width: 2.5, color: 0x6a3d16, join: 'round' as const, cap: 'round' as const };
 const SKY = new FillGradient({
   type: 'linear',
   start: { x: 0, y: 0 },
@@ -222,7 +223,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     bird.position.set(WORLD.birdX, run.bird.y);
     bird.rotation = run.bird.rot;
     bird.scale.set(1 + state.squash * 0.12, 1 - state.squash * 0.16);
-    drawBird(body, wing, state.wing);
+    drawSpecies(body, wing, state.wing, state.bird);
 
     drawUi(uiGfx, state, box, {
       title,
@@ -312,25 +313,6 @@ function drawGate(g: Graphics, x: number, gapY: number, box: Box, floor: number)
   };
   cap(openTop - lip);
   cap(openBot);
-}
-
-function drawBird(body: Graphics, wingGfx: Graphics, wingPhase: number): void {
-  const flapAngle = Math.sin(wingPhase);
-  body.clear();
-  body.poly([-6, 0, -22, -8 - flapAngle * 3, -16, 7], true).fill(0xf0b429).stroke(OUTLINE);
-
-  wingGfx.position.set(-2, 0);
-  wingGfx.rotation = flapAngle * 1.05 - 0.15;
-  wingGfx.clear();
-  wingGfx.ellipse(0, 11, 13, 7.5).fill(0xe7a322).stroke(OUTLINE);
-
-  body.ellipse(0, 0, 18, 14.5).fill(0xffd34d).stroke(OUTLINE);
-  body.ellipse(3, 4, 10, 8).fill(0xfff3c4);
-  body.ellipse(8, 5, 3.2, 2.2).fill({ color: 0xf4a0a0, alpha: 0.85 });
-  body.poly([12, -1, 26, 2, 12, 8], true).fill(0xef7a2f).stroke(OUTLINE);
-  body.circle(8, -4, 5.4).fill(0xffffff).stroke(OUTLINE);
-  body.circle(9.6, -4, 2.5).fill(INK);
-  body.circle(8.8, -5, 1).fill(0xffffff);
 }
 
 type Labels = {

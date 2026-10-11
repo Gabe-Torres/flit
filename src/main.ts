@@ -1,4 +1,5 @@
 import { createAudio } from './audio.ts';
+import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
 import { WORLD, createRun, flap, step, type Run } from './sim.ts';
 
@@ -6,19 +7,26 @@ const canvas = document.querySelector<HTMLCanvasElement>('#view');
 const statusEl = document.querySelector<HTMLElement>('#status');
 const pauseQuery = document.querySelector<HTMLButtonElement>('#pause');
 const muteQuery = document.querySelector<HTMLButtonElement>('#mute');
-if (!canvas || !statusEl || !pauseQuery || !muteQuery) {
+const rosterQuery = document.querySelector<HTMLElement>('#roster');
+const birdNameQuery = document.querySelector<HTMLElement>('#bird-name');
+const birdsQuery = document.querySelector<HTMLElement>('#birds');
+if (!canvas || !statusEl || !pauseQuery || !muteQuery || !rosterQuery || !birdNameQuery || !birdsQuery) {
   throw new Error('Flit is missing a page element');
 }
 const view = canvas;
 const statusNode = statusEl;
 const pauseBtn = pauseQuery;
 const muteBtn = muteQuery;
+const roster = rosterQuery;
+const birdNameEl = birdNameQuery;
+const birdsEl = birdsQuery;
 
 const audio = createAudio();
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let run: Run = createRun(mixSeed());
 let best = readNumber('flit-best');
+let birdId = readBird();
 let paused = false;
 let wing = 0;
 let pop = 0;
@@ -47,6 +55,45 @@ function writeNumber(key: string, value: number): void {
   }
 }
 
+function readBird(): BirdId {
+  try {
+    const saved = localStorage.getItem('flit-bird');
+    if (saved && isBirdId(saved)) return saved;
+  } catch {
+    // Storage can be blocked. The finch is the default.
+  }
+  return 'finch';
+}
+
+function writeBird(id: BirdId): void {
+  try {
+    localStorage.setItem('flit-bird', id);
+  } catch {
+    // The choice still lasts for this visit.
+  }
+}
+
+function paintBird(): void {
+  const bird = birdById(birdId);
+  birdNameEl.textContent = bird.name;
+  for (const button of birdsEl.querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', button.dataset.bird === birdId ? 'true' : 'false');
+  }
+}
+
+function chooseBird(id: BirdId): void {
+  if (id === birdId) return;
+  birdId = id;
+  writeBird(id);
+  paintBird();
+  describe();
+}
+
+function paintRoster(): void {
+  const open = run.phase === 'ready' || run.phase === 'over';
+  roster.classList.toggle('is-hidden', !open);
+}
+
 function paintMute(): void {
   const muted = audio.muted();
   muteBtn.classList.toggle('is-muted', muted);
@@ -72,7 +119,8 @@ function describe(): void {
     return;
   }
   if (run.phase === 'ready') {
-    setStatus(best > 0 ? `Flit. Tap to fly. Best ${best}.` : 'Flit. Tap to fly.');
+    const name = birdById(birdId).name;
+    setStatus(best > 0 ? `Flit. ${name}. Tap to fly. Best ${best}.` : `Flit. ${name}. Tap to fly.`);
     return;
   }
   if (run.phase === 'over') {
@@ -92,7 +140,7 @@ function puff(count: number, life: number, spread: number): void {
       life,
       max: life,
       r: 2.5 + Math.random() * 2.5,
-      color: Math.random() > 0.4 ? '#ffe08a' : '#fffdf6',
+      color: Math.random() > 0.4 ? birdById(birdId).feather : '#fffdf6',
     });
   }
 }
@@ -151,12 +199,16 @@ function fromButton(event: Event): boolean {
   return event.composedPath().some((node) => node instanceof HTMLButtonElement);
 }
 
+function fromRoster(event: Event): boolean {
+  return event.composedPath().includes(roster);
+}
+
 function resize(): void {
   stage?.resize();
 }
 
 window.addEventListener('pointerdown', (event) => {
-  if (fromButton(event)) return;
+  if (fromButton(event) || fromRoster(event)) return;
   event.preventDefault();
   onFly();
 });
@@ -184,6 +236,16 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
+for (const bird of BIRDS) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.bird = bird.id;
+  button.setAttribute('aria-label', bird.name);
+  button.innerHTML = bird.icon;
+  button.addEventListener('click', () => chooseBird(bird.id));
+  birdsEl.append(button);
+}
+
 pauseBtn.addEventListener('click', togglePause);
 muteBtn.addEventListener('click', toggleMute);
 window.addEventListener('resize', resize);
@@ -200,6 +262,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 paintMute();
 paintPause();
+paintBird();
+paintRoster();
 resize();
 describe();
 
@@ -214,6 +278,10 @@ if (import.meta.env.DEV) {
       },
       fly: onFly,
       reset: () => resetRun(false),
+      get bird() {
+        return birdId;
+      },
+      choose: chooseBird,
     },
   });
 }
@@ -260,6 +328,7 @@ function frame(now: number): void {
   }
 
   describe();
+  paintRoster();
   stage?.render({
     run,
     best,
@@ -269,6 +338,7 @@ function frame(now: number): void {
     squash,
     reduceMotion,
     particles,
+    bird: birdId,
   });
   requestAnimationFrame(frame);
 }

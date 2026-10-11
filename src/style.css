@@ -30,6 +30,60 @@ body {
   cursor: pointer;
 }
 
+#roster {
+  position: fixed;
+  z-index: 2;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 16px);
+}
+
+#roster.is-hidden {
+  display: none;
+}
+
+#bird-name {
+  margin: 0;
+  padding: 2px 12px 3px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: rgba(255, 248, 234, 0.94);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+#birds {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: rgba(255, 248, 234, 0.94);
+  box-shadow: 0 3px 0 #c4a27a;
+}
+
+#birds button {
+  width: 40px;
+  height: 40px;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+#birds button svg {
+  width: 28px;
+  height: 28px;
+}
+
+#birds button[aria-pressed='true'] {
+  background: #ffe08a;
+}
+
 #tools {
   position: fixed;
   z-index: 2;
