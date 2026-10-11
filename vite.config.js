@@ -15,11 +15,22 @@ function classicInlineScript() {
       for (const item of Object.values(bundle)) {
         if (item.type !== 'asset' || typeof item.source !== 'string') continue;
         if (!item.fileName.endsWith('.html')) continue;
-        item.source = item.source.replace(
-          /<script type="module"(?: crossorigin)?>([\s\S]*?)<\/script>/,
-          (_, code) =>
-            `<script>document.addEventListener('DOMContentLoaded',function(){${code}});</script>`,
-        );
+        const open = item.source.match(/<script type="module"(?: crossorigin)?>/);
+        if (!open || open.index === undefined) continue;
+        const start = open.index + open[0].length;
+        const end = item.source.lastIndexOf('</script>');
+        if (end < start) continue;
+        // A library string of "</script>" would end the inline tag early.
+        // import.meta is module syntax. Pixi only passes the URL into Vite's
+        // preload helper, and that helper never runs for this inlined build.
+        const code = item.source
+          .slice(start, end)
+          .replace(/<\/script/gi, '<\\/script')
+          .replace(/\bimport\.meta\b/g, '({url:location.href})');
+        item.source =
+          item.source.slice(0, open.index) +
+          `<script>document.addEventListener('DOMContentLoaded',function(){${code}});</script>` +
+          item.source.slice(end + '</script>'.length);
       }
     },
   };

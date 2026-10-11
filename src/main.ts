@@ -1,5 +1,5 @@
 import { createAudio } from './audio.ts';
-import { render, type Particle } from './draw.ts';
+import { createStage, type Particle, type Stage } from './draw.ts';
 import { WORLD, createRun, flap, step, type Run } from './sim.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
@@ -13,9 +13,6 @@ const view = canvas;
 const statusNode = statusEl;
 const pauseBtn = pauseQuery;
 const muteBtn = muteQuery;
-const context = view.getContext('2d');
-if (!context) throw new Error('Canvas is not available');
-const ctx = context;
 
 const audio = createAudio();
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -28,9 +25,7 @@ let pop = 0;
 let squash = 0;
 let particles: Particle[] = [];
 let lastStatus = '';
-let cssW = 1;
-let cssH = 1;
-let dpr = 1;
+let stage: Stage | null = null;
 
 function mixSeed(): number {
   return (Date.now() ^ Math.floor(Math.random() * 0x100000000)) >>> 0 || 1;
@@ -157,11 +152,7 @@ function fromButton(event: Event): boolean {
 }
 
 function resize(): void {
-  cssW = Math.max(1, view.clientWidth);
-  cssH = Math.max(1, view.clientHeight);
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
-  view.width = Math.round(cssW * dpr);
-  view.height = Math.round(cssH * dpr);
+  stage?.resize();
 }
 
 window.addEventListener('pointerdown', (event) => {
@@ -269,7 +260,7 @@ function frame(now: number): void {
   }
 
   describe();
-  render(ctx, cssW, cssH, dpr, {
+  stage?.render({
     run,
     best,
     paused,
@@ -283,12 +274,15 @@ function frame(now: number): void {
 }
 
 let started = false;
-function start(): void {
+async function start(): Promise<void> {
   if (started) return;
   started = true;
+  stage = await createStage(view);
   last = performance.now();
   requestAnimationFrame(frame);
 }
 
-document.fonts.ready.then(start);
-window.setTimeout(start, 700);
+void Promise.race([
+  document.fonts.ready,
+  new Promise((resolve) => window.setTimeout(resolve, 700)),
+]).then(() => start());

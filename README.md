@@ -6,7 +6,7 @@ Tap to flap. Slip through the gaps. See how long you last.
 
 ![Title screen: a yellow bird hangs in a blue sky over green hills. The word Flit sits above the words tap to fly.](docs/load.png)
 
-Flit is a one-button flyer in the tradition of Flappy Bird. The bird, the gates, the field, and the sound are drawn and synthesized for this version. The picture is a canvas, so the published game is one HTML file.
+Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pixijs.com/) draws the bird, the gates, and the field. The sound is synthesized. The published game is still one HTML file.
 
 ## How to play
 
