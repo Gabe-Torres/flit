@@ -20,7 +20,7 @@ The bird falls. You keep it in the air.
 
 The best score stays in this browser. A run of 5 earns bronze, 10 silver, 20 gold, and 40 a ruby.
 
-On a phone, open the play link in the browser. A texted HTML file is only a preview, and the game will not start from it. Open the play link once while you are online, then add it to the home screen. After that the game runs with the network off.
+On a phone, open the play link in the browser. A texted HTML file is only a preview, and the game will not start from it. Open the play link once while you are online, then add it to the home screen. The icon is the yellow bird. After that the game runs with the network off.
 
 ## Develop
 

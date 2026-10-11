@@ -134,17 +134,40 @@ function canvas(width, height) {
         }
       }
     },
-    ellipse(cx, cy, rx, ry, r, g, b) {
-      const x0 = Math.floor(cx - rx - 1);
-      const y0 = Math.floor(cy - ry - 1);
-      const x1 = Math.ceil(cx + rx + 1);
-      const y1 = Math.ceil(cy + ry + 1);
+    ellipse(cx, cy, rx, ry, r, g, b, rot = 0) {
+      const cos = Math.cos(rot);
+      const sin = Math.sin(rot);
+      const reach = Math.hypot(rx, ry) + 1;
+      const x0 = Math.floor(cx - reach);
+      const y0 = Math.floor(cy - reach);
+      const x1 = Math.ceil(cx + reach);
+      const y1 = Math.ceil(cy + reach);
       for (let y = y0; y <= y1; y++) {
         for (let x = x0; x <= x1; x++) {
-          const dx = (x + 0.5 - cx) / rx;
-          const dy = (y + 0.5 - cy) / ry;
-          const d = Math.hypot(dx, dy);
-          api.plot(x, y, r, g, b, Math.min(1, (1.05 - d) * Math.min(rx, ry)));
+          const dx = x + 0.5 - cx;
+          const dy = y + 0.5 - cy;
+          const lx = dx * cos + dy * sin;
+          const ly = -dx * sin + dy * cos;
+          const d = Math.hypot(lx / rx, ly / ry);
+          api.plot(x, y, r, g, b, Math.min(1, (1.04 - d) * Math.min(rx, ry) * 0.85));
+        }
+      }
+    },
+    tri(ax, ay, bx, by, cx, cy, r, g, b) {
+      const x0 = Math.floor(Math.min(ax, bx, cx));
+      const y0 = Math.floor(Math.min(ay, by, cy));
+      const x1 = Math.ceil(Math.max(ax, bx, cx));
+      const y1 = Math.ceil(Math.max(ay, by, cy));
+      const area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+      if (area === 0) return;
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const px = x + 0.5;
+          const py = y + 0.5;
+          const w0 = ((bx - px) * (cy - py) - (by - py) * (cx - px)) / area;
+          const w1 = ((cx - px) * (ay - py) - (cy - py) * (ax - px)) / area;
+          const w2 = 1 - w0 - w1;
+          if (w0 >= -0.02 && w1 >= -0.02 && w2 >= -0.02) api.plot(x, y, r, g, b, 1);
         }
       }
     },
@@ -185,15 +208,36 @@ function drawText(board, text, x, y, scale, gap, r, g, b) {
   }
 }
 
+const OUTLINE = [106, 61, 22];
+
+function outlinedEllipse(board, cx, cy, rx, ry, fill, stroke = 2.4, rot = 0) {
+  board.ellipse(cx, cy, rx + stroke, ry + stroke, ...OUTLINE, rot);
+  board.ellipse(cx, cy, rx, ry, ...fill, rot);
+}
+
 function drawBird(board, cx, cy, s) {
-  board.ellipse(cx - 6 * s, cy + 2 * s, 10 * s, 7 * s, 231, 163, 34);
-  board.ellipse(cx, cy, 18 * s, 15 * s, 255, 211, 77);
-  board.ellipse(cx + 2 * s, cy + 4 * s, 10 * s, 8 * s, 255, 243, 196);
-  board.circle(cx + 16 * s, cy + 1 * s, 5 * s, 239, 122, 47);
-  board.circle(cx + 22 * s, cy + 1 * s, 3.2 * s, 239, 122, 47);
-  board.circle(cx + 7 * s, cy - 4 * s, 5 * s, 255, 255, 255);
-  board.circle(cx + 8.5 * s, cy - 4 * s, 2.4 * s, 43, 33, 24);
-  board.circle(cx + 7.6 * s, cy - 5 * s, 1 * s, 255, 255, 255);
+  const stroke = Math.max(1.4, 2.3 * s);
+  board.tri(
+    cx - 6 * s, cy,
+    cx - 24 * s, cy - 9 * s,
+    cx - 16 * s, cy + 8 * s,
+    ...OUTLINE,
+  );
+  board.tri(
+    cx - 6 * s, cy + 0.4 * s,
+    cx - 20 * s, cy - 6 * s,
+    cx - 15 * s, cy + 6 * s,
+    240, 180, 41,
+  );
+  outlinedEllipse(board, cx - 2 * s, cy + 2 * s, 13 * s, 7.5 * s, [231, 163, 34], stroke, -0.45);
+  outlinedEllipse(board, cx, cy, 18 * s, 14.5 * s, [255, 211, 77], stroke);
+  board.ellipse(cx + 3 * s, cy + 4 * s, 10 * s, 8 * s, 255, 243, 196);
+  board.ellipse(cx + 8 * s, cy + 5 * s, 3.2 * s, 2.2 * s, 244, 160, 160);
+  board.tri(cx + 10 * s, cy - 2 * s, cx + 28 * s, cy + 2 * s, cx + 12 * s, cy + 9 * s, ...OUTLINE);
+  board.tri(cx + 12 * s, cy - 0.4 * s, cx + 25 * s, cy + 2 * s, cx + 12 * s, cy + 7 * s, 239, 122, 47);
+  outlinedEllipse(board, cx + 8 * s, cy - 4 * s, 5.4 * s, 5.4 * s, [255, 255, 255], stroke * 0.7);
+  board.circle(cx + 9.6 * s, cy - 4 * s, 2.5 * s, 43, 33, 24);
+  board.circle(cx + 8.7 * s, cy - 5.1 * s, 1.05 * s, 255, 255, 255);
 }
 
 function paintIcon(size) {
@@ -205,7 +249,8 @@ function paintIcon(size) {
   const ground = size * 0.78;
   board.rect(0, ground, size, size - ground, 227, 180, 92);
   board.rect(0, ground, size, size * 0.06, 99, 180, 74);
-  drawBird(board, size * 0.46, size * 0.46, size / 64);
+  // Keep the whole bird inside the center so a round home-screen mask still shows it.
+  drawBird(board, size * 0.42, size * 0.4, size / 86);
   return board;
 }
 
