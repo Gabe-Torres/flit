@@ -42,8 +42,9 @@ function playable(): ReturnType<typeof createRun> {
   assert(createRun(4).weather === weatherForSeed(4), 'a run keeps its weather');
   assert(createRun(4).season === seasonForDate(new Date()), 'a run keeps the season');
   assert(createRun(4).holiday === holidayForDate(new Date()), 'a run keeps the holiday');
-  assert(createRun(4).mode === 'starter', 'starter is the default course');
+  assert(createRun(4).mode === 'easy', 'easy is the default course');
   assert(createRun(4, 'hard').mode === 'hard', 'a run keeps the hard course');
+  assert(createRun(4, 'random').mode === 'random', 'a run keeps the random course');
   assert(createRun(4, 'normal').mode === 'normal', 'a run keeps the normal course');
   assert(seasonForDate(new Date(2026, 2, 1)) === 'spring', 'March is spring');
   assert(seasonForDate(new Date(2026, 4, 31)) === 'spring', 'May is spring');
@@ -274,7 +275,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(pipeOpening(40) === WORLD.gap, 'later openings stay narrow');
   assert(pipeSpacing(0, 'normal') === WORLD.spacing && pipeSpacing(40, 'normal') === WORLD.spacing, 'normal keeps the original distance');
   assert(pipeOpening(0, 'normal') === WORLD.gap && pipeOpening(40, 'normal') === WORLD.gap, 'normal keeps the original opening');
-  assert(pipeSpacing(0, 'starter') > pipeSpacing(0, 'normal'), 'starter begins wider than the original');
+  assert(pipeSpacing(0, 'easy') > pipeSpacing(0, 'normal'), 'easy begins wider than the original');
   const runWide = playable();
   runWide.bird.y = 320 + 100;
   runWide.gates = [{ x: WORLD.birdX - 20, gapY: 320, open: pipeOpening(0), scored: false }];
@@ -382,7 +383,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(run.phase === 'play', 'a later roll cannot bring it back');
 }
 
-function clearedLayout(seed: number, mode: 'starter' | 'normal' | 'hard', pipes: number): { gaps: number[]; opens: number[]; jumps: number[] } {
+function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard' | 'random', pipes: number): { gaps: number[]; opens: number[]; jumps: number[] } {
   const run = createRun(seed, mode);
   run.phase = 'play';
   run.snatchAt = null;
@@ -449,6 +450,24 @@ function clearedLayout(seed: number, mode: 'starter' | 'normal' | 'hard', pipes:
   }
   assert(count >= 24, `hard lays out the gates (${count})`);
   assert(Math.max(...jumps) > WORLD.gapStep, 'a hard hole can jump farther than the original step');
+}
+
+{
+  const spaces = Array.from({ length: 80 }, (_, i) => pipeSpacing(i, 'random', 11));
+  const opens = Array.from({ length: 80 }, (_, i) => pipeOpening(i, 'random', 11));
+  const far = WORLD.spacing + 120;
+  const tall = WORLD.gap + 120;
+  assert(spaces.every((gap) => gap >= WORLD.spacing - 0.01 && gap <= far + 0.01), 'random distances stay between close and far');
+  assert(opens.every((open) => open >= WORLD.gap - 0.01 && open <= tall + 0.01), 'random openings stay between short and tall');
+  assert(Math.min(...spaces) < WORLD.spacing + 120 * 0.35, 'a random run includes a close distance');
+  assert(Math.max(...spaces) > WORLD.spacing + 120 * 0.65, 'a random run includes a far distance');
+  assert(Math.min(...opens) < WORLD.gap + 120 * 0.35, 'a random run includes a short opening');
+  assert(Math.max(...opens) > WORLD.gap + 120 * 0.65, 'a random run includes a tall opening');
+  const layout = clearedLayout(11, 'random', 30);
+  assert(layout.gaps.length >= 20, `random lays out the gates (${layout.gaps.length})`);
+  assert(layout.gaps.every((gap) => gap >= WORLD.spacing - 0.01 && gap <= far + 0.01), 'random gates keep a close-to-far distance');
+  assert(layout.opens.every((open) => open >= WORLD.gap - 0.01 && open <= tall + 0.01), 'random gates keep a short-to-tall opening');
+  assert(layout.jumps.every((jump) => jump <= WORLD.gapStep + 0.01), 'random holes still move by a step');
 }
 
 {

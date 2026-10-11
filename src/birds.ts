@@ -13,6 +13,8 @@ export const BIRD_IDS = [
   'lander',
   'kiwi',
   'weka',
+  'trout',
+  'shark',
 ] as const;
 
 export type BirdId = (typeof BIRD_IDS)[number];
@@ -190,6 +192,39 @@ export const BIRDS: readonly BirdKind[] = [
         `<circle cx="17.5" cy="15.6" r="1.7" fill="#e23d3d"/>` +
         `<circle cx="18" cy="15.6" r="0.7" fill="${INK}"/>` +
         `<path d="M10 22 8 28M16 22 18 28" stroke="#c49a58" stroke-width="1.6" stroke-linecap="round"/>`,
+    ),
+  },
+  {
+    id: 'trout',
+    name: 'Rainbow trout',
+    feather: '#ff6b9a',
+    icon: icon(
+      `<path d="M9 16 3 11.2 3 20.8Z" fill="#2f8f62" stroke="${STROKE}" stroke-width="1" stroke-linejoin="round"/>` +
+        `<ellipse cx="17" cy="16" rx="9" ry="5.2" fill="#6ecf9a" stroke="${STROKE}" stroke-width="1.2"/>` +
+        `<path d="M10 14.5h11" stroke="#ff5a8a" stroke-width="1.8" stroke-linecap="round"/>` +
+        `<path d="M10 16.3h10" stroke="#f2c14b" stroke-width="1.5" stroke-linecap="round"/>` +
+        `<path d="M11 18h9" stroke="#3b82e0" stroke-width="1.5" stroke-linecap="round"/>` +
+        `<circle cx="12.2" cy="13.4" r="0.7" fill="${INK}"/>` +
+        `<circle cx="15.4" cy="18.4" r="0.65" fill="${INK}"/>` +
+        `<path d="M14 20.2 11 25 17.2 22.2Z" fill="#ff8a5b" stroke="${STROKE}" stroke-width="0.8" stroke-linejoin="round"/>` +
+        `<circle cx="22.2" cy="14.6" r="1.5" fill="#fff" stroke="${STROKE}" stroke-width="0.7"/>` +
+        `<circle cx="22.7" cy="14.6" r="0.65" fill="${INK}"/>`,
+    ),
+  },
+  {
+    id: 'shark',
+    name: 'Rocket shark',
+    feather: '#8aa0b0',
+    icon: icon(
+      `<path d="M8 18 3 13.2 4.2 18 3 22.8Z" fill="#5c6b7a" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<ellipse cx="16" cy="18" rx="9" ry="4.8" fill="#8aa0b0" stroke="${STROKE}" stroke-width="1.2"/>` +
+        `<ellipse cx="16" cy="19.8" rx="6" ry="2" fill="#e8eef4"/>` +
+        `<path d="M13 13.4 16 7.4 19 13.4Z" fill="#5c6b7a" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<rect x="11" y="8.2" width="10" height="3.6" rx="1.1" fill="#e23d3d" stroke="${STROKE}" stroke-width="0.8"/>` +
+        `<path d="M21 8.2 25.4 10 21 11.8Z" fill="#f6d98a" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<path d="M11 9.2 7.2 10 11 10.8Z" fill="#f08a2a"/>` +
+        `<circle cx="21" cy="17" r="1.25" fill="#fff" stroke="${STROKE}" stroke-width="0.6"/>` +
+        `<circle cx="21.4" cy="17" r="0.5" fill="${INK}"/>`,
     ),
   },
 ];
@@ -422,6 +457,42 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     body.moveTo(5, 12).lineTo(8, 22).stroke({ width: 2.8, color: 0xc49a58, cap: 'round' });
     body.moveTo(-6, 22).lineTo(-11, 23).stroke({ width: 2.2, color: 0xc49a58, cap: 'round' });
     body.moveTo(8, 22).lineTo(13, 23).stroke({ width: 2.2, color: 0xc49a58, cap: 'round' });
+    return;
+  }
+
+  if (id === 'trout') {
+    const wag = flapAngle * 5;
+    wing.rotation = flapAngle * 0.9;
+    wing.ellipse(2, 8, 9, 3.4).fill(0xff8a5b).stroke(OUTLINE);
+    body.poly([-12, 1, -24, -8 - wag, -24, 9 + wag], true).fill(0x2f8f62).stroke(OUTLINE);
+    body.ellipse(2, 1, 16, 8).fill(0x6ecf9a).stroke(OUTLINE);
+    body.ellipse(3, -1.2, 12, 1.7).fill(0xff5a8a);
+    body.ellipse(3, 1, 11, 1.3).fill(0xf2c14b);
+    body.ellipse(3, 3, 10, 1.2).fill(0x3b82e0);
+    body.circle(-2, -2.2, 1.2).fill(0x2b2118);
+    body.circle(5, 2.4, 1).fill(0x2b2118);
+    body.circle(9, -0.4, 0.9).fill(0x2b2118);
+    body.poly([1, -6, 6, -12, 9, -5], true).fill(0x3d8f6e).stroke(OUTLINE);
+    eye(body, 11, -2, 3.1);
+    return;
+  }
+
+  if (id === 'shark') {
+    wing.rotation = 0;
+    const wag = Math.sin(wingPhase * 2) * 4;
+    body.poly([-10, 2, -22, -8 - wag, -16, 2, -22, 11 + wag], true).fill(0x5c6b7a).stroke(OUTLINE);
+    body.ellipse(3, 2, 16, 8).fill(0x8aa0b0).stroke(OUTLINE);
+    body.ellipse(3, 5.2, 11, 3.2).fill(0xe8eef4);
+    body.poly([-1, -5, 3, -14, 8, -4], true).fill(0x5c6b7a).stroke(OUTLINE);
+    body.moveTo(6, 1).lineTo(4, 4).stroke({ width: 1.4, color: 0x3a4250, cap: 'round' });
+    body.moveTo(9, 1.4).lineTo(7, 4.2).stroke({ width: 1.4, color: 0x3a4250, cap: 'round' });
+    eye(body, 12, -1, 2.5);
+    body.poly([14, 3, 20, 5.2, 14, 6.2], true).fill(0xfffdf6).stroke({ ...OUTLINE, width: 1.2 });
+    body.roundRect(-1, -13, 16, 6, 2).fill(0xd23b2e).stroke(OUTLINE);
+    body.poly([15, -13, 22, -10, 15, -7], true).fill(0xf6d98a).stroke(OUTLINE);
+    const burn = 0.65 + 0.35 * Math.sin(wingPhase * 9);
+    body.poly([-1, -12, -1 - 11 * burn, -10, -1, -8], true).fill({ color: 0xf08a2a, alpha: 0.95 });
+    body.poly([-1, -11.2, -1 - 6 * burn, -10, -1, -8.8], true).fill(0xfff6d0);
     return;
   }
 

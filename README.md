@@ -12,8 +12,8 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 
 The bird falls. You keep it in the air.
 
-- On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, dodo, pterodactyl, drone, lunar lander, kiwi, or weka. The choice stays in this browser.
-- On the title, pick a difficulty. Starter begins with far gates and a tall opening. Every 5 you clear, the next ones sit a little closer and the opening gets a little shorter. After 20, they match the original. Normal is that original distance and opening from the first gate. Hard is tighter than that original. Each gate is the original size or smaller, so a wider gap can be followed by a closer one with a shorter opening, and the hole can sit anywhere between the pipes. The choice stays in this browser.
+- On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, dodo, pterodactyl, drone, lunar lander, kiwi, weka, rainbow trout, or rocket shark. The choice stays in this browser.
+- On the title, pick a difficulty. Easy begins with far gates and a tall opening. Every 5 you clear, the next ones sit a little closer and the opening gets a little shorter. After 20, they match the original. Normal is that original distance and opening from the first gate. Hard is tighter than that original, and the hole can sit anywhere. Random rolls every gate on its own, so a far gate can be followed by a close one, then a far one again. The choice stays in this browser.
 - The field follows the real date where you are: spring, summer, autumn, or winter. On a holiday it dresses for that day: New Year, Valentine's Day, St. Patrick's Day, Easter weekend, the week of Halloween, Thanksgiving and the Friday after, and the week of Christmas.
 - Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
 - Each gate you clear is one point.
@@ -33,7 +33,7 @@ On a computer:
 - Click the screen, or press Space, Up, or W, to flap. The same control starts a run, resumes a pause, and starts the next run after the score card.
 - P pauses. M mutes. R returns to the title. The buttons in the corner pause and mute too.
 
-The best score stays in this browser. A run of 30 earns bronze, 70 silver, and 100 a ruby. A few more rubies are buried in the dirt. They are just sitting there.
+Each difficulty keeps its own best score in this browser. A run of 30 earns bronze, 70 silver, and 100 a ruby. A few more rubies are buried in the dirt. They are just sitting there.
 
 On a phone, open the play link in the browser. A texted HTML file is only a preview, and the game will not start from it. Open the play link once while you are online, then add it to the home screen. The icon is the yellow bird. After that the game runs with the network off.
 

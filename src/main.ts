@@ -31,7 +31,7 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 
 let modeId = readMode();
 let run: Run = createRun(mixSeed(), modeId);
-let best = readNumber('flit-best');
+let bests = readBests();
 let birdId = readBird();
 let paused = false;
 let wing = 0;
@@ -82,11 +82,15 @@ function writeBird(id: BirdId): void {
 function readMode(): ModeId {
   try {
     const saved = localStorage.getItem('flit-mode');
+    if (saved === 'starter') {
+      localStorage.setItem('flit-mode', 'easy');
+      return 'easy';
+    }
     if (saved && isModeId(saved)) return saved;
   } catch {
-    // Storage can be blocked. Starter is the default.
+    // Storage can be blocked. Easy is the default.
   }
-  return 'starter';
+  return 'easy';
 }
 
 function writeMode(id: ModeId): void {
@@ -98,7 +102,27 @@ function writeMode(id: ModeId): void {
 }
 
 function modeName(id: ModeId): string {
-  return MODES.find((mode) => mode.id === id)?.name ?? 'Starter';
+  return MODES.find((mode) => mode.id === id)?.name ?? 'Easy';
+}
+
+function bestKey(id: ModeId): string {
+  return `flit-best-${id}`;
+}
+
+function readBests(): Record<ModeId, number> {
+  const legacy = readNumber('flit-best');
+  const easy = readNumber(bestKey('easy'));
+  if (legacy > easy) writeNumber(bestKey('easy'), legacy);
+  return {
+    easy: Math.max(easy, legacy),
+    normal: readNumber(bestKey('normal')),
+    hard: readNumber(bestKey('hard')),
+    random: readNumber(bestKey('random')),
+  };
+}
+
+function shownBest(): number {
+  return bests[run.phase === 'ready' ? modeId : run.mode];
 }
 
 function forecast(): string {
@@ -180,7 +204,8 @@ function describe(): void {
   if (run.phase === 'ready') {
     const name = birdById(birdId).name;
     const lead = `Flit. ${name}. ${modeName(modeId)}. ${sky}. ${controls.speak}`;
-    setStatus(best > 0 ? `${lead} Best ${best}.` : lead);
+    const modeBest = bests[modeId];
+    setStatus(modeBest > 0 ? `${lead} Best ${modeBest}.` : lead);
     return;
   }
   if (run.phase === 'snatched') {
@@ -191,7 +216,7 @@ function describe(): void {
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
     const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
-    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${best}. ${modeName(run.mode)}. ${sky}. ${controls.againSpeak}`);
+    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. Best ${bests[run.mode]}. ${modeName(run.mode)}. ${sky}. ${controls.againSpeak}`);
     return;
   }
   setStatus(`Score ${run.score}. ${sky}.`);
@@ -351,7 +376,7 @@ if (import.meta.env.DEV) {
         return run;
       },
       get best() {
-        return best;
+        return bests[modeId];
       },
       fly: onFly,
       reset: () => resetRun(false),
@@ -392,9 +417,9 @@ function frame(now: number): void {
     pop = 1;
     puff(6, 0.28, 50);
   }
-  if (run.phase === 'over' && phase !== 'over' && run.score > best) {
-    best = run.score;
-    writeNumber('flit-best', best);
+  if (run.phase === 'over' && phase !== 'over' && run.score > bests[run.mode]) {
+    bests[run.mode] = run.score;
+    writeNumber(bestKey(run.mode), run.score);
   }
 
   if (!paused) {
@@ -417,7 +442,7 @@ function frame(now: number): void {
   paintRoster();
   stage?.render({
     run,
-    best,
+    best: shownBest(),
     paused,
     wing,
     pop,
