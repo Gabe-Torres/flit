@@ -15,6 +15,8 @@ export const BIRD_IDS = [
   'weka',
   'trout',
   'shark',
+  'appa',
+  'momo',
 ] as const;
 
 export type BirdId = (typeof BIRD_IDS)[number];
@@ -234,6 +236,43 @@ export const BIRDS: readonly BirdKind[] = [
         `<rect x="5.2" y="9.4" width="7.2" height="2.8" rx="0.9" fill="#e23d3d" stroke="${STROKE}" stroke-width="0.6"/>` +
         `<path d="M12.4 9.4 15.6 10.8 12.4 12.2Z" fill="#f6d98a" stroke="${STROKE}" stroke-width="0.5" stroke-linejoin="round"/>` +
         `<path d="M5.2 10 2.4 10.8 5.2 11.6Z" fill="#f08a2a"/>`,
+    ),
+  },
+  {
+    id: 'appa',
+    name: 'Appa',
+    feather: '#f4e6cf',
+    icon: icon(
+      `<path d="M9 18 2 15.5 2 21.5 9 19.5Z" fill="#8a5a32" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<ellipse cx="16" cy="18" rx="8" ry="6" fill="#fff6ea" stroke="${STROKE}" stroke-width="1.2"/>` +
+        `<ellipse cx="12" cy="16.2" rx="2.4" ry="1.7" fill="#c48a4a"/>` +
+        `<ellipse cx="23" cy="15.2" rx="4.4" ry="3.6" fill="#fff6ea" stroke="${STROKE}" stroke-width="1.1"/>` +
+        `<path d="M18.4 12.4 17 9.2M20.8 12 20.2 8.6" stroke="${STROKE}" stroke-width="1" stroke-linecap="round"/>` +
+        `<path d="M15.6 12.7h5.2" stroke="#8a4b2a" stroke-width="1.9" stroke-linecap="round"/>` +
+        `<path d="M19.2 11.1 26.4 12.9 19.2 14.5Z" fill="#8a4b2a" stroke="${STROKE}" stroke-width="0.5" stroke-linejoin="round"/>` +
+        `<ellipse cx="26.4" cy="16" rx="1.8" ry="1.3" fill="#c49a6a" stroke="${INK}" stroke-width="0.6"/>` +
+        `<path d="M11.4 23.2 10.8 26.2M16.4 23.4 16 26.2M21.2 22.8 20.8 25.6" stroke="#d7b48a" stroke-width="1.15" stroke-linecap="round"/>` +
+        `<path d="M9.2 23.4 8.4 27.2M14.2 23.6 13.6 27.4M18.8 23.2 18.4 26.8" stroke="#c49a6a" stroke-width="1.25" stroke-linecap="round"/>` +
+        `<circle cx="24.2" cy="15.5" r="1.15" fill="#fff" stroke="${STROKE}" stroke-width="0.6"/>` +
+        `<circle cx="24.6" cy="15.5" r="0.5" fill="${INK}"/>`,
+    ),
+  },
+  {
+    id: 'momo',
+    name: 'Momo',
+    feather: '#c5ced8',
+    icon: icon(
+      `<path d="M10 18c-4-1-7 1-9 4" stroke="#6a5344" stroke-width="2.4" fill="none" stroke-linecap="round"/>` +
+        `<path d="M8 17.2c-2-.4-3.4.6-4.2 2" stroke="#f4efe4" stroke-width="1.5" fill="none" stroke-linecap="round"/>` +
+        `<ellipse cx="16" cy="18" rx="6.2" ry="4.6" fill="#8d97a3" stroke="${STROKE}" stroke-width="1.1"/>` +
+        `<ellipse cx="16.4" cy="19.4" rx="3.4" ry="2.2" fill="#f7f1e8"/>` +
+        `<ellipse cx="12" cy="9" rx="3.4" ry="6" fill="#9aa3b0" stroke="${STROKE}" stroke-width="0.9"/>` +
+        `<ellipse cx="12" cy="9.4" rx="1.7" ry="4" fill="#f3b6c4"/>` +
+        `<ellipse cx="20" cy="8" rx="3.6" ry="6.4" fill="#9aa3b0" stroke="${STROKE}" stroke-width="0.9"/>` +
+        `<ellipse cx="20" cy="8.4" rx="1.8" ry="4.2" fill="#f3b6c4"/>` +
+        `<ellipse cx="20" cy="16" rx="4.2" ry="3.4" fill="#b7c0c9" stroke="${STROKE}" stroke-width="0.9"/>` +
+        `<circle cx="21.2" cy="15.2" r="1.5" fill="#fff" stroke="${STROKE}" stroke-width="0.6"/>` +
+        `<circle cx="21.7" cy="15.2" r="0.65" fill="${INK}"/>`,
     ),
   },
 ];
@@ -520,6 +559,52 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     const burn = 0.65 + 0.35 * Math.sin(wingPhase * 9);
     body.poly([-16, -10.2, -16 - 10 * burn, -8.5, -16, -7], true).fill({ color: 0xf08a2a, alpha: 0.95 });
     body.poly([-16, -9.6, -16 - 5.5 * burn, -8.5, -16, -7.6], true).fill(0xfff6d0);
+    return;
+  }
+
+  if (id === 'appa') {
+    wing.rotation = 0;
+    const wag = flapAngle * 5;
+    const tuck = Math.max(0, flapAngle) * 3;
+    body.poly([-6, 3, -24, -2 - wag, -24, 8 + wag, -6, 7], true).fill(0x8a5a32).stroke(OUTLINE);
+    body.ellipse(1, 2, 15, 10).fill(0xfff6ea).stroke(OUTLINE);
+    body.ellipse(2, 6, 9, 5.2).fill(0xf0dcc4);
+    body.ellipse(-5, -1, 4.4, 3.1).fill(0xc48a4a);
+    body.ellipse(13, -2, 8.2, 6.8).fill(0xfff6ea).stroke(OUTLINE);
+    body.moveTo(5, -7.2).lineTo(3, -13).stroke({ width: 1.8, color: 0x6a3d16, cap: 'round' });
+    body.moveTo(9, -7.6).lineTo(8.4, -14).stroke({ width: 1.8, color: 0x6a3d16, cap: 'round' });
+    body.moveTo(0, -7.4).lineTo(12, -6.8).stroke({ width: 3.4, color: 0x8a4b2a, cap: 'round' });
+    body.poly([7, -10.2, 23, -6.4, 7, -6.6], true).fill(0x8a4b2a).stroke(OUTLINE);
+    body.ellipse(19.5, 0.4, 3.3, 2.4).fill(0xc49a6a).stroke({ ...OUTLINE, width: 1.4 });
+    body.ellipse(20.2, 0, 1.1, 0.8).fill(0x5c3a22);
+    eye(body, 15.4, -3.2, 2.2);
+    const leg = { width: 2.2, color: 0xc49a6a, cap: 'round' as const };
+    for (const lx of [-8, 0, 8]) {
+      body.moveTo(lx + 3, 9).lineTo(lx + 2, 14 - tuck * 0.4).stroke({ width: 1.7, color: 0xd7b48a, cap: 'round' });
+      body.moveTo(lx, 10).lineTo(lx - 1, 17 - tuck).stroke(leg);
+      body.ellipse(lx - 1, 17.2 - tuck, 2.1, 1).fill(0x8a5a32);
+    }
+    return;
+  }
+
+  if (id === 'momo') {
+    wing.rotation = 0;
+    const lift = flapAngle * 7;
+    const wag = flapAngle * 5;
+    body.moveTo(-2, 3).quadraticCurveTo(-14, -8 - wag, -24, 2 + wag).stroke({ width: 5.2, color: 0x6a5344, cap: 'round' });
+    body.moveTo(-8, 0).quadraticCurveTo(-14, -4 - wag * 0.6, -18, 1 + wag * 0.4).stroke({ width: 4.2, color: 0xf4efe4, cap: 'round' });
+    body.moveTo(-18, 1).quadraticCurveTo(-22, 0, -24, 2 + wag).stroke({ width: 3.4, color: 0x6a5344, cap: 'round' });
+    body.ellipse(2, 2, 11, 7.4).fill(0x8d97a3).stroke(OUTLINE);
+    body.ellipse(3, 5, 6.2, 3.5).fill(0xf7f1e8);
+    body.ellipse(4, -11 - lift * 0.7, 5.6, 8.4).fill(0x9aa3b0).stroke(OUTLINE);
+    body.ellipse(4, -11 - lift * 0.7, 2.8, 5.4).fill(0xf3b6c4);
+    body.ellipse(13, -13 - lift, 6, 9.2).fill(0x9aa3b0).stroke(OUTLINE);
+    body.ellipse(13, -13 - lift, 3.1, 6).fill(0xf3b6c4);
+    body.ellipse(12, -1, 7.2, 5.8).fill(0xb7c0c9).stroke(OUTLINE);
+    body.ellipse(16.2, 1.2, 2.3, 1.6).fill(0xf0c9b0);
+    eye(body, 13.2, -2.2, 2.5);
+    body.moveTo(6, 5).lineTo(2, 11).stroke({ width: 1.8, color: 0x6a5344, cap: 'round' });
+    body.moveTo(9, 6).lineTo(8, 12).stroke({ width: 1.8, color: 0x6a5344, cap: 'round' });
     return;
   }
 
