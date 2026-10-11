@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#8fd4f8" />
+  <meta name="description" content="Tap to flap through the gaps. A one-button flyer." />
+  <meta property="og:title" content="Flit" />
+  <meta property="og:description" content="Tap to flap through the gaps." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://gabe-torres.github.io/flit/" />
+  <meta property="og:image" content="https://gabe-torres.github.io/flit/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="A yellow bird flies toward a gap between green gates. The word Flit sits in the sky." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Flit" />
+  <meta name="twitter:description" content="Tap to flap through the gaps." />
+  <meta name="twitter:image" content="https://gabe-torres.github.io/flit/og.png" />
+  <link rel="icon" href="./favicon.ico" sizes="any" />
+  <link rel="icon" href="./favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="./icon-192.png" type="image/png" sizes="192x192" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Flit" />
+  <link rel="apple-touch-icon" href="./icon-180.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <title>Flit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="view" width="390" height="680" aria-label="Flit, a one-button flyer"></canvas>
+  <p id="status" class="sr-only" aria-live="polite">Flit. Tap to fly.</p>
+  <div id="tools">
+    <button id="pause" type="button" aria-label="Pause" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="bars" fill="currentColor" d="M7 4.5h3.2v15H7zM13.8 4.5H17v15h-3.2z" />
+        <path class="play" fill="currentColor" d="M8 4.8v14.4l11-7.2z" />
+      </svg>
+    </button>
+    <button id="mute" type="button" aria-label="Mute sound" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="speaker" fill="currentColor" d="M4 9.2h3.1L11.5 5v14l-4.4-4.2H4z" />
+        <path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.2 9.1a3.8 3.8 0 0 1 0 5.8" />
+        <path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M17.7 6.6a7.2 7.2 0 0 1 0 10.8" />
+        <path class="slash" fill="none" stroke="#d23b2e" stroke-width="2.4" stroke-linecap="round" d="M6 18.2 18.2 6" />
+      </svg>
+    </button>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+// Rules for Flit. The hit circle is smaller than the drawn bird so a
+// near miss on the beak or the tail still counts as a pass.
+
+export const WORLD = {
+  w: 390,
+  h: 680,
+  ground: 108,
+  birdX: 124,
+  birdR: 16,
+  hitR: 12,
+  readyY: 320,
+  gravity: 1550,
+  flap: -540,
+  maxFall: 760,
+  scroll: 162,
+  gap: 168,
+  pipeW: 70,
+  spacing: 232,
+  firstX: 420,
+  margin: 68,
+  gapStep: 116,
+} as const;
+
+export type Phase = 'ready' | 'play' | 'dying' | 'over';
+
+export type Bird = {
+  y: number;
+  vy: number;
+  rot: number;
+};
+
+export type Gate = {
+  x: number;
+  gapY: number;
+  scored: boolean;
+};
+
+export type Run = {
+  phase: Phase;
+  bird: Bird;
+  gates: Gate[];
+  score: number;
+  scroll: number;
+  time: number;
+  seed: number;
+  shake: number;
+  sinceFlap: number;
+};
+
+export function groundY(): number {
+  return WORLD.h - WORLD.ground;
+}
+
+// The resting pose is nose-down, so the center sits higher than the hit circle
+// or the beak plants in the dirt.
+export function restY(): number {
+  return groundY() - 32;
+}
+
+export function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+export function createRun(seed = 1): Run {
+  return {
+    phase: 'ready',
+    bird: { y: WORLD.readyY, vy: 0, rot: 0 },
+    gates: [],
+    score: 0,
+    scroll: 0,
+    time: 0,
+    seed: seed >>> 0 || 1,
+    shake: 0,
+    sinceFlap: 10,
+  };
+}
+
+function rand(run: Run): number {
+  run.seed = (Math.imul(run.seed, 1664525) + 1013904223) >>> 0;
+  return run.seed / 4294967296;
+}
+
+function nextGap(run: Run, around: number): number {
+  const half = WORLD.gap / 2;
+  const min = WORLD.margin + half;
+  const max = groundY() - WORLD.margin - half;
+  const raw = min + rand(run) * (max - min);
+  return clamp(raw, Math.max(min, around - WORLD.gapStep), Math.min(max, around + WORLD.gapStep));
+}
+
+function spawn(run: Run): void {
+  const last = run.gates[run.gates.length - 1];
+  if (!last) {
+    run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY), scored: false });
+    return;
+  }
+  if (last.x <= WORLD.w + 36 - WORLD.spacing) {
+    run.gates.push({
+      x: last.x + WORLD.spacing,
+      gapY: nextGap(run, last.gapY),
+      scored: false,
+    });
+  }
+}
+
+export function circleHits(
+  cx: number,
+  cy: number,
+  r: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): boolean {
+  if (w <= 0 || h <= 0) return false;
+  const nx = clamp(cx, x, x + w);
+  const ny = clamp(cy, y, y + h);
+  const dx = cx - nx;
+  const dy = cy - ny;
+  return dx * dx + dy * dy < r * r;
+}
+
+export function hits(run: Run): boolean {
+  const y = run.bird.y;
+  const r = WORLD.hitR;
+  if (y + r >= groundY()) return true;
+  const x = WORLD.birdX;
+  for (const gate of run.gates) {
+    const openTop = gate.gapY - WORLD.gap / 2;
+    const openBot = gate.gapY + WORLD.gap / 2;
+    if (circleHits(x, y, r, gate.x, -400, WORLD.pipeW, openTop + 400)) return true;
+    if (circleHits(x, y, r, gate.x, openBot, WORLD.pipeW, 4000)) return true;
+  }
+  return false;
+}
+
+export function flap(run: Run): boolean {
+  if (run.phase === 'dying' || run.phase === 'over') return false;
+  if (run.phase === 'ready') run.phase = 'play';
+  run.bird.vy = WORLD.flap;
+  run.bird.rot = Math.min(run.bird.rot, -0.25);
+  run.sinceFlap = 0;
+  return true;
+}
+
+function integrate(run: Run, dt: number): void {
+  run.bird.vy = Math.min(WORLD.maxFall, run.bird.vy + WORLD.gravity * dt);
+  run.bird.y += run.bird.vy * dt;
+  if (run.bird.y < -28) {
+    run.bird.y = -28;
+    if (run.bird.vy < 0) run.bird.vy = 0;
+  }
+  const target = clamp(run.bird.vy / 640, -0.6, 1.25);
+  const rate = run.bird.vy < 0 ? 16 : 8;
+  run.bird.rot += (target - run.bird.rot) * Math.min(1, dt * rate);
+}
+
+export function step(run: Run, dt: number): void {
+  dt = clamp(dt, 0, 0.05);
+  run.shake = Math.max(0, run.shake - dt);
+
+  if (run.phase === 'ready') {
+    run.time += dt;
+    run.scroll += WORLD.scroll * 0.35 * dt;
+    run.bird.y = WORLD.readyY + Math.sin(run.time * 2.6) * 7;
+    run.bird.vy = 0;
+    run.bird.rot = Math.sin(run.time * 2.6) * 0.06;
+    return;
+  }
+
+  if (run.phase === 'dying') {
+    run.time += dt;
+    run.sinceFlap += dt;
+    run.bird.vy = Math.min(WORLD.maxFall, run.bird.vy + WORLD.gravity * dt);
+    run.bird.y += run.bird.vy * dt;
+    run.bird.rot += (1.45 - run.bird.rot) * Math.min(1, dt * 6);
+    if (run.bird.y >= restY()) {
+      run.bird.y = restY();
+      run.bird.vy = 0;
+      run.phase = 'over';
+    }
+    return;
+  }
+
+  if (run.phase === 'over') return;
+
+  run.time += dt;
+  run.sinceFlap += dt;
+  run.scroll += WORLD.scroll * dt;
+  integrate(run, dt);
+  for (const gate of run.gates) gate.x -= WORLD.scroll * dt;
+  run.gates = run.gates.filter((gate) => gate.x + WORLD.pipeW > -80);
+  spawn(run);
+
+  if (hits(run)) {
+    run.phase = 'dying';
+    run.bird.vy = Math.min(run.bird.vy, -240);
+    run.shake = 0.32;
+    if (run.bird.y > restY()) run.bird.y = restY();
+    return;
+  }
+
+  for (const gate of run.gates) {
+    if (!gate.scored && gate.x + WORLD.pipeW < WORLD.birdX) {
+      gate.scored = true;
+      run.score += 1;
+    }
+  }
+}
