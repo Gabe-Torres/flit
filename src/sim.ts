@@ -99,9 +99,20 @@ export const SNATCH_DURATION = SNATCH_APPROACH + SNATCH_CARRY;
 const TALON_X = -6;
 const TALON_Y = 40;
 
+// Gates open wide and move 30px closer every 10 pipes cleared. WORLD.spacing is the tightest.
+const SPACING_EVERY = 10;
+const SPACING_TIGHTEN = 30;
+const SPACING_STEPS = 4;
+
+export function pipeSpacing(cleared: number): number {
+  const steps = Math.min(SPACING_STEPS, Math.max(0, Math.floor(cleared / SPACING_EVERY)));
+  return WORLD.spacing + (SPACING_STEPS - steps) * SPACING_TIGHTEN;
+}
+
 export function pipesClearTime(pipes = SNATCH_PIPE_LIMIT): number {
-  const first = (WORLD.firstX + WORLD.pipeW - WORLD.birdX) / WORLD.scroll;
-  return first + (pipes - 1) * (WORLD.spacing / WORLD.scroll);
+  let travel = WORLD.firstX + WORLD.pipeW - WORLD.birdX;
+  for (let i = 0; i < pipes - 1; i++) travel += pipeSpacing(i);
+  return travel / WORLD.scroll;
 }
 
 function mix(n: number): number {
@@ -175,9 +186,10 @@ function spawn(run: Run): void {
     run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY), scored: false });
     return;
   }
-  if (last.x <= WORLD.w + 36 - WORLD.spacing) {
+  const spacing = pipeSpacing(run.score);
+  if (last.x <= WORLD.w + 36 - spacing) {
     run.gates.push({
-      x: last.x + WORLD.spacing,
+      x: last.x + spacing,
       gapY: nextGap(run, last.gapY),
       scored: false,
     });

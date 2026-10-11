@@ -6,6 +6,7 @@ import {
   flightFacts,
   groundY,
   hits,
+  pipeSpacing,
   pipesClearTime,
   planSnatch,
   restY,
@@ -181,14 +182,49 @@ function playable(): ReturnType<typeof createRun> {
     step(run, 1 / 60);
   }
   assert(run.phase === 'play', 'a centered bird keeps flying');
+  assert(run.score < 10, `the opening is still the wide stretch (${run.score})`);
   assert(run.gates.length >= 2, 'gates keep coming');
   for (let i = 1; i < run.gates.length; i++) {
     const gap = run.gates[i].x - run.gates[i - 1].x;
-    assert(Math.abs(gap - WORLD.spacing) < 0.05, `gate spacing stays ${WORLD.spacing} (${gap})`);
+    assert(Math.abs(gap - pipeSpacing(0)) < 0.05, `early gates stay wide (${gap})`);
   }
   for (let i = 1; i < run.gates.length; i++) {
     const jump = Math.abs(run.gates[i].gapY - run.gates[i - 1].gapY);
     assert(jump <= WORLD.gapStep + 0.01, `gaps do not jump more than ${WORLD.gapStep} (${jump})`);
+  }
+}
+
+{
+  assert(pipeSpacing(0) === pipeSpacing(9), 'the first ten pipes share a distance');
+  assert(pipeSpacing(0) > pipeSpacing(10), 'pipe ten pulls the next gate closer');
+  const tighten = pipeSpacing(0) - pipeSpacing(10);
+  assert(tighten === pipeSpacing(10) - pipeSpacing(20), 'each ten pipes closes the gap by the same step');
+  assert(tighten === pipeSpacing(20) - pipeSpacing(30), 'the third step matches');
+  assert(pipeSpacing(39) === WORLD.spacing + tighten, 'pipe 39 is one step easier than the floor');
+  assert(pipeSpacing(40) === WORLD.spacing, 'pipe 40 is the closest the gates get');
+  assert(pipeSpacing(80) === WORLD.spacing, 'later pipes stay at the closest distance');
+
+  const run = createRun(9);
+  run.phase = 'play';
+  run.snatchAt = null;
+  const gaps: number[] = [];
+  for (let guard = 0; run.score < 45 && guard < 8000; guard++) {
+    const ahead = run.gates.find((gate) => gate.x + WORLD.pipeW >= WORLD.birdX - 40);
+    run.bird.y = ahead ? ahead.gapY : WORLD.readyY;
+    run.bird.vy = 0;
+    const count = run.gates.length;
+    step(run, 1 / 60);
+    if (run.gates.length > count && run.gates.length >= 2) {
+      const next = run.gates[run.gates.length - 1];
+      const prev = run.gates[run.gates.length - 2];
+      gaps.push(next.x - prev.x);
+    }
+  }
+  assert(run.phase === 'play', 'the spacing run survives');
+  assert(run.score >= 45, `the run reaches the tight gates (${run.score})`);
+  assert(gaps.length >= 45, `enough gates were measured (${gaps.length})`);
+  for (let i = 0; i < gaps.length; i++) {
+    assert(Math.abs(gaps[i] - pipeSpacing(i)) < 0.05, `gate ${i + 1} uses spacing ${pipeSpacing(i)} (${gaps[i]})`);
   }
 }
 
