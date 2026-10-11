@@ -152,10 +152,13 @@ export const BIRDS: readonly BirdKind[] = [
     name: 'Kiwi',
     feather: '#c49a6a',
     icon: icon(
-      `<path d="M8 14 5 8M12 12 11 6M15 12 17 6" stroke="#5c3a22" stroke-width="1.3" stroke-linecap="round"/>` +
-        `<ellipse cx="13" cy="19" rx="8" ry="7" fill="#8a5a32" stroke="${STROKE}" stroke-width="1.4"/>` +
-        `<path d="M19 18 31 20" stroke="#e7c27a" stroke-width="1.8" stroke-linecap="round"/>` +
-        `<circle cx="16" cy="17" r="1.2" fill="${INK}"/>`,
+      `<path d="M6 16 2 12M7 20 2 22M8 14 4 9" stroke="#5c3a22" stroke-width="1.3" stroke-linecap="round"/>` +
+        `<ellipse cx="11" cy="19" rx="6.2" ry="6.6" fill="#6b4226" stroke="${STROKE}" stroke-width="1.3"/>` +
+        `<ellipse cx="16" cy="16.2" rx="4" ry="3.8" fill="#8a5a32" stroke="${STROKE}" stroke-width="1.1"/>` +
+        `<path d="M19 16.4c5 1 9 3 12 5" stroke="${STROKE}" stroke-width="2" fill="none" stroke-linecap="round"/>` +
+        `<path d="M19.3 15.7c5 .8 8.6 2.6 11.4 4.4" stroke="#f0d7a0" stroke-width="1" fill="none" stroke-linecap="round"/>` +
+        `<circle cx="17.2" cy="14.8" r="1" fill="${INK}"/>` +
+        `<path d="M9 25 7 30M13 25 14 30" stroke="#c49a58" stroke-width="1.7" stroke-linecap="round"/>`,
     ),
   },
   {
@@ -338,18 +341,26 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
   }
 
   if (id === 'kiwi') {
-    wing.position.set(-8, 4);
-    wing.rotation = flapAngle * 0.12;
-    wing.ellipse(0, 3, 3.4, 2).fill(0x6b4226).stroke(OUTLINE);
-    body.ellipse(-1, 2, 15, 13.5).fill(0x8a5a32).stroke(OUTLINE);
-    body.moveTo(-8, -6).lineTo(-12, -16).stroke({ width: 1.6, color: 0x5c3a22, cap: 'round' });
-    body.moveTo(-2, -10).lineTo(-3, -20).stroke({ width: 1.6, color: 0x5c3a22, cap: 'round' });
-    body.moveTo(4, -8).lineTo(7, -18).stroke({ width: 1.6, color: 0x5c3a22, cap: 'round' });
-    body.moveTo(10, 1).lineTo(34, 4).stroke({ width: 3.4, color: 0x6a3d16, cap: 'round' });
-    body.moveTo(11, 0.2).lineTo(33, 3.2).stroke({ width: 1.5, color: 0xe7c27a, cap: 'round' });
-    eye(body, 7, -2, 2.5);
-    body.moveTo(-2, 14).lineTo(-4, 20).stroke({ width: 2.2, color: 0xc49a58, cap: 'round' });
-    body.moveTo(4, 14).lineTo(6, 20).stroke({ width: 2.2, color: 0xc49a58, cap: 'round' });
+    wing.rotation = 0;
+    const hair = { width: 1.8, color: 0x5c3a22, cap: 'round' as const };
+    body.moveTo(-6, -4).lineTo(-14, -12).stroke(hair);
+    body.moveTo(-10, 0).lineTo(-18, -2).stroke(hair);
+    body.moveTo(-10, 5).lineTo(-18, 8).stroke(hair);
+    body.moveTo(-6, 8).lineTo(-12, 16).stroke(hair);
+    body.ellipse(-3, 3, 12, 10.5).fill(0x6b4226).stroke(OUTLINE);
+    body.ellipse(-2, 6, 8, 6).fill(0x8a5a32);
+    body.ellipse(8, -1, 6.6, 5.8).fill(0x7a4e30).stroke(OUTLINE);
+    body.moveTo(13, 0).quadraticCurveTo(26, 2, 36, 9).stroke({ width: 4.2, color: 0x6a3d16, cap: 'round' });
+    body.moveTo(14, -0.6).quadraticCurveTo(26, 1.2, 35, 8).stroke({ width: 1.7, color: 0xf0d7a0, cap: 'round' });
+    body.circle(34.6, 8.2, 1.1).fill(0x2b2118);
+    eye(body, 10, -3, 2.1);
+    const leg = { width: 2.8, color: 0xc49a58, cap: 'round' as const };
+    body.moveTo(-2, 12).lineTo(-6, 22).stroke(leg);
+    body.moveTo(4, 12).lineTo(5, 22).stroke(leg);
+    body.moveTo(-6, 22).lineTo(-12, 24).stroke(leg);
+    body.moveTo(-6, 22).lineTo(-4, 25).stroke(leg);
+    body.moveTo(5, 22).lineTo(11, 24).stroke(leg);
+    body.moveTo(5, 22).lineTo(7, 25).stroke(leg);
     return;
   }
 
