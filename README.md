@@ -17,7 +17,7 @@ The bird falls. You keep it in the air.
 - Tap, click, or press Space, Up, or W to flap.
 - Each gate you clear is one point. The gates start far apart. Every 10 you clear, the next ones sit a little closer. After 40, they are as close as they get.
 - A gate or the ground ends the run.
-- Before you clear 16 pipes, there is a 0.0001% chance a pterodactyl flies in, grabs you, and carries you away. After 16 pipes it does not come.
+- Before you clear 25 pipes, there is a 1 in 100 chance a pterodactyl flies in, grabs you, and carries you away. After 25 pipes it does not come.
 - After the score card, tap or press Space to fly again. The card lists your taps, the pipes you cleared, and your time in the air.
 - P pauses. M mutes. R returns to the title. The buttons in the corner pause and mute too.
 

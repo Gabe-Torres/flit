@@ -230,17 +230,17 @@ function playable(): ReturnType<typeof createRun> {
 
 {
   assert(planSnatch(1) === null, 'an ordinary seed stays safe');
-  const at = planSnatch(88613);
-  assert(at != null && at >= 0.55 && at < pipesClearTime(), `the rare grab is before sixteen pipes (${at})`);
+  const at = planSnatch(192);
+  assert(at != null && at >= 0.55 && at < pipesClearTime(), `the grab is before twenty-five pipes (${at})`);
   let invites = 0;
   for (let seed = 1; seed <= 1000000; seed++) if (planSnatch(seed) != null) invites += 1;
-  assert(invites === 5, `the first million seeds invite the pterodactyl five times (${invites})`);
+  assert(invites === 9965, `the first million seeds invite the pterodactyl 9965 times (${invites})`);
 }
 
 {
-  const run = createRun(88613);
+  const run = createRun(192);
   flap(run);
-  assert(run.snatchAt != null, 'the rare run keeps its plan');
+  assert(run.snatchAt != null, 'the marked run keeps its plan');
   for (let guard = 0; run.phase === 'play' && guard < 4000; guard++) {
     const ahead = run.gates.find((gate) => gate.x + WORLD.pipeW >= WORLD.birdX - 40);
     run.bird.y = ahead ? ahead.gapY : 280;
@@ -248,7 +248,7 @@ function playable(): ReturnType<typeof createRun> {
     step(run, 1 / 60);
   }
   assert(run.phase === 'snatched', 'the planned grab happens in flight');
-  assert(run.score < 16, `the grab is before sixteen pipes (${run.score})`);
+  assert(run.score < 25, `the grab is before twenty-five pipes (${run.score})`);
   const air = run.playTime;
   const score = run.score;
   assert(flap(run) === false, 'no flap in the talons');
@@ -277,12 +277,23 @@ function playable(): ReturnType<typeof createRun> {
   const run = playable();
   run.bird.y = 280;
   run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 280, scored: false }];
-  run.snatchAt = 10;
-  run.score = 15;
+  run.snatchAt = 0;
+  run.score = 16;
   step(run, 0);
-  assert(run.score === 16, 'the sixteenth pipe still scores');
-  assert(run.phase === 'play', 'sixteen pipes is past the pterodactyl');
-  assert(run.snatchAt === null, 'the chance is over after sixteen pipes');
+  assert(run.phase === 'snatched', 'sixteen pipes is still inside the window');
+  assert(run.score === 16, 'the grab happens before that pipe scores');
+}
+
+{
+  const run = playable();
+  run.bird.y = 280;
+  run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 280, scored: false }];
+  run.snatchAt = 10;
+  run.score = 24;
+  step(run, 0);
+  assert(run.score === 25, 'the twenty-fifth pipe still scores');
+  assert(run.phase === 'play', 'twenty-five pipes is past the pterodactyl');
+  assert(run.snatchAt === null, 'the chance is over after twenty-five pipes');
   run.snatchAt = 0;
   step(run, 0.05);
   assert(run.phase === 'play', 'a later roll cannot bring it back');

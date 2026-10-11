@@ -90,9 +90,10 @@ export function createRun(seed = 1): Run {
   };
 }
 
-// 0.0001% is 4295 / 2^32. One roll per run, timed anywhere before pipe 16.
-export const SNATCH_CHANCE_NUMERATOR = 4295;
-export const SNATCH_PIPE_LIMIT = 16;
+// One run in 100. 42949673 / 2^32 is the closest whole rate. The grab is timed
+// anywhere before pipe 25, then the chance is gone.
+export const SNATCH_CHANCE_NUMERATOR = Math.round(2 ** 32 / 100);
+export const SNATCH_PIPE_LIMIT = 25;
 export const SNATCH_APPROACH = 0.92;
 export const SNATCH_CARRY = 1.28;
 export const SNATCH_DURATION = SNATCH_APPROACH + SNATCH_CARRY;
