@@ -13,7 +13,7 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 The bird falls. You keep it in the air.
 
 - On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, dodo, pterodactyl, drone, kiwi, or weka. The choice stays in this browser.
-- The field follows the season: spring, summer, autumn, or winter.
+- The field follows the real date where you are: spring, summer, autumn, or winter. On a holiday it dresses for that day: New Year, Valentine's Day, St. Patrick's Day, Easter weekend, the week of Halloween, Thanksgiving and the Friday after, and the week of Christmas.
 - Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
 - Each gate you clear is one point. The gates start far apart, and the opening starts tall. Every 10 you clear, the next ones sit a little closer and the opening gets a little shorter. After 40, they are as close and as narrow as they get.
 - A gate or the ground ends the run.

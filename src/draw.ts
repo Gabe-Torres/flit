@@ -1,7 +1,7 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
-import { seasonById } from './season.ts';
+import { fieldName } from './holiday.ts';
 import { WORLD, flightFacts, groundY, snatchPose, type Run } from './sim.ts';
 import { terrainFor, weatherById } from './weather.ts';
 import { drawAtmosphere, drawClouds, drawSeason, drawSky, drawTornado } from './weather-draw.ts';
@@ -244,12 +244,13 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     uiGfx.clear();
     const weather = run.weather;
     const season = run.season;
-    const land = terrainFor(weather, season);
-    drawSky(sky, weather, season, box, floor);
+    const holiday = run.holiday;
+    const land = terrainFor(weather, season, holiday);
+    drawSky(sky, weather, season, holiday, box, floor);
     drawClouds(scenery, weather, run.scroll, box);
     hill(scenery, floor - 78, land.hillFar, 16, 90, run.scroll * 0.35, box.left, box.right, floor);
     hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
-    drawSeason(scenery, season, weather, run.time, run.scroll, box, floor, state.reduceMotion);
+    drawSeason(scenery, season, holiday, weather, run.time, run.scroll, box, floor, state.reduceMotion);
     drawTornado(scenery, weather, run.time, box, floor);
     for (const gate of run.gates) drawGate(gateLayer, gate.x, gate.gapY, gate.open, box, floor);
     drawGround(ground, run, box, floor, land);
@@ -491,8 +492,20 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.retry.text = controls.retry;
   labels.retry.style.fontSize = controls.touch ? 18 : 16;
   labels.weatherLabel.visible = true;
-  labels.weatherLabel.text = `${seasonById(run.season).name}  ·  ${weatherById(run.weather).name}`;
-  labels.weatherLabel.position.set((box.left + box.right) / 2, box.top + 30);
+  const skyLine = `${fieldName(run.season, run.holiday)}  ·  ${weatherById(run.weather).name}`;
+  const reserve = 116;
+  const edge = box.right - reserve;
+  labels.weatherLabel.text = skyLine;
+  let skySize = 22;
+  labels.weatherLabel.style.fontSize = skySize;
+  const room = Math.max(120, edge - box.left - 16);
+  while (skySize > 14 && labels.weatherLabel.width > room) {
+    skySize -= 1;
+    labels.weatherLabel.style.fontSize = skySize;
+  }
+  const half = labels.weatherLabel.width / 2;
+  const mid = (box.left + box.right) / 2;
+  labels.weatherLabel.position.set(Math.min(mid, edge - half), box.top + 30);
 
   if (ready) {
     labels.title.position.set(cx, 128);

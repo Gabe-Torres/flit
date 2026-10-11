@@ -15,6 +15,7 @@ import {
   step,
 } from './sim.ts';
 import { controlHints } from './controls.ts';
+import { holidayForDate } from './holiday.ts';
 import { seasonForDate } from './season.ts';
 import { WEATHERS, terrainFor, weatherForSeed } from './weather.ts';
 
@@ -40,6 +41,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(seen.size === WEATHERS.length, 'seeds cover every weather');
   assert(createRun(4).weather === weatherForSeed(4), 'a run keeps its weather');
   assert(createRun(4).season === seasonForDate(new Date()), 'a run keeps the season');
+  assert(createRun(4).holiday === holidayForDate(new Date()), 'a run keeps the holiday');
   assert(seasonForDate(new Date(2026, 2, 1)) === 'spring', 'March is spring');
   assert(seasonForDate(new Date(2026, 4, 31)) === 'spring', 'May is spring');
   assert(seasonForDate(new Date(2026, 5, 1)) === 'summer', 'June is summer');
@@ -53,6 +55,46 @@ function playable(): ReturnType<typeof createRun> {
   assert(terrainFor('clear', 'spring').tuft !== terrainFor('clear', 'summer').tuft, 'spring tufts are their own color');
   assert(terrainFor('blizzard', 'autumn').grass === terrainFor('blizzard', 'summer').grass, 'a blizzard stays snowy');
   assert(terrainFor('storm', 'autumn').grass !== terrainFor('clear', 'autumn').grass, 'a storm darkens the season');
+  assert(holidayForDate(new Date(2026, 9, 11)) === null, 'October 11 is an ordinary autumn day');
+  assert(seasonForDate(new Date(2026, 9, 11)) === 'autumn', 'October 11 is autumn');
+  assert(holidayForDate(new Date(2026, 9, 23)) === null, 'October 23 is still autumn');
+  assert(holidayForDate(new Date(2026, 9, 24)) === 'halloween', 'October 24 starts Halloween');
+  assert(holidayForDate(new Date(2026, 9, 31)) === 'halloween', 'October 31 is Halloween');
+  assert(holidayForDate(new Date(2026, 10, 1)) === null, 'November 1 is autumn again');
+  assert(holidayForDate(new Date(2024, 10, 28)) === 'thanksgiving', 'Thanksgiving 2024 is November 28');
+  assert(holidayForDate(new Date(2024, 10, 29)) === 'thanksgiving', 'the Friday after Thanksgiving 2024 stays');
+  assert(holidayForDate(new Date(2025, 10, 27)) === 'thanksgiving', 'Thanksgiving 2025 is November 27');
+  assert(holidayForDate(new Date(2025, 10, 26)) === null, 'the Wednesday before Thanksgiving stays autumn');
+  assert(holidayForDate(new Date(2026, 10, 26)) === 'thanksgiving', 'Thanksgiving 2026 is November 26');
+  assert(holidayForDate(new Date(2026, 11, 17)) === null, 'December 17 is winter');
+  assert(holidayForDate(new Date(2026, 11, 18)) === 'christmas', 'December 18 starts Christmas');
+  assert(holidayForDate(new Date(2026, 11, 25)) === 'christmas', 'December 25 is Christmas');
+  assert(seasonForDate(new Date(2026, 11, 25)) === 'winter', 'Christmas day is still winter');
+  assert(holidayForDate(new Date(2026, 11, 27)) === null, 'December 27 is winter again');
+  assert(holidayForDate(new Date(2026, 11, 31)) === 'newyear', 'New Year starts on the eve');
+  assert(holidayForDate(new Date(2027, 0, 1)) === 'newyear', 'January 1 is New Year');
+  assert(holidayForDate(new Date(2027, 0, 2)) === null, 'January 2 is winter');
+  assert(holidayForDate(new Date(2026, 1, 12)) === null, 'February 12 is winter');
+  assert(holidayForDate(new Date(2026, 1, 14)) === 'valentine', "February 14 is Valentine's");
+  assert(holidayForDate(new Date(2026, 1, 16)) === null, 'February 16 is winter');
+  assert(holidayForDate(new Date(2026, 2, 16)) === null, 'March 16 is spring');
+  assert(holidayForDate(new Date(2026, 2, 17)) === 'patrick', "March 17 is St. Patrick's");
+  assert(holidayForDate(new Date(2024, 2, 30)) === 'easter', 'the Saturday of Easter 2024 counts');
+  assert(holidayForDate(new Date(2024, 2, 31)) === 'easter', 'Easter 2024 is March 31');
+  assert(holidayForDate(new Date(2024, 3, 1)) === 'easter', 'Easter Monday 2024 counts');
+  assert(holidayForDate(new Date(2024, 2, 29)) === null, 'the Friday before Easter 2024 stays spring');
+  assert(holidayForDate(new Date(2025, 3, 20)) === 'easter', 'Easter 2025 is April 20');
+  assert(holidayForDate(new Date(2026, 3, 5)) === 'easter', 'Easter 2026 is April 5');
+  assert(holidayForDate(new Date(2020, 3, 12)) === 'easter', 'Easter 2020 is April 12');
+  assert(seasonForDate(new Date(2026, 6, 4)) === 'summer', 'July 4 is summer');
+  assert(holidayForDate(new Date(2026, 6, 4)) === null, 'July 4 keeps the summer field');
+  assert(terrainFor('clear', 'autumn', 'halloween').grass !== terrainFor('clear', 'autumn').grass, 'halloween has its own ground');
+  assert(terrainFor('clear', 'winter', 'christmas').tuft !== terrainFor('clear', 'winter').tuft, 'christmas tufts are their own color');
+  assert(terrainFor('blizzard', 'winter', 'christmas').grass === terrainFor('blizzard', 'summer').grass, 'a blizzard stays snowy on a holiday');
+  assert(
+    terrainFor('storm', 'autumn', 'halloween').grass !== terrainFor('clear', 'autumn', 'halloween').grass,
+    'a storm darkens the holiday',
+  );
 }
 
 {

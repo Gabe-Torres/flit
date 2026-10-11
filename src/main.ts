@@ -3,7 +3,7 @@ import { controlHints } from './controls.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
 import { WORLD, createRun, flap, flightFacts, step, type Run } from './sim.ts';
-import { seasonById } from './season.ts';
+import { fieldName } from './holiday.ts';
 import { weatherById } from './weather.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
@@ -77,7 +77,7 @@ function writeBird(id: BirdId): void {
 }
 
 function forecast(): string {
-  return `${seasonById(run.season).name} · ${weatherById(run.weather).name}`;
+  return `${fieldName(run.season, run.holiday)} · ${weatherById(run.weather).name}`;
 }
 
 function paintForecast(): void {
