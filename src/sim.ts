@@ -1,6 +1,7 @@
 // Rules for Flit. The hit circle is smaller than the drawn bird so a
 // near miss on the beak or the tail still counts as a pass.
 
+import { seasonForDate, type SeasonId } from './season.ts';
 import { weatherForSeed, type WeatherId } from './weather.ts';
 
 export const WORLD = {
@@ -48,6 +49,7 @@ export type Run = {
   shake: number;
   sinceFlap: number;
   weather: WeatherId;
+  season: SeasonId;
   taps: number;
   playTime: number;
   snatchAt: number | null;
@@ -82,6 +84,7 @@ export function createRun(seed = 1): Run {
     shake: 0,
     sinceFlap: 10,
     weather: weatherForSeed(safe),
+    season: seasonForDate(new Date()),
     taps: 0,
     playTime: 0,
     snatchAt: null,

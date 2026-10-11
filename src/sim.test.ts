@@ -13,7 +13,8 @@ import {
   snatchPose,
   step,
 } from './sim.ts';
-import { WEATHERS, weatherForSeed } from './weather.ts';
+import { seasonForDate } from './season.ts';
+import { WEATHERS, terrainFor, weatherForSeed } from './weather.ts';
 
 declare const process: { exit: (code: number) => never };
 
@@ -36,6 +37,20 @@ function playable(): ReturnType<typeof createRun> {
   const seen = new Set(Array.from({ length: 40 }, (_, i) => weatherForSeed(i + 1)));
   assert(seen.size === WEATHERS.length, 'seeds cover every weather');
   assert(createRun(4).weather === weatherForSeed(4), 'a run keeps its weather');
+  assert(createRun(4).season === seasonForDate(new Date()), 'a run keeps the season');
+  assert(seasonForDate(new Date(2026, 2, 1)) === 'spring', 'March is spring');
+  assert(seasonForDate(new Date(2026, 4, 31)) === 'spring', 'May is spring');
+  assert(seasonForDate(new Date(2026, 5, 1)) === 'summer', 'June is summer');
+  assert(seasonForDate(new Date(2026, 7, 31)) === 'summer', 'August is summer');
+  assert(seasonForDate(new Date(2026, 8, 1)) === 'autumn', 'September is autumn');
+  assert(seasonForDate(new Date(2026, 10, 30)) === 'autumn', 'November is autumn');
+  assert(seasonForDate(new Date(2026, 11, 1)) === 'winter', 'December is winter');
+  assert(seasonForDate(new Date(2026, 0, 15)) === 'winter', 'January is winter');
+  assert(seasonForDate(new Date(2026, 1, 28)) === 'winter', 'February is winter');
+  assert(terrainFor('clear', 'autumn').grass !== terrainFor('clear', 'summer').grass, 'autumn grass is its own color');
+  assert(terrainFor('clear', 'spring').tuft !== terrainFor('clear', 'summer').tuft, 'spring tufts are their own color');
+  assert(terrainFor('blizzard', 'autumn').grass === terrainFor('blizzard', 'summer').grass, 'a blizzard stays snowy');
+  assert(terrainFor('storm', 'autumn').grass !== terrainFor('clear', 'autumn').grass, 'a storm darkens the season');
 }
 
 {

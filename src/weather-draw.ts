@@ -1,4 +1,5 @@
 import { FillGradient, type Graphics } from 'pixi.js';
+import type { SeasonId } from './season.ts';
 import { terrainFor, type WeatherId } from './weather.ts';
 
 type Box = { left: number; top: number; right: number; bottom: number };
@@ -50,6 +51,25 @@ const SKY: Record<WeatherId, FillGradient> = {
   ]),
 };
 
+const SEASON_SKY: Record<SeasonId, FillGradient> = {
+  spring: skyFill([
+    { offset: 0, color: 0x8ec8f0 },
+    { offset: 0.5, color: 0xf7c6de },
+    { offset: 1, color: 0xfff0d0 },
+  ]),
+  summer: SKY.clear,
+  autumn: skyFill([
+    { offset: 0, color: 0xf09a5a },
+    { offset: 0.48, color: 0xf6c27a },
+    { offset: 1, color: 0xffe0b0 },
+  ]),
+  winter: skyFill([
+    { offset: 0, color: 0x9eb8d4 },
+    { offset: 0.5, color: 0xd5e4f0 },
+    { offset: 1, color: 0xf4f7fb },
+  ]),
+};
+
 function cloud(g: Graphics, x: number, y: number, s: number, color: number, alpha: number): void {
   const fill = { color, alpha };
   g.ellipse(x, y, 28 * s, 16 * s).fill(fill);
@@ -57,10 +77,11 @@ function cloud(g: Graphics, x: number, y: number, s: number, color: number, alph
   g.ellipse(x - 20 * s, y + 6 * s, 16 * s, 11 * s).fill(fill);
 }
 
-export function drawSky(g: Graphics, id: WeatherId, box: Box, floor: number): void {
+export function drawSky(g: Graphics, id: WeatherId, season: SeasonId, box: Box, floor: number): void {
   const top = Math.min(box.top, floor - 1);
-  const dirt = terrainFor(id).dirt;
-  g.rect(box.left, top, box.right - box.left, Math.max(1, floor - top)).fill(SKY[id]);
+  const dirt = terrainFor(id, season).dirt;
+  const sky = id === 'clear' || id === 'wind' ? SEASON_SKY[season] : SKY[id];
+  g.rect(box.left, top, box.right - box.left, Math.max(1, floor - top)).fill(sky);
   if (box.bottom > floor) g.rect(box.left, floor, box.right - box.left, box.bottom - floor).fill(dirt);
 
   if (id === 'storm' || id === 'blizzard') return;
@@ -82,9 +103,11 @@ export function drawSky(g: Graphics, id: WeatherId, box: Box, floor: number): vo
     g.circle(sunX, sunY, 46).fill({ color: 0xfff6e0, alpha: 0.16 });
     return;
   }
-  g.circle(sunX, sunY, 110).fill({ color: 0xffe896, alpha: 0.22 });
-  g.circle(sunX, sunY, 68).fill({ color: 0xffe896, alpha: 0.28 });
-  g.circle(sunX, sunY, 34).fill(0xffe38a);
+  const sun = season === 'autumn' ? 0xffb15a : season === 'winter' ? 0xfff6e0 : 0xffe38a;
+  const glow = season === 'winter' ? 0.14 : 0.24;
+  g.circle(sunX, sunY, season === 'winter' ? 78 : 110).fill({ color: sun, alpha: glow });
+  g.circle(sunX, sunY, season === 'winter' ? 46 : 68).fill({ color: sun, alpha: glow + 0.08 });
+  g.circle(sunX, sunY, season === 'winter' ? 24 : 34).fill(sun);
 }
 
 export function drawClouds(g: Graphics, id: WeatherId, scroll: number, box: Box): void {
@@ -140,6 +163,81 @@ function streaks(
     const x = box.left + ((i * 97 + scroll * 0.35) % spanW);
     const y = box.top + ((i * 53 + time * speed) % spanH);
     g.moveTo(x, y).lineTo(x + lean, y + length).stroke({ width, color, alpha, cap: 'round' });
+  }
+}
+
+export function drawSeason(
+  g: Graphics,
+  season: SeasonId,
+  weather: WeatherId,
+  time: number,
+  scroll: number,
+  box: Box,
+  floor: number,
+  reduceMotion: boolean,
+): void {
+  if (weather === 'blizzard' || weather === 'heat') return;
+  const drift = scroll * 0.35;
+  const span = 280;
+  const start = Math.floor((box.left + drift) / span) - 1;
+  const end = Math.floor((box.right + drift) / span) + 1;
+  for (let i = start; i <= end; i++) {
+    const x = i * span - drift + 48;
+    const ground = floor - 78 + Math.sin((x + drift) / 90) * 16;
+    const trunk = season === 'winter' ? 34 : 18;
+    g.rect(x - 3, ground - trunk, 6, trunk).fill(0x6a3d16);
+    if (season === 'winter') {
+      g.moveTo(x, ground - trunk)
+        .lineTo(x - 16, ground - trunk - 18)
+        .stroke({ width: 2.4, color: 0x6a3d16, cap: 'round' });
+      g.moveTo(x, ground - trunk)
+        .lineTo(x + 18, ground - trunk - 16)
+        .stroke({ width: 2.4, color: 0x6a3d16, cap: 'round' });
+      g.moveTo(x, ground - trunk - 8)
+        .lineTo(x + 12, ground - trunk - 4)
+        .stroke({ width: 2, color: 0x6a3d16, cap: 'round' });
+      continue;
+    }
+    const leaf = season === 'spring' ? 0xf2a0c4 : season === 'autumn' ? 0xe2582a : 0x3f9a3a;
+    const leaf2 = season === 'spring' ? 0xfffdf6 : season === 'autumn' ? 0xf0a030 : 0x67b84e;
+    g.circle(x, ground - trunk - 12, 16).fill(leaf);
+    g.circle(x - 12, ground - trunk - 4, 11).fill(leaf2);
+    g.circle(x + 13, ground - trunk - 3, 12).fill(leaf);
+  }
+
+  const wide = Math.max(1, box.right - box.left);
+  const tall = Math.max(1, floor - box.top);
+  const pace = reduceMotion ? 0.25 : 1;
+  if (season === 'spring') {
+    for (let i = 0; i < 16; i++) {
+      const x = box.left + ((i * 83 + time * 26 * pace + scroll * 0.12) % wide);
+      const y = box.top + ((i * 57 + time * 36 * pace) % tall);
+      g.ellipse(x, y, 4.2, 2.2).fill({ color: i % 2 === 0 ? 0xf48cb8 : 0xfffdf6, alpha: 0.9 });
+    }
+  }
+  if (season === 'summer') {
+    const step = 52;
+    for (let x = box.left - (scroll % step) - step; x < box.right; x += step) {
+      g.circle(x, floor - 7, 3.1).fill(0xf2c14b);
+      g.circle(x + 9, floor - 5, 2.3).fill(0xfffdf6);
+    }
+  }
+  if (season === 'autumn') {
+    const colors = [0xe2582a, 0xf0a030, 0xc4382a, 0xe8c15a];
+    for (let i = 0; i < 18; i++) {
+      const sway = Math.sin(time * pace * 2 + i) * 12;
+      const x = box.left + ((i * 71 + time * 22 * pace + scroll * 0.18 + sway) % wide);
+      const y = box.top + ((i * 49 + time * 48 * pace) % tall);
+      const color = colors[i % colors.length];
+      g.poly([x, y, x + 7, y + 3, x + 3, y + 8, x - 3, y + 4], true).fill({ color, alpha: 0.92 });
+    }
+  }
+  if (season === 'winter') {
+    for (let i = 0; i < 22; i++) {
+      const x = box.left + ((i * 67 + time * 18 * pace + scroll * 0.08) % wide);
+      const y = box.top + ((i * 43 + time * 32 * pace) % tall);
+      g.circle(x, y, 1.2 + (i % 3) * 0.5).fill({ color: 0xffffff, alpha: 0.9 });
+    }
   }
 }
 

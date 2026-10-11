@@ -1,8 +1,9 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
+import { seasonById } from './season.ts';
 import { WORLD, flightFacts, groundY, snatchPose, type Run } from './sim.ts';
 import { terrainFor, weatherById } from './weather.ts';
-import { drawAtmosphere, drawClouds, drawSky, drawTornado } from './weather-draw.ts';
+import { drawAtmosphere, drawClouds, drawSeason, drawSky, drawTornado } from './weather-draw.ts';
 
 export type Particle = {
   x: number;
@@ -240,11 +241,13 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     fx.clear();
     uiGfx.clear();
     const weather = run.weather;
-    const land = terrainFor(weather);
-    drawSky(sky, weather, box, floor);
+    const season = run.season;
+    const land = terrainFor(weather, season);
+    drawSky(sky, weather, season, box, floor);
     drawClouds(scenery, weather, run.scroll, box);
     hill(scenery, floor - 78, land.hillFar, 16, 90, run.scroll * 0.35, box.left, box.right, floor);
     hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
+    drawSeason(scenery, season, weather, run.time, run.scroll, box, floor, state.reduceMotion);
     drawTornado(scenery, weather, run.time, box, floor);
     for (const gate of run.gates) drawGate(gateLayer, gate.x, gate.gapY, box, floor);
     drawGround(ground, run, box, floor, land);
@@ -479,7 +482,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.overStats.visible = over;
   labels.retry.visible = over;
   labels.weatherLabel.visible = true;
-  labels.weatherLabel.text = weatherById(run.weather).name;
+  labels.weatherLabel.text = `${seasonById(run.season).name}  ·  ${weatherById(run.weather).name}`;
   labels.weatherLabel.position.set((box.left + box.right) / 2, box.top + 30);
 
   if (ready) {

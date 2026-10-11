@@ -2,6 +2,7 @@ import { createAudio } from './audio.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
 import { WORLD, createRun, flap, flightFacts, step, type Run } from './sim.ts';
+import { seasonById } from './season.ts';
 import { weatherById } from './weather.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
@@ -74,8 +75,12 @@ function writeBird(id: BirdId): void {
   }
 }
 
+function forecast(): string {
+  return `${seasonById(run.season).name} · ${weatherById(run.weather).name}`;
+}
+
 function paintForecast(): void {
-  const text = `${birdById(birdId).name} · ${weatherById(run.weather).name}`;
+  const text = `${birdById(birdId).name} · ${forecast()}`;
   if (birdNameEl.textContent !== text) birdNameEl.textContent = text;
 }
 
@@ -119,7 +124,7 @@ function setStatus(text: string): void {
 }
 
 function describe(): void {
-  const sky = weatherById(run.weather).name;
+  const sky = forecast();
   if (paused) {
     setStatus(`Paused. Score ${run.score}. ${sky}.`);
     return;
