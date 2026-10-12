@@ -1,10 +1,9 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
-import { fieldName } from './holiday.ts';
 import { WORLD, flightFacts, groundY, medalForScore, snatchPose, type MedalName, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
-import { terrainFor, weatherById } from './weather.ts';
+import { terrainFor } from './weather.ts';
 import { drawAtmosphere, drawClouds, drawSeason, drawSky } from './weather-draw.ts';
 
 export type Particle = {
@@ -422,7 +421,6 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const overStats = plain('', 18, 0x6d5848);
   overStats.style.lineHeight = 26;
   const retry = plain('tap to try again', 18, 0x8a7362);
-  const weatherLabel = outlined('', 22, CREAM);
   ui.addChild(
     uiGfx,
     title,
@@ -438,7 +436,6 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     overBest,
     overStats,
     retry,
-    weatherLabel,
   );
   app.stage.addChild(world, ui);
 
@@ -502,7 +499,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     }
     drawSpecies(body, wing, state.wing, state.bird);
 
-    drawUi(uiGfx, state, box, scale, ox, {
+    drawUi(uiGfx, state, box, {
       title,
       flyHint,
       modeName,
@@ -516,7 +513,6 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       overBest,
       overStats,
       retry,
-      weatherLabel,
     });
     app.render();
   };
@@ -653,7 +649,6 @@ type Labels = {
   overBest: Text;
   overStats: Text;
   retry: Text;
-  weatherLabel: Text;
 };
 
 function card(g: Graphics, x: number, y: number, w: number, h: number): void {
@@ -661,7 +656,7 @@ function card(g: Graphics, x: number, y: number, w: number, h: number): void {
   g.roundRect(x, y, w, h, 24).fill(0xfff8ea).stroke({ width: 4, color: INK });
 }
 
-function drawUi(g: Graphics, state: RenderState, box: Box, scale: number, ox: number, labels: Labels): void {
+function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void {
   const { run } = state;
   const cx = WORLD.w / 2;
   const ready = run.phase === 'ready';
@@ -696,7 +691,6 @@ function drawUi(g: Graphics, state: RenderState, box: Box, scale: number, ox: nu
   labels.modeName.visible = cornerClear;
   labels.modeScore.visible = cornerClear;
   let hudMedalAt: { x: number; y: number } | null = null;
-  let hudRight = box.left + 108;
   if (cornerClear) {
     labels.modeName.text = state.modeName;
     labels.modeScore.text = String(state.modeBest);
@@ -706,39 +700,13 @@ function drawUi(g: Graphics, state: RenderState, box: Box, scale: number, ox: nu
     labels.modeName.position.set(hudX, hudY);
     labels.modeScore.position.set(hudX, hudY + scoreDrop);
     const pad = Math.ceil(Number(labels.modeScore.style.fontSize) / 6);
-    hudRight = hudX + Math.max(labels.modeName.width, labels.modeScore.width - pad);
     if (hudMedal) {
       hudMedalAt = {
         x: hudX + labels.modeScore.width - pad + 22,
         y: hudY + scoreDrop + labels.modeScore.height / 2,
       };
-      hudRight = Math.max(hudRight, hudMedalAt.x + 18);
     }
   }
-
-  labels.weatherLabel.visible = true;
-  const skyLine = `${fieldName(run.season, run.holiday)}  ·  ${weatherById(run.weather).name}`;
-  const picking = run.phase === 'ready' || run.phase === 'over';
-  const toolPx = picking ? 178 : 116;
-  const belowTools = controls.touch && ox < 24;
-  const titleGate = run.phase === 'ready' ? Math.max(0, box.right - 318) : 0;
-  const rightReserve = belowTools ? Math.max(18, titleGate) : Math.max(116, toolPx / scale, titleGate);
-  const leftReserve = cornerClear ? Math.max(128, hudRight - box.left + 12) : 128;
-  const edge = box.right - rightReserve;
-  labels.weatherLabel.text = skyLine;
-  let skySize = controls.touch ? 26 : 22;
-  labels.weatherLabel.style.fontSize = skySize;
-  const room = Math.max(80, edge - box.left - leftReserve);
-  while (skySize > 13 && labels.weatherLabel.width > room) {
-    skySize -= 1;
-    labels.weatherLabel.style.fontSize = skySize;
-  }
-  const half = labels.weatherLabel.width / 2;
-  const mid = (box.left + box.right) / 2;
-  const leftLimit = box.left + leftReserve + half;
-  const rightLimit = edge - half;
-  const skyX = leftLimit <= rightLimit ? Math.min(rightLimit, Math.max(leftLimit, mid)) : mid;
-  labels.weatherLabel.position.set(skyX, box.top + (belowTools ? 78 / scale : 30));
 
   if (ready) {
     labels.title.position.set(cx, 128);
