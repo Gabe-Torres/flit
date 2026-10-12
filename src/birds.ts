@@ -294,6 +294,8 @@ export const BIRDS: readonly BirdKind[] = [
         `<ellipse cx="18.6" cy="11" rx="1.25" ry="3.8" fill="#f06aa8"/>` +
         `<ellipse cx="16.2" cy="20.6" rx="4.8" ry="3.3" fill="#fffdf8" stroke="${STROKE}" stroke-width="0.9"/>` +
         `<ellipse cx="16.4" cy="21.6" rx="2.6" ry="1.5" fill="#fff4e4"/>` +
+        `<path d="M14.6 18.6 6.4 13.2 4.6 17.4 8.8 22.2 15.2 21.2Z" fill="#fff4dc" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<path d="M14.2 19 7.2 14.6M14.4 20 6.2 18.2M14.6 20.8 9.4 21.4" stroke="#8a5a32" stroke-width="0.55" stroke-linecap="round"/>` +
         `<ellipse cx="21.4" cy="17.4" rx="4" ry="3.3" fill="#fffdf8" stroke="${STROKE}" stroke-width="0.8"/>` +
         `<circle cx="22.2" cy="16.8" r="2.15" fill="#1c140f"/>` +
         `<circle cx="21.5" cy="16.1" r="0.75" fill="#fff"/>` +
@@ -801,6 +803,26 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
       const py = tx * 4.6;
       body.moveTo(x - px, y - py).lineTo(x + px, y + py).stroke({ width: 3.5, color: 0xf7f1e4, cap: 'butt' });
     }
+    const spread = flapAngle * 6;
+    const wristX = -32;
+    const wristY = -8 - spread;
+    body
+      .poly([4, 2, -6, -2 - spread * 0.35, wristX, wristY, -36, 1, -28, 9, -14, 12, 5, 8], true)
+      .fill(0xfff4dc)
+      .stroke(OUTLINE);
+    const rib = { width: 1.6, color: 0x8a5a32, cap: 'round' as const };
+    body.moveTo(2, 3).lineTo(-30, 2).stroke(rib);
+    body.moveTo(2, 5).lineTo(-26, 8).stroke(rib);
+    body.moveTo(3, 7).lineTo(-14, 11).stroke(rib);
+    body.moveTo(4, 2).quadraticCurveTo(-12, -4 - spread * 0.4, wristX + 2, wristY + 1).stroke({
+      width: 3.1,
+      color: 0x5c4638,
+      cap: 'round',
+    });
+    body.circle(wristX, wristY, 1.8).fill(0xfffdf8).stroke({ ...OUTLINE, width: 1.4 });
+    body.moveTo(wristX - 0.4, wristY - 0.6).lineTo(wristX - 3.4, wristY - 2.8).stroke({ width: 1.25, color: 0x5c4638, cap: 'round' });
+    body.moveTo(wristX - 0.6, wristY).lineTo(wristX - 4, wristY + 0.2).stroke({ width: 1.25, color: 0x5c4638, cap: 'round' });
+    body.moveTo(wristX - 0.3, wristY + 0.7).lineTo(wristX - 2.8, wristY + 2.6).stroke({ width: 1.25, color: 0x5c4638, cap: 'round' });
     const backY = -7 - lift * 0.45;
     body.ellipse(-1, backY, 8, 14.2).fill(0xfffdf8).stroke(OUTLINE);
     body.ellipse(-1, backY + 0.6, 4.6, 10).fill(0xff9ec4);
