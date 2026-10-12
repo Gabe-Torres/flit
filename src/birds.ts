@@ -7,7 +7,7 @@ export const BIRD_IDS = [
   'cardinal',
   'bluejay',
   'pelican',
-  'dodo',
+  'magpie',
   'pterodactyl',
   'drone',
   'lander',
@@ -115,17 +115,19 @@ export const BIRDS: readonly BirdKind[] = [
     ),
   },
   {
-    id: 'dodo',
-    name: 'Dodo',
-    feather: '#e7d3b0',
+    id: 'magpie',
+    name: 'Magpie',
+    feather: '#d7e4ea',
     icon: icon(
-      `<ellipse cx="14" cy="19" rx="9" ry="8" fill="#c4a882" stroke="${STROKE}" stroke-width="1.4"/>` +
-        `<path d="M10 13c1-6 7-7 9-2" stroke="#a08060" stroke-width="2" fill="none" stroke-linecap="round"/>` +
-        `<ellipse cx="9" cy="20" rx="3.2" ry="2" fill="#a89070" stroke="${STROKE}" stroke-width="1"/>` +
-        `<path d="M20 17c5 0 8 2 9 4" stroke="${STROKE}" stroke-width="2.2" fill="none" stroke-linecap="round"/>` +
-        `<path d="M20 17c5 0 8 2 9 4" stroke="#f0d9a0" stroke-width="1.2" fill="none" stroke-linecap="round"/>` +
-        `<path d="M27 21 25 26" stroke="#e7c98a" stroke-width="1.8" stroke-linecap="round"/>` +
-        `<circle cx="17" cy="16.5" r="1.2" fill="${INK}"/>`,
+      `<path d="M13 17 1 11 3.2 20.2 12.4 19Z" fill="#1a2330" stroke="${STROKE}" stroke-width="1.1" stroke-linejoin="round"/>` +
+        `<path d="M12 16.2 3.2 13 4.4 17.2Z" fill="#149a96"/>` +
+        `<ellipse cx="15.2" cy="18.2" rx="6.4" ry="5" fill="#1a2330" stroke="${STROKE}" stroke-width="1.3"/>` +
+        `<ellipse cx="15.6" cy="20.2" rx="3.5" ry="2.2" fill="#fffdf6"/>` +
+        `<ellipse cx="16.8" cy="16.4" rx="2.3" ry="1.5" fill="#fffdf6"/>` +
+        `<ellipse cx="20.4" cy="16.2" rx="3.3" ry="2.9" fill="#1a2330" stroke="${STROKE}" stroke-width="1.1"/>` +
+        `<path d="M22.8 15.8 31 17.2 22.8 18.6Z" fill="#241c16" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<circle cx="21.2" cy="15.2" r="1.15" fill="#fff" stroke="${STROKE}" stroke-width="0.6"/>` +
+        `<circle cx="21.5" cy="15.2" r="0.5" fill="${INK}"/>`,
     ),
   },
   {
@@ -440,18 +442,21 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     return;
   }
 
-  if (id === 'dodo') {
-    wing.position.set(-6, 4);
-    wing.rotation = flapAngle * 0.22;
-    wing.ellipse(0, 5, 6, 3.2).fill(0xa89070).stroke(OUTLINE);
-    body.poly([-14, 4, -22, 8, -12, 12], true).fill(0xb8956a).stroke(OUTLINE);
-    body.ellipse(0, 3, 18, 15.5).fill(0xc4a882).stroke(OUTLINE);
-    body.ellipse(2, 8, 11, 8).fill(0xe7d3b0);
-    body.poly([-2, -10, 3, -22, 9, -8], true).fill(0xb8956a).stroke(OUTLINE);
-    body.poly([3, -8, 9, -18, 11, -6], true).fill(0xd4b483).stroke(OUTLINE);
-    body.poly([12, 0, 26, 2, 14, 6], true).fill(0xf0d9a0).stroke(OUTLINE);
-    body.poly([20, 4, 25, 2, 22, 11], true).fill(0xe7c98a).stroke(OUTLINE);
-    eye(body, 10, -2, 3);
+  if (id === 'magpie') {
+    const lift = flapAngle * 4;
+    body.poly([-6, 0, -36, -8 - lift, -30, 3, -8, 7], true).fill(0x1a2330).stroke(OUTLINE);
+    body.poly([-10, 1, -32, -4 - lift * 0.7, -28, 2], true).fill(0x149a96);
+    wing.position.set(-2, 2);
+    wing.rotation = flapAngle * 0.9 - 0.2;
+    wingOval(wing, 0x1a2330, 14, 7);
+    wing.ellipse(0, 9, 9, 2.1).fill(0x149a96);
+    wing.ellipse(1, 12.5, 6.5, 1.5).fill(0xf7f4ee);
+    body.ellipse(0, 2, 16, 11.5).fill(0x1a2330).stroke(OUTLINE);
+    body.ellipse(1, 6.5, 9, 6).fill(0xfffdf6);
+    body.ellipse(3, -1, 6.5, 3.2).fill(0xfffdf6);
+    body.ellipse(11, -1, 6.4, 5.6).fill(0x1a2330).stroke(OUTLINE);
+    body.poly([15, -1, 30, 1.2, 15, 4.2], true).fill(0x241c16).stroke(OUTLINE);
+    eye(body, 13, -2.4, 2.3);
     return;
   }
 

@@ -70,6 +70,10 @@ function writeNumber(key: string, value: number): void {
 function readBird(): BirdId {
   try {
     const saved = localStorage.getItem('flit-bird');
+    if (saved === 'dodo') {
+      localStorage.setItem('flit-bird', 'magpie');
+      return 'magpie';
+    }
     if (saved && isBirdId(saved)) return saved;
   } catch {
     // Storage can be blocked. The finch is the default.
