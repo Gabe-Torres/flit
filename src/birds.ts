@@ -260,13 +260,14 @@ export const BIRDS: readonly BirdKind[] = [
     name: 'Appa',
     feather: '#f4e6cf',
     icon: icon(
-      `<path d="M9.2 13.2.8 10.6.2 16.6.8 23 9.2 20.4Z" fill="#7a4e2c" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
-        `<path d="M8.4 15 2.2 13.8 2.2 19.6 8.4 18.4Z" fill="#c4a06a"/>` +
+      `<path d="M10.2 14.2 2.2 7.4 1 16.2 2.4 24.6 10.4 20.2Z" fill="#fff6ea" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<path d="M8.6 16.6 3.4 12.2 4.2 16.4 3.4 20.2 8.6 18.4Z" fill="#6a6560"/>` +
         `<ellipse cx="15.2" cy="17.6" rx="7.6" ry="5.8" fill="#f3ddc0" stroke="${STROKE}" stroke-width="1.15"/>` +
         `<path d="M16.2 16.4 11.4 13.8 11.4 15.2 7.2 15.4 7.2 17.8 11.4 18 11.4 19.6Z" fill="#7a3e1e" stroke="${STROKE}" stroke-width="0.4" stroke-linejoin="round"/>` +
         `<ellipse cx="16.2" cy="20.2" rx="4.4" ry="2.2" fill="#e7cba6"/>` +
         `<ellipse cx="22.6" cy="15" rx="5.4" ry="4.6" fill="#fff6ea" stroke="${STROKE}" stroke-width="1"/>` +
-        `<path d="M15.6 13.2C14.2 12.2 13.6 11.4 13.2 10.6M17.4 12.8C16.2 11.6 15.6 10.8 15.2 10" stroke="#5c3a22" stroke-width="1.4" fill="none" stroke-linecap="round"/>` +
+        `<path d="M20.2 11.2C18.2 7 17 5.4 16 4.4" stroke="#3a332c" stroke-width="1.7" fill="none" stroke-linecap="round"/>` +
+        `<path d="M18.2 11.6C16.6 8.2 15.6 6.8 15 6" stroke="#5c554c" stroke-width="1.3" fill="none" stroke-linecap="round"/>` +
         `<ellipse cx="26.2" cy="16.6" rx="2.5" ry="1.75" fill="#d7b48a" stroke="${INK}" stroke-width="0.5"/>` +
         `<ellipse cx="27.5" cy="16.5" rx="0.85" ry="0.55" fill="#3d2918"/>` +
         `<circle cx="23.2" cy="16.8" r="1.15" fill="#fff" stroke="${STROKE}" stroke-width="0.5"/>` +
@@ -752,8 +753,20 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
       body.moveTo(x, 13).lineTo(x - 0.3, y).stroke({ width: far ? 2.3 : 3.3, color: far ? 0xe7d3b4 : 0xf3e2c8, cap: 'round' });
       body.ellipse(x - 0.3, y + 0.8, far ? 2.1 : 2.6, far ? 1.05 : 1.25).fill(far ? 0xa07848 : 0x5c3a22);
     };
-    body.poly([-10, 0, -36, -8 - wag, -38, 4, -36, 16 + wag, -10, 12], true).fill(0x7a4e2c).stroke(OUTLINE);
-    body.poly([-16, 3.2, -34, 0.6 - wag * 0.35, -34, 9.4 + wag * 0.35, -16, 8.2], true).fill(0xc4a06a);
+    body
+      .poly(
+        [-4, -1, -12, -10 - wag * 0.45, -20, -16 - wag, -28, -8 - wag * 0.2, -30, 2, -26, 12 + wag * 0.3, -16, 16 + wag, -6, 10],
+        true,
+      )
+      .fill(0xfff6ea)
+      .stroke(OUTLINE);
+    body
+      .poly(
+        [-24, 1 + wag * 0.1, -16, -8 - wag * 0.35, -15, -2, -11, -2.2, -11, 5, -15, 5.4, -16, 11 + wag * 0.3],
+        true,
+      )
+      .fill(0x6a6560)
+      .stroke({ ...OUTLINE, width: 1.3 });
     body.ellipse(-1, 3, 17.5, 12).fill(0xfff6ea).stroke(OUTLINE);
     body.ellipse(1.2, 8.4, 11, 5).fill(0xf0d4b0);
     body
@@ -763,8 +776,11 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     for (const lx of [-12, -2, 9]) hoof(lx + 7, 17.6 - tuck * 0.25, true);
     for (const lx of [-12, -2, 9]) hoof(lx, 21.2 - tuck, false);
     body.ellipse(15, -0.6, 10.2, 8).fill(0xfff6ea).stroke(OUTLINE);
-    body.moveTo(6.2, -4.4).quadraticCurveTo(3, -5.8, 1.6, -6.6).stroke({ width: 3.1, color: 0x5c3a22, cap: 'round' });
-    body.moveTo(8.6, -5).quadraticCurveTo(5.8, -7.2, 4.4, -8.4).stroke({ width: 2.7, color: 0x5c3a22, cap: 'round' });
+    body.poly([11.2, -5.4, 8.4, -6.2, 4.6, -11.2, 5.4, -15.2, 7.2, -14.2, 8.6, -9.6, 12, -6.4], true).fill(0x5c554c).stroke({
+      ...OUTLINE,
+      width: 1.4,
+    });
+    body.poly([15.4, -5.2, 12.2, -6.8, 9.2, -12.4, 10.4, -17.6, 12.6, -16.2, 13.2, -11, 16, -6.8], true).fill(0x3a332c).stroke(OUTLINE);
     body.ellipse(22.8, 3.2, 5.1, 3.1).fill(0xd7b48a).stroke({ ...OUTLINE, width: 1.5 });
     body.ellipse(25.4, 3, 1.9, 1.25).fill(0x3d2918);
     eye(body, 18.4, 4, 2);
