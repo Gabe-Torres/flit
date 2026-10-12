@@ -269,7 +269,7 @@ export const BIRDS: readonly BirdKind[] = [
   {
     id: 'momo',
     name: 'Momo',
-    feather: '#c5ced8',
+    feather: '#fffdf8',
     icon: icon(
       `<path d="M14.4 19.4 11.2 17.2" stroke="#5c4638" stroke-width="3.5" fill="none" stroke-linecap="round"/>` +
         `<path d="M11.2 17.2 8 18.8" stroke="#f4efe6" stroke-width="3.5" fill="none" stroke-linecap="round"/>` +
@@ -277,15 +277,15 @@ export const BIRDS: readonly BirdKind[] = [
         `<path d="M5.2 21.4 3.6 24.4" stroke="#f4efe6" stroke-width="3.5" fill="none" stroke-linecap="round"/>` +
         `<path d="M3.6 24.4 5.2 26.2" stroke="#5c4638" stroke-width="3.3" fill="none" stroke-linecap="round"/>` +
         `<path d="M5.2 26.2 8 26.6" stroke="#f4efe6" stroke-width="3.1" fill="none" stroke-linecap="round"/>` +
-        `<ellipse cx="10.2" cy="11.2" rx="4.5" ry="8.8" fill="#8fa0b4" stroke="${STROKE}" stroke-width="0.9"/>` +
+        `<ellipse cx="10.2" cy="11.2" rx="4.5" ry="8.8" fill="#fffdf8" stroke="${STROKE}" stroke-width="0.9"/>` +
         `<ellipse cx="10.2" cy="11.6" rx="2.5" ry="6.2" fill="#ff9ec4"/>` +
         `<ellipse cx="10.2" cy="11.8" rx="1.05" ry="3.8" fill="#e45a96"/>` +
-        `<ellipse cx="18.6" cy="10.4" rx="5.3" ry="9.2" fill="#9aadc2" stroke="${STROKE}" stroke-width="0.9"/>` +
+        `<ellipse cx="18.6" cy="10.4" rx="5.3" ry="9.2" fill="#fffdf8" stroke="${STROKE}" stroke-width="0.9"/>` +
         `<ellipse cx="18.6" cy="10.8" rx="3" ry="6.4" fill="#ffb3d2"/>` +
         `<ellipse cx="18.6" cy="11" rx="1.25" ry="3.8" fill="#f06aa8"/>` +
-        `<ellipse cx="16.2" cy="20.6" rx="4.8" ry="3.3" fill="#6e8498" stroke="${STROKE}" stroke-width="0.9"/>` +
-        `<ellipse cx="16.4" cy="21.6" rx="2.6" ry="1.5" fill="#f7f1e4"/>` +
-        `<ellipse cx="21.4" cy="17.4" rx="4" ry="3.3" fill="#d5dee8" stroke="${STROKE}" stroke-width="0.8"/>` +
+        `<ellipse cx="16.2" cy="20.6" rx="4.8" ry="3.3" fill="#fffdf8" stroke="${STROKE}" stroke-width="0.9"/>` +
+        `<ellipse cx="16.4" cy="21.6" rx="2.6" ry="1.5" fill="#fff4e4"/>` +
+        `<ellipse cx="21.4" cy="17.4" rx="4" ry="3.3" fill="#fffdf8" stroke="${STROKE}" stroke-width="0.8"/>` +
         `<circle cx="22.2" cy="16.8" r="2.15" fill="#1c140f"/>` +
         `<circle cx="21.5" cy="16.1" r="0.75" fill="#fff"/>` +
         `<ellipse cx="24.4" cy="18.2" rx="1.35" ry="0.85" fill="#f7f1e4"/>` +
@@ -709,17 +709,17 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
       body.moveTo(x - px, y - py).lineTo(x + px, y + py).stroke({ width: 3.5, color: 0xf7f1e4, cap: 'butt' });
     }
     const backY = -7 - lift * 0.45;
-    body.ellipse(-1, backY, 8, 14.2).fill(0x8fa0b4).stroke(OUTLINE);
+    body.ellipse(-1, backY, 8, 14.2).fill(0xfffdf8).stroke(OUTLINE);
     body.ellipse(-1, backY + 0.6, 4.6, 10).fill(0xff9ec4);
     body.ellipse(-1, backY + 0.9, 2, 6).fill(0xe45a96);
     const frontY = -9 - lift;
-    body.ellipse(8.5, frontY, 9, 15.6).fill(0x9aadc2).stroke(OUTLINE);
+    body.ellipse(8.5, frontY, 9, 15.6).fill(0xfffdf8).stroke(OUTLINE);
     body.ellipse(8.5, frontY + 0.7, 5.3, 11).fill(0xffb3d2);
     body.ellipse(8.5, frontY + 1, 2.4, 6.6).fill(0xf06aa8);
-    body.ellipse(2, 5.5, 8.2, 5.5).fill(0x6e8498).stroke(OUTLINE);
-    body.ellipse(2.4, 7.4, 4.6, 2.7).fill(0xf7f1e4);
-    body.ellipse(12.2, 1.2, 6.8, 5.2).fill(0xd5dee8).stroke(OUTLINE);
-    body.ellipse(16.6, 2.6, 2.5, 1.6).fill(0xf7f1e4);
+    body.ellipse(2, 5.5, 8.2, 5.5).fill(0xfffdf8).stroke(OUTLINE);
+    body.ellipse(2.4, 7.4, 4.6, 2.7).fill(0xfff4e4);
+    body.ellipse(12.2, 1.2, 6.8, 5.2).fill(0xfffdf8).stroke(OUTLINE);
+    body.ellipse(16.6, 2.6, 2.5, 1.6).fill(0xfff4e4);
     body.circle(14, 0.4, 3.55).fill(0x1c140f);
     body.circle(13, -0.6, 1.2).fill(0xffffff);
     body.circle(14.8, 1.1, 0.48).fill(0xffffff);
