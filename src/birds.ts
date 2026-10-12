@@ -108,10 +108,17 @@ export const BIRDS: readonly BirdKind[] = [
     name: 'Pelican',
     feather: '#fff4e0',
     icon: icon(
-      `<ellipse cx="12" cy="17" rx="8" ry="6" fill="#fffdf6" stroke="${STROKE}" stroke-width="1.4"/>` +
-        `<path d="M16 15.5 30 16.5 17 19Z" fill="#f2c14b" stroke="${STROKE}" stroke-width="1.1" stroke-linejoin="round"/>` +
-        `<ellipse cx="23" cy="21.5" rx="6" ry="3.4" fill="#ef8a2a" stroke="${STROKE}" stroke-width="1.1"/>` +
-        `<circle cx="14" cy="15" r="1.3" fill="${INK}"/>`,
+      `<path d="M9 15.2 1.2 10.6 0.4 15.2 2.2 18.4 9.2 18.6Z" fill="#fffdf6" stroke="${STROKE}" stroke-width="1" stroke-linejoin="round"/>` +
+        `<path d="M2.4 12.2 0.6 14.6 3.4 16.2 4.6 13.4Z" fill="#241c16"/>` +
+        `<ellipse cx="12.2" cy="17.6" rx="6.2" ry="4.7" fill="#fffdf6" stroke="${STROKE}" stroke-width="1.25"/>` +
+        `<ellipse cx="12.4" cy="19.4" rx="4" ry="2.2" fill="#f3efe6"/>` +
+        `<ellipse cx="16.4" cy="15.2" rx="3.2" ry="2.8" fill="#fffdf6" stroke="${STROKE}" stroke-width="1.05"/>` +
+        `<path d="M18.8 15.8 29.2 16.3 29.4 17.7 19.2 17.4Z" fill="#f2c14b" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<path d="M26.8 16 31.2 16.9 27 17.8Z" fill="#c45c28" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<path d="M18.2 17.5 20.6 20.6 24.8 25.6 28.8 20.4 29.2 17.4 23 18Z" fill="#ef8a2a" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<path d="M20.8 20 24.8 24.4 27.6 20Z" fill="#ffd27a"/>` +
+        `<circle cx="17.2" cy="14.1" r="1.15" fill="#fffdf6" stroke="${STROKE}" stroke-width="0.55"/>` +
+        `<circle cx="17.5" cy="14.1" r="0.5" fill="${INK}"/>`,
     ),
   },
   {
@@ -431,14 +438,89 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
   }
 
   if (id === 'pelican') {
-    tail(body, flapAngle, 0xe7e0d4);
-    wingOval(wing, 0xd9d3c7, 13, 6.2);
-    body.ellipse(0, 1, 17, 12).fill(0xfffdf6).stroke(OUTLINE);
-    body.ellipse(2, 5, 10, 6.5).fill(0xf3efe6);
-    body.poly([10, -1, 34, 1, 12, 5], true).fill(0xf2c14b).stroke(OUTLINE);
-    body.ellipse(22, 10, 11, 6.5).fill(0xef8a2a).stroke(OUTLINE);
-    body.ellipse(22, 8, 6, 2.6).fill({ color: 0xffd27a, alpha: 0.8 });
-    eye(body, 8, -4, 3.2);
+    wing.rotation = 0;
+    const lift = flapAngle * 9;
+    const sag = 24 + Math.sin(wingPhase * 2) * 3.2;
+    const sway = Math.sin(wingPhase * 1.4) * 1.8;
+
+    body
+      .poly([7, 3, 0, -3 - lift * 0.15, -16, -12 - lift * 0.5, -30, -8 - lift * 0.35, -22, 6, -8, 10, 6, 6], true)
+      .fill(0xfffdf6)
+      .stroke(OUTLINE);
+    body.ellipse(-10, 1 - lift * 0.08, 9, 3.6).fill(0xe4ddd2);
+    const feather = { ...OUTLINE, width: 1.35 };
+    body.poly([-18, -4 - lift * 0.25, -40, -16 - lift, -26, -1], true).fill(0x241c16).stroke(feather);
+    body.poly([-16, -1 - lift * 0.12, -37, -8 - lift * 0.55, -24, 3], true).fill(0x241c16).stroke(feather);
+    body.poly([-14, 3, -33, -1 - lift * 0.2, -22, 8], true).fill(0x241c16).stroke(feather);
+    body.poly([-6, 2, -18, -1 - lift * 0.08, -16, 6, -4, 7], true).fill(0xfffdf6).stroke(OUTLINE);
+    body.poly([-8, 3.2, -15, 1.4, -14, 5.2, -6, 5.6], true).fill(0xe7e0d4);
+
+    body.ellipse(-1, 3, 16.5, 11).fill(0xfffdf6).stroke(OUTLINE);
+    body.ellipse(-2.2, -0.6, 10.5, 4.8).fill(0xe7eef4);
+    body.ellipse(1.2, 7.4, 10.6, 5).fill(0xf6f1e8);
+    body.ellipse(-2.4, 8.6, 5.4, 2.2).fill(0xe7e0d4);
+    body.ellipse(12, -3.2, 7.2, 5.8).fill(0xfffdf6).stroke(OUTLINE);
+    body.poly([8.2, -6.8, 3.4, -11.2, 10.4, -5.6], true).fill(0xfffdf6).stroke(OUTLINE);
+
+    body.poly([15, -4.6, 37, -2.6, 39.5, 0.2, 36.5, 2.4, 15.2, 2.2], true).fill(0xf2c14b).stroke(OUTLINE);
+    body.poly([17, -3.8, 32, -2.2, 17.4, -1.6], true).fill(0xffe29a);
+    body.poly([35.2, 0.2, 43.4, 1.8, 36.6, 3.6], true).fill(0xd86a22).stroke(OUTLINE);
+    body.moveTo(19, -2.6).lineTo(23.2, -1.5).stroke({ width: 1.35, color: 0xc45c28, cap: 'round' });
+
+    body
+      .poly(
+        [
+          14.6,
+          2.8,
+          18,
+          8,
+          21,
+          15,
+          25 + sway * 0.35,
+          sag - 3,
+          30 + sway,
+          sag + 1,
+          35 + sway * 0.4,
+          sag - 2,
+          39,
+          14,
+          40.6,
+          4,
+          32,
+          4.2,
+          21,
+          4,
+          15.4,
+          3.2,
+        ],
+        true,
+      )
+      .fill(0xef8a2a)
+      .stroke(OUTLINE);
+    body
+      .poly([19, 10, 24 + sway, sag - 6, 30 + sway, sag - 2.2, 35, sag - 7, 34, 12, 24, 9], true)
+      .fill(0xd86a22);
+    body.ellipse(27 + sway * 0.2, 8.5, 6.4, 2.4).fill({ color: 0xffd27a, alpha: 0.9 });
+    body.moveTo(20, 7).quadraticCurveTo(25 + sway * 0.4, 16, 29 + sway, sag - 3).stroke({
+      width: 1.15,
+      color: 0xc45c28,
+      cap: 'round',
+    });
+    body.moveTo(32, 6.5).quadraticCurveTo(33.5, 14, 34 + sway * 0.3, sag - 6).stroke({
+      width: 1.15,
+      color: 0xc45c28,
+      cap: 'round',
+    });
+    body.moveTo(15.4, 2.8).quadraticCurveTo(26, 4.6, 38.6, 2.4).stroke({ width: 1.4, color: 0xc45c28, cap: 'round' });
+
+    body.ellipse(12.6, -2.2, 2.1, 1.35).fill(0xf0b429);
+    body.circle(14.6, -4.2, 2.05).fill(0xfffdf6).stroke({ ...OUTLINE, width: 1.45 });
+    body.circle(15.15, -4.2, 1.05).fill(0xf2c14b);
+    body.circle(15.4, -4.2, 0.52).fill(0x2b2118);
+    body.circle(14.8, -4.6, 0.32).fill(0xffffff);
+
+    body.moveTo(0, 12.6).lineTo(2.2, 16.4).stroke({ width: 2.2, color: 0xe7a322, cap: 'round' });
+    body.poly([2.2, 16.2, 7.2, 17.4, 4.6, 15.6, 1.2, 17.2], true).fill(0xf2c14b).stroke({ ...OUTLINE, width: 1.25 });
     return;
   }
 
