@@ -566,13 +566,6 @@ function drawGround(
     const scale = big ? 1.55 : roll > 0.82 ? 1.15 : 0.95;
     const y = floor + depth;
     drawBuriedRuby(g, x, y, scale, land.dirt, sparkClock(reduce) + i * 0.73, reduce);
-    if (!big) continue;
-    g.moveTo(x - 9, y - 22)
-      .lineTo(x + 9, y - 12)
-      .stroke({ width: 2.2, color: 0x6a3d16, cap: 'round' });
-    g.moveTo(x - 9, y - 12)
-      .lineTo(x + 9, y - 22)
-      .stroke({ width: 2.2, color: 0x8a5a32, cap: 'round' });
   }
 }
 
