@@ -104,47 +104,122 @@ function star(g: Graphics, x: number, y: number, r: number, color: number): void
   g.poly(points, true).fill(color);
 }
 
-function medalFor(score: number): { name: MedalName; fill: number; rim: number } | null {
-  const name = medalForScore(score);
-  if (name === 'ruby') return { name, fill: 0xe85d75, rim: 0x9d2944 };
-  if (name === 'silver') return { name, fill: 0xd5dbe3, rim: 0x7d8794 };
-  if (name === 'bronze') return { name, fill: 0xe0a36a, rim: 0x8a5a32 };
-  return null;
+type GemPt = readonly [number, number];
+
+// Original faceted cut in the same family as a ruby gem: offset crown, pale table,
+// dark pavilion on the left, bright pavilion on the right. Not a copied logo.
+const RUBY_CUT: readonly GemPt[] = [
+  [1.2, -6.2],
+  [4.8, -3.6],
+  [6.2, -0.2],
+  [5.2, 3.4],
+  [2.2, 5.6],
+  [-1.6, 6.6],
+  [-4.6, 3.8],
+  [-6.0, 0.4],
+  [-4.4, -2.8],
+  [-0.8, -4.8],
+];
+
+const RUBY_FACETS: readonly { pts: readonly GemPt[]; color: number }[] = [
+  { pts: [[1.2, -6.2], [2.4, -3.8], [0.2, -3.2], [-0.8, -4.8]], color: 0xf6d4cc },
+  { pts: [[1.2, -6.2], [4.8, -3.6], [2.4, -3.8]], color: 0xf06448 },
+  { pts: [[4.8, -3.6], [6.2, -0.2], [3.4, 0.8], [2.4, -3.8]], color: 0xc42012 },
+  { pts: [[6.2, -0.2], [5.2, 3.4], [3.4, 0.8]], color: 0x8a120c },
+  { pts: [[5.2, 3.4], [2.2, 5.6], [1.4, 2.4], [3.4, 0.8]], color: 0xe23a20 },
+  { pts: [[2.2, 5.6], [-1.6, 6.6], [-0.6, 4.2], [1.4, 2.4]], color: 0xb01810 },
+  { pts: [[-1.6, 6.6], [-4.6, 3.8], [-6.0, 0.4], [-2.6, 1.8], [-0.6, 4.2]], color: 0x6e100a },
+  { pts: [[-6.0, 0.4], [-4.4, -2.8], [-2.2, -1.4], [-2.6, 1.8]], color: 0x9e140c },
+  { pts: [[-0.8, -4.8], [0.2, -3.2], [0.8, -0.8], [-2.2, -1.4], [-4.4, -2.8]], color: 0xffece6 },
+  { pts: [[0.2, -3.2], [2.4, -3.8], [3.4, 0.8], [0.8, -0.8]], color: 0xd42618 },
+  { pts: [[0.8, -0.8], [3.4, 0.8], [1.4, 2.4], [-0.6, 4.2]], color: 0xa8140c },
+  { pts: [[0.8, -0.8], [-0.6, 4.2], [-2.6, 1.8], [-2.2, -1.4]], color: 0xb81e12 },
+];
+
+function layGem(x: number, y: number, s: number, pts: readonly GemPt[]): number[] {
+  const flat: number[] = new Array(pts.length * 2);
+  for (let i = 0; i < pts.length; i++) {
+    flat[i * 2] = x + pts[i][0] * s;
+    flat[i * 2 + 1] = y + pts[i][1] * s;
+  }
+  return flat;
 }
 
-function drawRubyMedal(g: Graphics, x: number, y: number, s = 3.7): void {
-  const cut = [
-    x,
-    y - 8 * s,
-    x + 5.5 * s,
-    y - 2 * s,
-    x + 3.2 * s,
-    y + 5 * s,
-    x - 3.2 * s,
-    y + 5 * s,
-    x - 5.5 * s,
-    y - 2 * s,
-  ];
-  g.poly(cut, true).fill(0xe85d75);
-  g.poly([x, y - 8 * s, x - 5.5 * s, y - 2 * s, x - 3.2 * s, y + 5 * s, x, y + 1.4 * s], true).fill(0x9d2944);
-  g.poly([x, y - 8 * s, x + 5.5 * s, y - 2 * s, x + 2.4 * s, y + 0.6 * s, x, y - 1.2 * s], true).fill(0xff8fa6);
-  g.poly([x, y + 1.4 * s, x + 3.2 * s, y + 5 * s, x - 3.2 * s, y + 5 * s], true).fill(0xb1334c);
-  g.poly([x - 0.4 * s, y - 6.6 * s, x + 2.3 * s, y - 2.4 * s, x + 0.2 * s, y - 1.2 * s], true).fill({
-    color: 0xfffdf6,
-    alpha: 0.92,
+function sparkClock(reduce: boolean): number {
+  return reduce ? 0 : performance.now() / 1000;
+}
+
+function twinkle(g: Graphics, x: number, y: number, r: number, alpha: number): void {
+  if (alpha < 0.08 || r < 0.45) return;
+  const w = r * 0.28;
+  g.poly(
+    [x, y - r, x + w, y - w, x + r, y, x + w, y + w, x, y + r, x - w, y + w, x - r, y, x - w, y - w],
+    true,
+  ).fill({ color: 0xfffdf6, alpha });
+}
+
+function drawRubyTwinkle(g: Graphics, x: number, y: number, s: number, time: number, reduce: boolean): void {
+  const a = reduce ? 0.88 : 0.5 + 0.5 * Math.sin(time * 6);
+  const b = reduce ? 0.5 : 0.5 + 0.5 * Math.sin(time * 6 + 2.15);
+  twinkle(g, x + 6.6 * s, y - 5.2 * s, Math.max(1.25, s * (0.5 + 0.75 * a)), 0.22 + 0.78 * a);
+  twinkle(g, x - 4.8 * s, y - 5.6 * s, Math.max(0.9, s * (0.32 + 0.48 * b)), 0.18 + 0.72 * b);
+  if (a > 0.62) twinkle(g, x + 2.8 * s, y + 0.6 * s, Math.max(0.7, s * 0.48), reduce ? 0.45 : (a - 0.62) * 2.2);
+}
+
+function paintRuby(g: Graphics, x: number, y: number, s: number, time: number, reduce: boolean): void {
+  for (const facet of RUBY_FACETS) g.poly(layGem(x, y, s, facet.pts), true).fill(facet.color);
+  const gleam = reduce ? 0.94 : 0.38 + 0.62 * (0.5 + 0.5 * Math.sin(time * 5.4));
+  g.poly(layGem(x, y, s, [[-0.55, -4.05], [0.75, -2.7], [-1.35, -2.15]]), true).fill({
+    color: 0xffffff,
+    alpha: gleam,
   });
-  g.poly(cut, true).stroke({ width: Math.max(1.6, s * 0.8), color: 0x9d2944, join: 'round' });
-  star(g, x + 6.4 * s, y - 9.2 * s, Math.max(2.2, s * 0.9), 0xfffdf6);
+  g.poly(layGem(x, y, s, RUBY_CUT), true).stroke({
+    width: Math.max(1, s * 0.42),
+    color: 0x6a100c,
+    join: 'round',
+  });
 }
 
-function drawHudMedal(g: Graphics, x: number, y: number, award: { name: MedalName; fill: number; rim: number }): void {
-  if (award.name === 'ruby') {
-    drawRubyMedal(g, x, y + 1, 1.55);
+function drawRubyGem(g: Graphics, x: number, y: number, s: number, time: number, reduce: boolean): void {
+  paintRuby(g, x, y, s, time, reduce);
+  drawRubyTwinkle(g, x, y, s, time, reduce);
+}
+
+function drawMetalMedal(g: Graphics, x: number, y: number, r: number, metal: 'bronze' | 'silver'): void {
+  const gold = metal === 'bronze';
+  if (r >= 20) {
+    const rw = r * 0.28;
+    const rh = r * 0.7;
+    const top = y - r - r * 0.38;
+    g.roundRect(x - r * 0.5, top, rw, rh, 3).fill(gold ? 0xb4232c : 0x2c5c90);
+    g.roundRect(x + r * 0.22, top, rw, rh, 3).fill(gold ? 0xe24b45 : 0x6ea0d0);
+  }
+  const rim = gold ? 0x7a4e12 : 0x4d5966;
+  const lip = gold ? 0xffe29a : 0xf7f9fc;
+  const groove = gold ? 0xa86a20 : 0x8492a0;
+  const face = gold ? 0xf2b434 : 0xd7e0ea;
+  const hot = gold ? 0xfff6d2 : 0xffffff;
+  g.circle(x, y, r).fill(rim);
+  g.circle(x, y, r * 0.88).fill(lip);
+  g.circle(x, y, r * 0.78).fill(groove);
+  g.circle(x, y, r * 0.7).fill(face);
+  g.circle(x, y, r * 0.56).stroke({ width: Math.max(1.15, r * 0.06), color: groove });
+  g.arc(x, y, r * 0.6, Math.PI * 1.16, Math.PI * 1.8).stroke({
+    width: Math.max(1.4, r * 0.085),
+    color: hot,
+    cap: 'round',
+  });
+  if (r >= 20) star(g, x + 0.7, y + r * 0.04 + 1, r * 0.36, gold ? 0xc48a28 : 0x8b97a6);
+  star(g, x, y + r * 0.02, r * 0.36, hot);
+  g.circle(x, y + r * 0.02, Math.max(0.7, r * 0.065)).fill(gold ? 0xe8a020 : 0xb7c3d0);
+}
+
+function drawHudMedal(g: Graphics, x: number, y: number, award: MedalName, time: number, reduce: boolean): void {
+  if (award === 'ruby') {
+    drawRubyGem(g, x, y + 1, 1.5, time, reduce);
     return;
   }
-  g.circle(x, y, 11).fill(award.rim);
-  g.circle(x, y, 8).fill(award.fill);
-  star(g, x, y - 0.3, 4.4, CREAM);
+  drawMetalMedal(g, x, y, 11, award);
 }
 
 function fit(cssW: number, cssH: number): { scale: number; ox: number; oy: number; box: Box } {
@@ -272,7 +347,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     for (const gate of run.gates) {
       drawThemedGate(gateLayer, state.theme, gate.x, gate.gapY, gate.open, box.top, floor, themeTime);
     }
-    drawGround(ground, run, box, floor, land);
+    drawGround(ground, run, box, floor, land, state.reduceMotion);
     drawAtmosphere(atmosphere, weather, run.time, run.scroll, box, floor, state.reduceMotion);
 
     const altitude = Math.max(0, floor - run.bird.y);
@@ -329,6 +404,7 @@ function drawGround(
   box: Box,
   floor: number,
   land: { dirt: number; grass: number; grassDark: number; tuft: number; lean: number },
+  reduce: boolean,
 ): void {
   g.rect(box.left, floor, box.right - box.left, Math.max(4, box.bottom - floor + 4)).fill(land.dirt);
   g.rect(box.left, floor, box.right - box.left, 18).fill(land.grass);
@@ -359,9 +435,8 @@ function drawGround(
     const depth = 28 + hashUnit(i + 101) * 42;
     const big = roll > 0.93;
     const scale = big ? 1.55 : roll > 0.82 ? 1.15 : 0.95;
-    const sparkle = big ? 0.55 + 0.45 * Math.sin(run.time * 4 + i) : 0;
     const y = floor + depth;
-    drawBuriedRuby(g, x, y, scale, land.dirt, sparkle);
+    drawBuriedRuby(g, x, y, scale, land.dirt, sparkClock(reduce) + i * 0.73, reduce);
     if (!big) continue;
     g.moveTo(x - 9, y - 22)
       .lineTo(x + 9, y - 12)
@@ -380,18 +455,20 @@ function hashUnit(i: number): number {
   return n / 4294967296;
 }
 
-function drawBuriedRuby(g: Graphics, x: number, y: number, scale: number, dirt: number, sparkle: number): void {
+function drawBuriedRuby(
+  g: Graphics,
+  x: number,
+  y: number,
+  scale: number,
+  dirt: number,
+  time: number,
+  reduce: boolean,
+): void {
   const s = scale;
-  g.ellipse(x, y + 4 * s, 13 * s, 5 * s).fill({ color: 0x6a3d16, alpha: 0.22 });
-  g.poly(
-    [x, y - 8 * s, x + 5.5 * s, y - 2 * s, x + 3.2 * s, y + 5 * s, x - 3.2 * s, y + 5 * s, x - 5.5 * s, y - 2 * s],
-    true,
-  )
-    .fill(0xe85d75)
-    .stroke({ width: 1.6, color: 0x9d2944 });
-  g.poly([x, y - 7 * s, x + 2.4 * s, y - 2 * s, x, y + 0.4 * s], true).fill({ color: 0xfff4f6, alpha: 0.82 });
-  g.ellipse(x, y + 6 * s, 12 * s, 3.4 * s).fill(dirt);
-  if (sparkle > 0.35) star(g, x + 7 * s, y - 10 * s, 2.4 + sparkle * 1.6, 0xfffdf6);
+  g.ellipse(x, y + 3.2 * s, 10 * s, 3.2 * s).fill({ color: 0x6a3d16, alpha: 0.22 });
+  paintRuby(g, x, y, s, time, reduce);
+  g.ellipse(x, y + 5.2 * s, 11 * s, 3.5 * s).fill(dirt);
+  drawRubyTwinkle(g, x, y, s, time, reduce);
 }
 
 function drawPterodactyl(g: Graphics, flap: number, grabbed: boolean): void {
@@ -489,7 +566,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.pauseHint.style.fontSize = controls.touch ? 20 : 18;
   labels.retry.text = controls.retry;
   labels.retry.style.fontSize = controls.touch ? 18 : 16;
-  const hudMedal = medalFor(state.modeBest);
+  const hudMedal = medalForScore(state.modeBest);
   const cornerClear = !over || box.top < -48;
   labels.modeName.visible = cornerClear;
   labels.modeScore.visible = cornerClear;
@@ -562,12 +639,12 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   }
 
   if (!over) {
-    if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal);
+    if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal, sparkClock(state.reduceMotion), state.reduceMotion);
     return;
   }
 
   g.rect(box.left, box.top, wide, tall).fill({ color: 0x14283c, alpha: 0.28 });
-  const award = medalFor(run.score);
+  const award = medalForScore(run.score);
   const cardW = 304;
   const cardH = award ? 388 : 300;
   const x = (WORLD.w - cardW) / 2;
@@ -576,14 +653,10 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.overTitle.text = run.snatchTime >= 0 ? 'SNATCHED' : 'GAME OVER';
   labels.overTitle.position.set(cx, y + 42);
   if (award) {
-    if (award.name === 'ruby') drawRubyMedal(g, cx, y + 116);
-    else {
-      g.circle(cx, y + 112, 28).fill(award.rim);
-      g.circle(cx, y + 112, 22).fill(award.fill);
-      star(g, cx, y + 110, 12, CREAM);
-    }
+    if (award === 'ruby') drawRubyGem(g, cx, y + 112, 3.15, sparkClock(state.reduceMotion), state.reduceMotion);
+    else drawMetalMedal(g, cx, y + 114, 28, award);
     labels.medalName.visible = true;
-    labels.medalName.text = award.name;
+    labels.medalName.text = award;
     labels.medalName.position.set(cx, y + 152);
   }
   const scoreY = award ? y + 200 : y + 108;
@@ -591,9 +664,10 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.overScore.position.set(cx, scoreY);
   labels.overBest.text = `BEST  ${state.best}`;
   labels.overBest.position.set(cx, scoreY + 50);
-  const bestMedal = medalFor(state.best);
-  if (bestMedal) drawHudMedal(g, cx + labels.overBest.width / 2 + 16, scoreY + 50, bestMedal);
-  if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal);
+  const bestMedal = medalForScore(state.best);
+  const clock = sparkClock(state.reduceMotion);
+  if (bestMedal) drawHudMedal(g, cx + labels.overBest.width / 2 + 16, scoreY + 50, bestMedal, clock, state.reduceMotion);
+  if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal, clock, state.reduceMotion);
   const facts = flightFacts(run);
   labels.overStats.text = `${facts.taps}  ·  ${facts.pipes}\n${facts.seconds}`;
   labels.overStats.position.set(cx, scoreY + 100);
