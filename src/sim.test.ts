@@ -1,9 +1,11 @@
 import {
   SNATCH_DURATION,
+  MODES,
   WORLD,
   createRun,
   flap,
   flightFacts,
+  isModeId,
   medalForScore,
   groundY,
   hits,
@@ -46,7 +48,6 @@ function playable(): ReturnType<typeof createRun> {
   assert(createRun(4).holiday === holidayForDate(new Date()), 'a run keeps the holiday');
   assert(createRun(4).mode === 'easy', 'easy is the default course');
   assert(createRun(4, 'hard').mode === 'hard', 'a run keeps the hard course');
-  assert(createRun(4, 'random').mode === 'random', 'a run keeps the random course');
   assert(createRun(4, 'normal').mode === 'normal', 'a run keeps the normal course');
   assert(seasonForDate(new Date(2026, 2, 1)) === 'spring', 'March is spring');
   assert(seasonForDate(new Date(2026, 4, 31)) === 'spring', 'May is spring');
@@ -60,7 +61,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(terrainFor('clear', 'autumn').grass !== terrainFor('clear', 'summer').grass, 'autumn grass is its own color');
   assert(terrainFor('clear', 'spring').tuft !== terrainFor('clear', 'summer').tuft, 'spring tufts are their own color');
   assert(terrainFor('blizzard', 'autumn').grass === terrainFor('blizzard', 'summer').grass, 'a blizzard stays snowy');
-  assert(terrainFor('storm', 'autumn').grass !== terrainFor('clear', 'autumn').grass, 'a storm darkens the season');
+  assert(terrainFor('rain', 'autumn').grass !== terrainFor('clear', 'autumn').grass, 'rain darkens the season');
   assert(holidayForDate(new Date(2026, 9, 1)) === 'halloween', 'October 1 is Halloween');
   assert(holidayForDate(new Date(2026, 9, 11)) === 'halloween', 'October 11 is Halloween');
   assert(seasonForDate(new Date(2026, 9, 11)) === 'autumn', 'October 11 is autumn');
@@ -99,8 +100,8 @@ function playable(): ReturnType<typeof createRun> {
   assert(terrainFor('clear', 'winter', 'christmas').tuft !== terrainFor('clear', 'winter').tuft, 'christmas tufts are their own color');
   assert(terrainFor('blizzard', 'winter', 'christmas').grass === terrainFor('blizzard', 'summer').grass, 'a blizzard stays snowy on a holiday');
   assert(
-    terrainFor('storm', 'autumn', 'halloween').grass !== terrainFor('clear', 'autumn', 'halloween').grass,
-    'a storm darkens the holiday',
+    terrainFor('rain', 'autumn', 'halloween').grass !== terrainFor('clear', 'autumn', 'halloween').grass,
+    'rain darkens the holiday',
   );
 }
 
@@ -317,7 +318,7 @@ function playable(): ReturnType<typeof createRun> {
 
 {
   assert(planSnatch(1) === null, 'an ordinary seed stays safe');
-  const modes = ['easy', 'normal', 'hard', 'random'] as const;
+  const modes = ['easy', 'normal', 'hard'] as const;
   for (const mode of modes) {
     let invites = 0;
     for (let seed = 1; seed <= 1000000; seed++) {
@@ -355,7 +356,7 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
-  for (const mode of ['easy', 'normal', 'hard', 'random'] as const) {
+  for (const mode of ['easy', 'normal', 'hard'] as const) {
     for (const dt of [1 / 60, 0.05]) {
       const run = createRun(192, mode);
       flap(run);
@@ -430,7 +431,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(run.phase === 'play', 'a later roll cannot bring it back');
 }
 
-function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard' | 'random', pipes: number): { gaps: number[]; opens: number[]; jumps: number[] } {
+function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: number): { gaps: number[]; opens: number[]; jumps: number[] } {
   const run = createRun(seed, mode);
   run.phase = 'play';
   run.snatchAt = null;
@@ -500,24 +501,6 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard' | 'random'
 }
 
 {
-  const spaces = Array.from({ length: 80 }, (_, i) => pipeSpacing(i, 'random', 11));
-  const opens = Array.from({ length: 80 }, (_, i) => pipeOpening(i, 'random', 11));
-  const far = WORLD.spacing + 120;
-  const tall = WORLD.gap + 120;
-  assert(spaces.every((gap) => gap >= WORLD.spacing - 0.01 && gap <= far + 0.01), 'random distances stay between close and far');
-  assert(opens.every((open) => open >= WORLD.gap - 0.01 && open <= tall + 0.01), 'random openings stay between short and tall');
-  assert(Math.min(...spaces) < WORLD.spacing + 120 * 0.35, 'a random run includes a close distance');
-  assert(Math.max(...spaces) > WORLD.spacing + 120 * 0.65, 'a random run includes a far distance');
-  assert(Math.min(...opens) < WORLD.gap + 120 * 0.35, 'a random run includes a short opening');
-  assert(Math.max(...opens) > WORLD.gap + 120 * 0.65, 'a random run includes a tall opening');
-  const layout = clearedLayout(11, 'random', 30);
-  assert(layout.gaps.length >= 20, `random lays out the gates (${layout.gaps.length})`);
-  assert(layout.gaps.every((gap) => gap >= WORLD.spacing - 0.01 && gap <= far + 0.01), 'random gates keep a close-to-far distance');
-  assert(layout.opens.every((open) => open >= WORLD.gap - 0.01 && open <= tall + 0.01), 'random gates keep a short-to-tall opening');
-  assert(layout.jumps.every((jump) => jump <= WORLD.gapStep + 0.01), 'random holes still move by a step');
-}
-
-{
   const phone = controlHints(true);
   const computer = controlHints(false);
   assert(phone.touch && phone.fly === 'tap to fly', 'a phone says tap');
@@ -534,10 +517,12 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard' | 'random'
 }
 
 {
-  assert(THEMES.map((theme) => theme.id).join() === 'classic,roman,colony,reef', 'maps stay in menu order');
-  assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman,Colony,Coral', 'map names stay with their gates');
+  assert(THEMES.map((theme) => theme.id).join() === 'classic,roman,colony', 'maps stay in menu order');
+  assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman,Colony', 'map names stay with their gates');
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
-  assert(!isThemeId('mars') && !isThemeId('starter') && !isThemeId('pipes') && !isThemeId('lunar'), 'unknown maps fall through');
+  assert(!isThemeId('mars') && !isThemeId('reef') && !isThemeId('starter') && !isThemeId('pipes'), 'unknown maps fall through');
+  assert(MODES.map((mode) => mode.id).join() === 'easy,normal,hard', 'difficulties stay in menu order');
+  assert(!isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
 }
 
 {

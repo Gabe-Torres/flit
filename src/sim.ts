@@ -40,13 +40,12 @@ export type Gate = {
   scored: boolean;
 };
 
-export type ModeId = 'easy' | 'normal' | 'hard' | 'random';
+export type ModeId = 'easy' | 'normal' | 'hard';
 
 export const MODES: { id: ModeId; name: string }[] = [
   { id: 'easy', name: 'Easy' },
   { id: 'normal', name: 'Normal' },
   { id: 'hard', name: 'Hard' },
-  { id: 'random', name: 'Random' },
 ];
 
 export function isModeId(id: string): id is ModeId {
@@ -129,11 +128,9 @@ const TALON_Y = 40;
 // Easy tightens every 5 pipes, by 30px of distance and 30px of opening.
 // The floor is the original distance and opening. Normal stays on that floor.
 // Hard stays on that floor or tighter, and its hole can sit anywhere.
-// Random rolls each gate from the wide easy size to the original close size.
 const EASE_EVERY = 5;
 const EASE_STEP = 30;
 const EASE_STEPS = 4;
-const EASE_SPAN = EASE_STEPS * EASE_STEP;
 const HARD_SPACE = 64;
 const HARD_OPEN = 48;
 
@@ -149,14 +146,12 @@ function roll(origin: number, index: number, salt: number): number {
 export function pipeSpacing(cleared: number, mode: ModeId = 'easy', origin = 1): number {
   if (mode === 'normal') return WORLD.spacing;
   if (mode === 'hard') return WORLD.spacing - roll(origin, cleared, 0x51a7c0de) * HARD_SPACE;
-  if (mode === 'random') return WORLD.spacing + roll(origin, cleared, 0xa11ce501) * EASE_SPAN;
   return WORLD.spacing + easeLeft(cleared);
 }
 
 export function pipeOpening(cleared: number, mode: ModeId = 'easy', origin = 1): number {
   if (mode === 'normal') return WORLD.gap;
   if (mode === 'hard') return WORLD.gap - roll(origin, cleared, 0xc0ffee21) * HARD_OPEN;
-  if (mode === 'random') return WORLD.gap + roll(origin, cleared, 0x5a7e0101) * EASE_SPAN;
   return WORLD.gap + easeLeft(cleared);
 }
 
@@ -243,9 +238,9 @@ function nextGap(run: Run, around: number, open: number): number {
 
 function spawn(run: Run): void {
   const last = run.gates[run.gates.length - 1];
-  // Hard and random gates vary in distance, so the roll follows how many have
-  // been placed. Easy and normal still follow the cleared score.
-  const slot = run.mode === 'hard' || run.mode === 'random' ? Math.max(0, run.placed - 1) : run.score;
+  // Hard gates vary in distance, so the roll follows how many have been placed.
+  // Easy and normal still follow the cleared score.
+  const slot = run.mode === 'hard' ? Math.max(0, run.placed - 1) : run.score;
   const open = pipeOpening(slot, run.mode, run.origin);
   if (!last) {
     run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY, open), open, scored: false });

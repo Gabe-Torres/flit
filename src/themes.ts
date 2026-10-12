@@ -1,16 +1,15 @@
 // Map skins for the gates. The solid column stays inside the hit width.
-// Arms, fish, and leaves may stick out past it.
+// Arms and leaves may stick out past it.
 
 import type { Graphics } from 'pixi.js';
 import { WORLD } from './sim.ts';
 
-export type ThemeId = 'classic' | 'roman' | 'colony' | 'reef';
+export type ThemeId = 'classic' | 'roman' | 'colony';
 
 export const THEMES: { id: ThemeId; name: string }[] = [
   { id: 'classic', name: 'Classic' },
   { id: 'roman', name: 'Roman' },
   { id: 'colony', name: 'Colony' },
-  { id: 'reef', name: 'Coral' },
 ];
 
 export function isThemeId(id: string): id is ThemeId {
@@ -55,10 +54,6 @@ export function drawThemedGate(
   }
   if (theme === 'colony') {
     drawColony(g, gate);
-    return;
-  }
-  if (theme === 'reef') {
-    drawReef(g, gate);
     return;
   }
   drawClassic(g, gate);
@@ -279,61 +274,6 @@ function crawler(g: Graphics, x: number, y: number, toward: 1 | -1, face: 1 | -1
     .lineTo(x + f * (20 + reach), y + t * 16)
     .lineTo(x + f * (30 + reach), y + t * 22)
     .stroke({ width: 3, color: 0x12161c, cap: 'round', join: 'round' });
-}
-
-function drawReef(g: Graphics, gate: End): void {
-  const lip = 30;
-  const { x, time } = gate;
-  const stroke = { width: 3, color: 0x6a2438, join: 'round' as const, cap: 'round' as const };
-  const sway = Math.sin(time * 2.4 + gate.seed) * 4;
-  const shaft = (sy: number, sh: number) => {
-    if (sh <= 1) return;
-    g.roundRect(x + 8, sy, PIPE_W - 16, sh, 18).fill(0xe25b86).stroke(stroke);
-    g.rect(x + 14, sy, 6, sh).fill({ color: 0xffd0dc, alpha: 0.45 });
-    const sprigs = Math.max(0, Math.floor(sh / 52));
-    for (let i = 0; i < sprigs; i++) {
-      const yy = sy + 24 + i * 52;
-      if (yy > sy + sh - 18) break;
-      g.ellipse(x + 2, yy, 11, 7).fill(0xf08a3c).stroke({ width: 2.2, color: 0x8a3d12 });
-      g.ellipse(x + PIPE_W - 2, yy + 18, 10, 6).fill(0xc86bdc).stroke({ width: 2.2, color: 0x6a3480 });
-    }
-    const fishY = sy + sh * (0.35 + 0.3 * Math.sin(time * 1.5 + gate.seed));
-    if (fishY > sy + 12 && fishY < sy + sh - 12) fish(g, x - 16, fishY, time);
-    const bubble = sy + ((time * 26 + gate.seed) % Math.max(sh, 1));
-    g.circle(x + PIPE_W + 12, sy + sh - bubble, 3.2).fill({ color: 0xffffff, alpha: 0.72 });
-    g.circle(x + PIPE_W + 18, sy + sh - ((bubble + 18) % sh), 2).fill({ color: 0xffffff, alpha: 0.5 });
-  };
-  const topY = gate.ceil - 20;
-  shaft(topY, gate.openTop - lip - topY);
-  shaft(gate.openBot + lip, gate.floor - (gate.openBot + lip) + 4);
-  head(g, x, gate.openTop - lip, true);
-  head(g, x, gate.openBot, false);
-
-  function head(gfx: Graphics, hx: number, hy: number, hanging: boolean): void {
-    const cy = hanging ? hy + 16 : hy + 14;
-    gfx.ellipse(hx + PIPE_W / 2, cy, 32, 14).fill(0xff7b59).stroke({ width: 3, color: 0x8a3418 });
-    gfx.ellipse(hx + 22, cy - 2, 10, 7).fill(0xffb086);
-    gfx.ellipse(hx + 46, cy + 2, 9, 6).fill(0xf2c14b);
-    gfx.circle(hx + 30, cy + 1, 2).fill(0xfffdf6);
-    gfx.circle(hx + 42, cy - 1, 1.6).fill(0xfffdf6);
-    const root = hanging ? hy + 6 : hy + lip - 6;
-    const away = hanging ? -1 : 1;
-    for (let i = 0; i < 4; i++) {
-      const rx = hx + 12 + i * 14;
-      const lean = sway + i * 1.4;
-      gfx
-        .moveTo(rx, root)
-        .quadraticCurveTo(rx + lean, root + away * 8, rx - 2, root + away * 15)
-        .stroke({ width: 2.4, color: 0x7d4bb0, cap: 'round' });
-    }
-  }
-}
-
-function fish(g: Graphics, x: number, y: number, time: number): void {
-  const wag = Math.sin(time * 8) * 2;
-  g.ellipse(x, y, 8, 4.2).fill(0x3b82e0).stroke({ width: 2, color: 0x1d4e89 });
-  g.poly([x - 7, y, x - 14, y - 4 - wag, x - 14, y + 4 + wag], true).fill(0xf2c14b);
-  g.circle(x + 3, y - 1, 1.1).fill(0xfffdf6);
 }
 
 function unit(n: number): number {

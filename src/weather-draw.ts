@@ -25,11 +25,6 @@ const SKY: Record<WeatherId, FillGradient> = {
     { offset: 0.55, color: 0x9bb4c4 },
     { offset: 1, color: 0xc9d5c4 },
   ]),
-  storm: skyFill([
-    { offset: 0, color: 0x243140 },
-    { offset: 0.5, color: 0x3e5364 },
-    { offset: 1, color: 0x6a7568 },
-  ]),
   blizzard: skyFill([
     { offset: 0, color: 0xc5d6e4 },
     { offset: 0.45, color: 0xe4eef4 },
@@ -141,7 +136,7 @@ export function drawSky(
   g.rect(box.left, top, box.right - box.left, Math.max(1, floor - top)).fill(sky);
   if (box.bottom > floor) g.rect(box.left, floor, box.right - box.left, box.bottom - floor).fill(dirt);
 
-  if (id === 'storm' || id === 'blizzard') return;
+  if (id === 'blizzard') return;
 
   const sunX = box.left + (box.right - box.left) * (id === 'heat' ? 0.86 : 0.2);
   const sunY = box.top + (floor - box.top) * (id === 'heat' ? 0.14 : 0.2);
@@ -175,35 +170,18 @@ export function drawSky(
 }
 
 export function drawClouds(g: Graphics, id: WeatherId, scroll: number, box: Box): void {
-  const speed = id === 'wind' ? 0.9 : id === 'storm' ? 0.45 : 0.22;
-  const band = id === 'storm' ? 380 : 520;
+  const speed = id === 'wind' ? 0.9 : 0.22;
+  const band = 520;
   const drift = scroll * speed;
-  const tint =
-    id === 'storm' ? 0x5c6770 : id === 'rain' ? 0xd5dde6 : id === 'heat' ? 0xfff1d2 : 0xffffff;
-  const alpha = id === 'heat' ? 0.72 : id === 'fog' ? 0.55 : id === 'storm' ? 0.96 : 0.94;
+  const tint = id === 'rain' ? 0xd5dde6 : id === 'heat' ? 0xfff1d2 : 0xffffff;
+  const alpha = id === 'heat' ? 0.72 : id === 'fog' ? 0.55 : 0.94;
   const start = Math.floor((box.left + drift) / band) - 1;
   const end = Math.floor((box.right + drift) / band) + 1;
   for (let i = start; i <= end; i++) {
     const origin = i * band - drift;
-    const low = id === 'storm' ? 70 : 0;
-    cloud(g, origin + 36, 38 + low, id === 'storm' ? 1.15 : 0.82, tint, alpha);
+    cloud(g, origin + 36, 38, 0.82, tint, alpha);
     if (id !== 'heat') cloud(g, origin + 250, id === 'blizzard' ? 180 : 448, 0.7, tint, alpha * 0.9);
-    cloud(g, origin + 430, 34 + low * 0.4, id === 'storm' ? 1.25 : 1, tint, alpha);
-  }
-}
-
-function tornado(g: Graphics, x: number, floor: number, time: number): void {
-  for (let i = 0; i < 16; i++) {
-    const t = i / 15;
-    const y = floor - 4 - t * 250;
-    const sway = Math.sin(time * 5 + i * 0.65) * (5 + t * 16);
-    const rx = 36 * t * t + 5;
-    const color = i % 2 === 0 ? 0x55636c : 0x8d9aa2;
-    g.ellipse(x + sway, y, rx, 7).fill({ color, alpha: 0.58 + (1 - t) * 0.28 });
-  }
-  for (let i = 0; i < 7; i++) {
-    const a = time * 4.2 + (i * Math.PI * 2) / 7;
-    g.circle(x + Math.cos(a) * 32, floor - 8 + Math.sin(a) * 5, 2.2).fill({ color: 0x6b4423, alpha: 0.75 });
+    cloud(g, origin + 430, 34, 1, tint, alpha);
   }
 }
 
@@ -228,7 +206,6 @@ function nearSlope(x: number, scroll: number, floor: number): number {
 // slashes reads as stripes, so nothing here shares a column or a fall rate.
 function drawRain(
   g: Graphics,
-  heavy: boolean,
   time: number,
   scroll: number,
   box: Box,
@@ -238,12 +215,9 @@ function drawRain(
   const spanW = Math.max(1, box.right - box.left);
   const spanH = Math.max(1, floor - box.top);
   const pace = reduceMotion ? 0.25 : 1;
-  const count = Math.max(
-    heavy ? 90 : 70,
-    Math.min(heavy ? 220 : 160, Math.round((spanW * spanH) / (heavy ? 1800 : 2400))),
-  );
-  const slant = heavy ? -0.28 : -0.14;
-  const body = heavy ? 0xc5d7e6 : 0xd7ebf8;
+  const count = Math.max(70, Math.min(160, Math.round((spanW * spanH) / 2400)));
+  const slant = -0.14;
+  const body = 0xd7ebf8;
   const head = 0xf4fbff;
 
   const mist = Math.round(count * 0.8);
@@ -263,14 +237,14 @@ function drawRain(
     const phase = hashUnit(i * 5 + 102);
     const depth = hashUnit(i * 5 + 103);
     const wobble = hashUnit(i * 5 + 104);
-    const len = (heavy ? 6 : 4.5) + depth * (heavy ? 7 : 4.5);
-    const radius = (heavy ? 1.35 : 1.15) + depth * (heavy ? 1.05 : 0.7);
+    const len = 4.5 + depth * 4.5;
+    const radius = 1.15 + depth * 0.7;
     const lean = slant * (0.8 + wobble * 0.45) * len;
-    const speed = (heavy ? 860 : 580) * (0.55 + depth * 0.8) * pace;
+    const speed = 580 * (0.55 + depth * 0.8) * pace;
     const travel = spanH + len + 28;
     const y2 = box.top + wrap(phase * travel + time * speed, travel);
     const x2 = box.left + wrap(along * spanW + scroll * (0.06 + depth * 0.16) + time * slant * (18 + depth * 30) * pace, spanW);
-    const alpha = (heavy ? 0.5 : 0.4) + depth * (heavy ? 0.38 : 0.3);
+    const alpha = 0.4 + depth * 0.3;
     const slope = nearSlope(x2, scroll, floor);
     if (y2 < slope) {
       const x1 = x2 - lean;
@@ -498,13 +472,6 @@ export function drawSeason(
   }
 }
 
-export function drawTornado(g: Graphics, id: WeatherId, time: number, box: Box, floor: number): void {
-  if (id !== 'storm') return;
-  const span = box.right - box.left + 220;
-  const x = box.left - 90 + ((time * 62) % span);
-  tornado(g, x, floor, time);
-}
-
 export function drawAtmosphere(
   g: Graphics,
   id: WeatherId,
@@ -517,20 +484,7 @@ export function drawAtmosphere(
   const wide = box.right - box.left;
   const tall = floor - box.top;
 
-  if (id === 'rain' || id === 'storm') {
-    const heavy = id === 'storm';
-    drawRain(g, heavy, time, scroll, box, floor, reduceMotion);
-    if (heavy && !reduceMotion && time % 3.4 < 0.1) {
-      g.rect(box.left, box.top, wide, tall + 8).fill({ color: 0xfff6d8, alpha: 0.38 });
-      const bx = box.left + wide * (0.25 + (Math.floor(time / 3.4) % 3) * 0.22);
-      g.poly([bx, box.top + 8, bx + 10, box.top + 48, bx - 6, box.top + 48, bx + 14, box.top + 110], false).stroke({
-        width: 3,
-        color: 0xfff6c2,
-        cap: 'round',
-        join: 'round',
-      });
-    }
-  }
+  if (id === 'rain') drawRain(g, time, scroll, box, floor, reduceMotion);
 
   if (id === 'blizzard') {
     const spanW = Math.max(1, wide);

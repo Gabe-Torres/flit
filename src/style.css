@@ -32,69 +32,62 @@ body {
 
 #roster {
   position: fixed;
-  z-index: 2;
-  left: 50%;
-  bottom: max(14px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
+  z-index: 4;
+  top: calc(max(12px, env(safe-area-inset-top)) + 58px);
+  right: max(10px, env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: min(524px, calc(100vw - 16px));
+  align-items: stretch;
+  gap: 10px;
+  width: min(420px, calc(100vw - 20px));
+  max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - 78px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: 12px;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: rgba(255, 248, 234, 0.97);
+  box-shadow: 0 4px 0 #c4a27a;
 }
 
 #roster.is-hidden {
   display: none;
 }
 
-#modes {
-  display: flex;
-  gap: 6px;
-}
-
-#modes button {
-  width: auto;
-  min-width: 76px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-#modes button[aria-pressed='true'] {
-  background: #ffe08a;
-}
-
+#modes,
 #themes {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
+#modes button,
 #themes button {
+  flex: 1;
   width: auto;
-  min-width: 54px;
-  height: 34px;
-  padding: 0 9px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 8px;
   border-radius: 999px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
 }
 
+#modes button[aria-pressed='true'],
 #themes button[aria-pressed='true'] {
   background: #ffe08a;
 }
 
 #bird-name {
+  align-self: center;
   margin: 0;
-  padding: 2px 12px 3px;
+  padding: 4px 14px 5px;
   border: 3px solid var(--ink);
   border-radius: 999px;
-  background: rgba(255, 248, 234, 0.94);
+  background: #fffdf8;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -102,25 +95,25 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
-  padding: 5px;
-  border: 3px solid var(--ink);
-  border-radius: 22px;
-  background: rgba(255, 248, 234, 0.94);
-  box-shadow: 0 3px 0 #c4a27a;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 #birds button {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-width: 2px;
   box-shadow: none;
 }
 
 #birds button svg {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
 }
 
 #birds button[aria-pressed='true'] {
@@ -129,11 +122,15 @@ body {
 
 #tools {
   position: fixed;
-  z-index: 2;
+  z-index: 3;
   top: max(12px, env(safe-area-inset-top));
   right: max(12px, env(safe-area-inset-right));
   display: flex;
   gap: 8px;
+}
+
+#options[hidden] {
+  display: none;
 }
 
 button {
@@ -189,6 +186,33 @@ button svg {
 
 #mute.is-muted {
   background: #ffd9d2;
+}
+
+@media (max-width: 700px) {
+  #modes button,
+  #themes button {
+    height: 48px;
+    font-size: 20px;
+  }
+
+  #bird-name {
+    font-size: 20px;
+    padding: 6px 16px 7px;
+  }
+
+  #birds {
+    gap: 8px;
+  }
+
+  #birds button {
+    width: 48px;
+    height: 48px;
+  }
+
+  #birds button svg {
+    width: 30px;
+    height: 30px;
+  }
 }
 
 .sr-only {

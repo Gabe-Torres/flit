@@ -12,18 +12,20 @@ const canvas = document.querySelector<HTMLCanvasElement>('#view');
 const statusEl = document.querySelector<HTMLElement>('#status');
 const pauseQuery = document.querySelector<HTMLButtonElement>('#pause');
 const muteQuery = document.querySelector<HTMLButtonElement>('#mute');
+const optionsQuery = document.querySelector<HTMLButtonElement>('#options');
 const rosterQuery = document.querySelector<HTMLElement>('#roster');
 const birdNameQuery = document.querySelector<HTMLElement>('#bird-name');
 const birdsQuery = document.querySelector<HTMLElement>('#birds');
 const modesQuery = document.querySelector<HTMLElement>('#modes');
 const themesQuery = document.querySelector<HTMLElement>('#themes');
-if (!canvas || !statusEl || !pauseQuery || !muteQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery || !themesQuery) {
+if (!canvas || !statusEl || !pauseQuery || !muteQuery || !optionsQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery || !themesQuery) {
   throw new Error('Flit is missing a page element');
 }
 const view = canvas;
 const statusNode = statusEl;
 const pauseBtn = pauseQuery;
 const muteBtn = muteQuery;
+const optionsBtn = optionsQuery;
 const roster = rosterQuery;
 const birdNameEl = birdNameQuery;
 const birdsEl = birdsQuery;
@@ -40,6 +42,7 @@ let run: Run = createRun(mixSeed(), modeId);
 let bests = readBests();
 let birdId = readBird();
 let paused = false;
+let menuOpen = false;
 let wing = 0;
 let pop = 0;
 let squash = 0;
@@ -96,6 +99,10 @@ function readMode(): ModeId {
       localStorage.setItem('flit-mode', 'easy');
       return 'easy';
     }
+    if (saved === 'random') {
+      localStorage.setItem('flit-mode', 'normal');
+      return 'normal';
+    }
     if (saved && isModeId(saved)) return saved;
   } catch {
     // Storage can be blocked. Easy is the default.
@@ -118,7 +125,7 @@ function modeName(id: ModeId): string {
 function readTheme(): ThemeId {
   try {
     const saved = localStorage.getItem('flit-theme');
-    if (saved === 'mars') {
+    if (saved === 'mars' || saved === 'reef') {
       localStorage.setItem('flit-theme', 'classic');
       return 'classic';
     }
@@ -153,7 +160,6 @@ function readBests(): Record<ModeId, number> {
     easy: Math.max(easy, legacy),
     normal: readNumber(bestKey('normal')),
     hard: readNumber(bestKey('hard')),
-    random: readNumber(bestKey('random')),
   };
 }
 
@@ -219,9 +225,27 @@ function chooseTheme(id: ThemeId): void {
   describe();
 }
 
-function paintRoster(): void {
-  const open = run.phase === 'ready' || run.phase === 'over';
-  roster.classList.toggle('is-hidden', !open);
+function picksOpen(): boolean {
+  return run.phase === 'ready' || run.phase === 'over';
+}
+
+function paintMenu(): void {
+  if (!picksOpen()) menuOpen = false;
+  optionsBtn.hidden = !picksOpen();
+  optionsBtn.setAttribute('aria-expanded', menuOpen ? 'true' : 'false');
+  roster.classList.toggle('is-hidden', !menuOpen);
+}
+
+function toggleMenu(): void {
+  if (!picksOpen()) return;
+  menuOpen = !menuOpen;
+  paintMenu();
+}
+
+function closeMenu(): void {
+  if (!menuOpen) return;
+  menuOpen = false;
+  paintMenu();
 }
 
 function paintMute(): void {
@@ -318,6 +342,7 @@ function resetRun(andFly: boolean): void {
 }
 
 function onFly(): void {
+  closeMenu();
   audio.unlock();
   if (paused) {
     paused = false;
@@ -364,11 +389,21 @@ function resize(): void {
 window.addEventListener('pointerdown', (event) => {
   if (fromButton(event) || fromRoster(event)) return;
   event.preventDefault();
+  if (menuOpen) {
+    closeMenu();
+    return;
+  }
   onFly();
 });
 
 window.addEventListener('keydown', (event) => {
   if (event.repeat) return;
+  if (event.code === 'Escape') {
+    if (!menuOpen) return;
+    event.preventDefault();
+    closeMenu();
+    return;
+  }
   if (event.code === 'Space' || event.code === 'ArrowUp' || event.code === 'KeyW') {
     event.preventDefault();
     onFly();
@@ -418,6 +453,7 @@ for (const bird of BIRDS) {
   birdsEl.append(button);
 }
 
+optionsBtn.addEventListener('click', toggleMenu);
 pauseBtn.addEventListener('click', togglePause);
 muteBtn.addEventListener('click', toggleMute);
 window.addEventListener('resize', resize);
@@ -437,7 +473,7 @@ paintPause();
 paintBird();
 paintMode();
 paintTheme();
-paintRoster();
+paintMenu();
 resize();
 describe();
 
@@ -519,7 +555,7 @@ function frame(now: number): void {
 
   describe();
   paintForecast();
-  paintRoster();
+  paintMenu();
   stage?.render({
     run,
     best: shownBest(),

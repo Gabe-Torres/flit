@@ -12,12 +12,13 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 
 The bird falls. You keep it in the air.
 
-- On the title, pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, magpie, pterodactyl, drone, lunar lander, Ha'tak, kiwi, weka, flying rainbow trout, rocket shark, Appa, Momo, Charizard, or Mew. The choice stays in this browser.
-- On the title, pick a difficulty. Easy begins with far gates and a tall opening. Every 5 you clear, the next ones sit a little closer and the opening gets a little shorter. After 20, they match the original. Normal is that original distance and opening from the first gate. Hard is tighter than that original, and the hole can sit anywhere. Random rolls every gate on its own, so a far gate can be followed by a close one, then a far one again. The choice stays in this browser.
-- On the title, and again after a run, pick a map. Classic keeps the green gates. Roman builds stone columns wrapped in vines. Colony is a broken ship with aliens crawling on the wreck. Coral grows coral towers, with fish beside them. The gaps stay the same. The choice stays in this browser.
+- On the title, and again after a run, a button beside pause opens the flyer, the map, and the difficulty.
+- Pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, magpie, pterodactyl, drone, lunar lander, Ha'tak, kiwi, weka, flying rainbow trout, rocket shark, Appa, Momo, Charizard, or Mew. The choice stays in this browser.
+- Easy begins with far gates and a tall opening. Every 5 you clear, the next ones sit a little closer and the opening gets a little shorter. After 20, they match the original. Normal is that original distance and opening from the first gate. Hard is tighter than that original, and the hole can sit anywhere. The choice stays in this browser.
+- Classic keeps the green gates. Roman builds stone columns wrapped in vines. Colony is a broken ship with aliens crawling on the wreck. The gaps stay the same. The choice stays in this browser.
 - On the title, a stargate drifts across the sky on every map. The wormhole turns.
 - The field follows the real date where you are: spring, summer, autumn, or winter. A holiday dresses the whole month it falls in: January is New Year, February is Valentine's Day, March is St. Patrick's Day, the month of Easter is Easter, October is Halloween, November is Thanksgiving, and December is Christmas.
-- Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
+- Each run has its own weather: clear, rain, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
 - Each gate you clear is one point.
 - A gate or the ground ends the run.
 - Each run has a 1 in 100 chance a pterodactyl flies in after you clear the first pipe, grabs you, and carries you away. The chance lasts until you clear 25 pipes.
@@ -28,12 +29,12 @@ The bird falls. You keep it in the air.
 On a phone:
 
 - Tap the screen to flap. The same tap starts a run, resumes a pause, and starts the next run after the score card.
-- The buttons in the corner pause and mute.
+- A button beside pause opens the flyer, the map, and the difficulty. The other corner buttons pause and mute.
 
 On a computer:
 
 - Click the screen, or press Space, Up, or W, to flap. The same control starts a run, resumes a pause, and starts the next run after the score card.
-- P pauses. M mutes. R returns to the title. The buttons in the corner pause and mute too.
+- P pauses. M mutes. R returns to the title. The corner buttons pause and mute too, and the one beside pause opens the flyer, the map, and the difficulty.
 
 Each difficulty keeps its own best score in this browser. That score sits in the top left, under the name of the difficulty you have selected, and the medal that score earned sits beside the number. A run of 30 earns bronze, 70 silver, and 100 a ruby. A few more rubies are buried in the dirt. They are just sitting there.
 

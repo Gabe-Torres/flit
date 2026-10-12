@@ -4,7 +4,6 @@ import type { SeasonId } from './season.ts';
 export const WEATHERS = [
   { id: 'clear', name: 'Clear' },
   { id: 'rain', name: 'Rain' },
-  { id: 'storm', name: 'Storm' },
   { id: 'blizzard', name: 'Blizzard' },
   { id: 'heat', name: 'Heat wave' },
   { id: 'fog', name: 'Fog' },
@@ -78,7 +77,6 @@ export function terrainFor(id: WeatherId, season: SeasonId, holiday: HolidayId |
     return { hillFar: 0xd6c36a, hillNear: 0xc4a24a, grass: 0xc6a24e, grassDark: 0xa8843a, dirt: 0xe08a3c, tuft: 0xd2b15a, lean: 0 };
   }
   const land = holiday ? HOLIDAY_LAND[holiday] : SEASON_LAND[season];
-  if (id === 'storm') return tint(land, 0.58);
   if (id === 'rain') return tint(land, 0.84);
   if (id === 'fog') return tint(land, 0.9);
   if (id === 'wind') return { ...land, lean: land.lean + 8 };

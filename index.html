@@ -35,13 +35,18 @@
 <body>
   <canvas id="view" width="390" height="680" aria-label="Flit, a one-button flyer"></canvas>
   <p id="status" class="sr-only" aria-live="polite">Flit.</p>
-  <div id="roster">
+  <div id="roster" class="is-hidden">
     <div id="themes" role="group" aria-label="Choose a map"></div>
     <div id="modes" role="group" aria-label="Choose a difficulty"></div>
     <p id="bird-name"></p>
     <div id="birds" role="group" aria-label="Choose a flyer"></div>
   </div>
   <div id="tools">
+    <button id="options" type="button" aria-label="Choose a flyer, map, and difficulty" aria-expanded="false" aria-controls="roster">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M4 5.5h16v2.6H4zM4 10.7h16v2.6H4zM4 15.9h16v2.6H4z" />
+      </svg>
+    </button>
     <button id="pause" type="button" aria-label="Pause" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path class="bars" fill="currentColor" d="M7 4.5h3.2v15H7zM13.8 4.5H17v15h-3.2z" />
