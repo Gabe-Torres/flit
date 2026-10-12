@@ -77,55 +77,126 @@ function plain(text: string, size: number, fill: number): Text {
   return label;
 }
 
+function ringBand(
+  g: Graphics,
+  x: number,
+  y: number,
+  inner: number,
+  outer: number,
+  colorAt: (mid: number) => number,
+): void {
+  const n = 28;
+  for (let i = 0; i < n; i++) {
+    const a0 = (i / n) * Math.PI * 2;
+    const a1 = ((i + 1.2) / n) * Math.PI * 2;
+    const mid = (i + 0.5) / n * Math.PI * 2;
+    g.poly(
+      [
+        x + Math.cos(a0) * inner,
+        y + Math.sin(a0) * inner,
+        x + Math.cos(a1) * inner,
+        y + Math.sin(a1) * inner,
+        x + Math.cos(a1) * outer,
+        y + Math.sin(a1) * outer,
+        x + Math.cos(a0) * outer,
+        y + Math.sin(a0) * outer,
+      ],
+      true,
+    ).fill(colorAt(mid));
+  }
+}
+
 function drawStargate(g: Graphics, x: number, y: number, time: number): void {
-  const spin = time * 2.4;
-  g.circle(x, y, 32).fill({ color: 0x8ec8ff, alpha: 0.16 });
-  g.circle(x, y, 17.5).fill(0x123a66);
-  g.circle(x, y, 13.5).fill(0x2f7ec4);
-  g.circle(x, y, 8.5).fill({ color: 0xc5ebff, alpha: 0.92 });
-  g.circle(x, y, 4.6 + Math.sin(time * 3.1) * 0.55).fill(0xf7fdff);
-  for (let i = 0; i < 7; i++) {
-    const orbit = 4.2 + (i % 3) * 2.8;
-    const a = spin * (1.1 + (i % 3) * 0.28) + (i * Math.PI * 2) / 7;
-    const px = x + Math.cos(a) * orbit;
-    const py = y + Math.sin(a) * orbit * 0.8;
-    const tangent = a + Math.PI / 2;
-    const len = 2.8 + (i % 2) * 0.7;
+  const spin = time * 1.8;
+  const glow = 0.16 + Math.sin(time * 2.1) * 0.05;
+  g.circle(x, y, 38).fill({ color: 0x7eb6ff, alpha: glow * 0.65 });
+  g.circle(x, y, 30).fill({ color: 0xc5e4ff, alpha: glow });
+
+  g.circle(x, y, 16.8).fill(0x0c2c52);
+  g.circle(x, y, 14.6).fill(0x1864a4);
+  for (let arm = 0; arm < 4; arm++) {
+    const dir = arm % 2 === 0 ? 1 : -0.72;
+    const base = spin * dir + (arm * Math.PI) / 2;
+    for (let step = 0; step < 7; step++) {
+      const t = step / 6;
+      const a = base + t * 3.1;
+      const rad = 1.2 + t * 12.4;
+      const color = t < 0.3 ? 0xf4fbff : t < 0.65 ? 0x9ad4f6 : 0x3d92cc;
+      g.circle(x + Math.cos(a) * rad, y + Math.sin(a) * rad, 3.15 * (1 - t * 0.5)).fill({
+        color,
+        alpha: 0.22 + (1 - t) * 0.55,
+      });
+    }
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = -spin * 1.6 + (i * Math.PI * 2) / 8;
+    g.circle(x + Math.cos(a) * 12.4, y + Math.sin(a) * 12.4, i % 2 === 0 ? 1.15 : 0.7).fill({
+      color: 0xf7fdff,
+      alpha: 0.45 + (i % 2) * 0.4,
+    });
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = spin * 1.35 + (i * Math.PI * 2) / 5;
+    const rad = 6.2 + (i % 2) * 3.2;
+    const px = x + Math.cos(a) * rad;
+    const py = y + Math.sin(a) * rad;
+    const tangent = a + Math.PI / 2 + 0.45;
+    const len = 3.8;
     const c = Math.cos(tangent);
     const s = Math.sin(tangent);
-    const nx = -s * 0.95;
-    const ny = c * 0.95;
-    g.beginPath();
     g.poly(
-      [px + c * len, py + s * len, px + nx, py + ny, px - c * len * 0.35, py - s * len * 0.35, px - nx, py - ny],
+      [px + c * len, py + s * len, px - s * 0.85, py + c * 0.85, px - c * len * 0.25, py - s * len * 0.25, px + s * 0.85, py - c * 0.85],
       true,
-    ).fill({ color: i % 2 === 0 ? 0xf4fbff : 0x9fd4ff, alpha: 0.8 });
+    ).fill({ color: 0xf7fdff, alpha: 0.78 });
   }
-  g.beginPath();
-  g.circle(x, y, 21).stroke({ width: 5.4, color: 0x2c3642 });
-  g.beginPath();
-  g.circle(x, y, 21).stroke({ width: 1.7, color: 0x8b9bab });
-  g.beginPath();
-  g.circle(x, y, 17.4).stroke({ width: 1.35, color: 0x141b24 });
+  const pulse = 4.4 + Math.sin(time * 3.2) * 0.75;
+  g.circle(x, y, 7.4).fill({ color: 0xd6f2ff, alpha: 0.96 });
+  g.circle(x, y, pulse).fill(0xffffff);
+  g.circle(x - 1.5, y - 1.7, 1.45).fill({ color: 0xffffff, alpha: 0.95 });
+
+  ringBand(g, x, y, 16.2, 18.2, () => 0x101820);
+  ringBand(g, x, y, 18, 23.4, (mid) => {
+    const light = Math.cos(mid - 2.2) * 0.5 + 0.5;
+    if (light > 0.72) return 0xb7c6d4;
+    if (light > 0.42) return 0x738494;
+    return 0x3c4a58;
+  });
+  ringBand(g, x, y, 23.2, 25.6, (mid) => (Math.cos(mid - 2.2) > 0.35 ? 0x2a3440 : 0x161c24));
+
   for (let i = 0; i < 9; i++) {
     const a = -Math.PI / 2 + (i * Math.PI * 2) / 9;
-    const cx = x + Math.cos(a) * 21;
-    const cy = y + Math.sin(a) * 21;
-    g.beginPath();
-    g.circle(cx, cy, 2.05).fill(i === 0 ? 0xffffff : 0xd5e8f8);
-    g.beginPath();
-    g.circle(cx, cy, 1).fill(0xffffff);
+    const engaged = i === 0;
+    const spread = 0.1;
+    const outer = engaged ? 27.4 : 26.2;
+    g.poly(
+      [
+        x + Math.cos(a - spread) * 19.2,
+        y + Math.sin(a - spread) * 19.2,
+        x + Math.cos(a + spread) * 19.2,
+        y + Math.sin(a + spread) * 19.2,
+        x + Math.cos(a + spread * 0.45) * outer,
+        y + Math.sin(a + spread * 0.45) * outer,
+        x + Math.cos(a - spread * 0.45) * outer,
+        y + Math.sin(a - spread * 0.45) * outer,
+      ],
+      true,
+    ).fill(engaged ? 0xe7f2fb : 0x9aabba);
+    const lx = x + Math.cos(a) * 22.3;
+    const ly = y + Math.sin(a) * 22.3;
+    if (engaged) g.circle(lx, ly, 3.4).fill({ color: 0x9fd4ff, alpha: 0.7 });
+    g.circle(lx, ly, engaged ? 1.85 : 1.4).fill(0xffffff);
+    g.circle(lx - 0.35, ly - 0.4, engaged ? 0.55 : 0.4).fill({ color: 0xd7f1ff, alpha: 0.9 });
   }
 }
 
 function drawTitleStargate(g: Graphics, box: Box, time: number, reduce: boolean): void {
-  const r = 21;
+  const r = 27;
   const hudBottom = box.top + 62;
   const titleTop = 74;
   const bob = reduce ? 0 : Math.sin(time * 0.85) * 5;
   const gap = titleTop - hudBottom;
-  const y = gap > r * 2 + 18 ? (hudBottom + titleTop) / 2 + bob : hudBottom + r + 10 + bob;
-  const span = box.right - box.left + r * 5;
+  const y = gap > r * 2 + 18 ? (hudBottom + titleTop) / 2 + bob : hudBottom + r + 14 + bob;
+  const span = box.right - box.left + r * 4;
   const travel = reduce ? span * 0.22 : (time * 34) % span;
   drawStargate(g, box.left - r * 2 + travel, y, reduce ? 0.6 : time);
 }
