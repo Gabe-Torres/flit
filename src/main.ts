@@ -77,6 +77,10 @@ function readBird(): BirdId {
       localStorage.setItem('flit-bird', 'magpie');
       return 'magpie';
     }
+    if (saved === 'appa' || saved === 'momo' || saved === 'charizard') {
+      localStorage.setItem('flit-bird', 'finch');
+      return 'finch';
+    }
     if (saved && isBirdId(saved)) return saved;
   } catch {
     // Storage can be blocked. The finch is the default.

@@ -13,7 +13,7 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 The bird falls. You keep it in the air.
 
 - On the title, and again after a run, a button beside pause opens the flyer, the map, and the difficulty.
-- Pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, magpie, pterodactyl, drone, lunar lander, Ha'tak, kiwi, weka, flying rainbow trout, rocket shark, Appa, Momo, Charizard, or Mew. The choice stays in this browser.
+- Pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, magpie, pterodactyl, drone, lunar lander, Ha'tak, kiwi, weka, flying rainbow trout, rocket shark, or Mew. The choice stays in this browser.
 - Easy begins with far gates and a tall opening. Every 5 you clear, the next ones sit a little closer and the opening gets a little shorter. After 20, they match the original. Normal is that original distance and opening from the first gate. Hard is tighter than that original, and the hole can sit anywhere. The choice stays in this browser.
 - Classic keeps the green gates. Roman builds stone columns wrapped in vines. The gaps stay the same. The choice stays in this browser.
 - On the title, a stargate drifts across the sky on every map. The wormhole turns.
