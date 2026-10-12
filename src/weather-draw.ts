@@ -224,6 +224,57 @@ function nearSlope(x: number, scroll: number, floor: number): number {
   return floor - 36 + Math.sin((x + scroll * 0.55) / 54) * 12;
 }
 
+// Storm rain is a downpour: long streaks with their own speeds, plus bright
+// heads on the near ones. The positions stay hashed so they do not line up.
+function drawDownpour(
+  g: Graphics,
+  time: number,
+  scroll: number,
+  box: Box,
+  floor: number,
+  reduceMotion: boolean,
+): void {
+  const spanW = Math.max(1, box.right - box.left);
+  const spanH = Math.max(1, floor - box.top);
+  const pace = reduceMotion ? 0.25 : 1;
+  const count = Math.max(140, Math.min(260, Math.round((spanW * spanH) / 1000)));
+  const slant = -0.62;
+  const color = 0xd7e9f8;
+
+  for (let i = 0; i < count; i++) {
+    const along = hashUnit(i * 5 + 301);
+    const phase = hashUnit(i * 5 + 302);
+    const depth = hashUnit(i * 5 + 303);
+    const wobble = hashUnit(i * 5 + 304);
+    const len = 26 + depth * 30;
+    const lean = slant * (0.78 + wobble * 0.4) * len;
+    const speed = (980 + depth * 820) * pace;
+    const travel = spanH + len + 48;
+    const y2 = box.top + wrap(phase * travel + time * speed, travel);
+    const x2 =
+      box.left + wrap(along * spanW + scroll * (0.14 + depth * 0.22) + time * slant * (48 + depth * 70) * pace, spanW);
+    const slope = nearSlope(x2, scroll, floor);
+    if (y2 >= slope) {
+      if (y2 < slope + 20 && depth > 0.62) {
+        const fade = 1 - (y2 - slope) / 20;
+        g.ellipse(x2, slope - 0.6, 3 + depth * 5, 1.3).stroke({
+          width: 1.2,
+          color: 0xf4fbff,
+          alpha: fade * 0.65,
+        });
+      }
+      continue;
+    }
+    const alpha = 0.22 + depth * 0.62;
+    g.moveTo(x2 - lean, y2 - len)
+      .lineTo(x2, y2)
+      .stroke({ width: 1.15 + depth * 1.35, color, alpha, cap: 'round' });
+    if (depth > 0.48) {
+      g.circle(x2, y2, 1.2 + depth * 1.45).fill({ color: 0xf7fbff, alpha: Math.min(0.96, alpha + 0.2) });
+    }
+  }
+}
+
 // Each drop keeps its own place, length, and speed. A shared grid of identical
 // slashes reads as stripes, so nothing here shares a column or a fall rate.
 function drawRain(
@@ -237,13 +288,14 @@ function drawRain(
 ): void {
   const spanW = Math.max(1, box.right - box.left);
   const spanH = Math.max(1, floor - box.top);
+  if (heavy) {
+    drawDownpour(g, time, scroll, box, floor, reduceMotion);
+    return;
+  }
   const pace = reduceMotion ? 0.25 : 1;
-  const count = Math.max(
-    heavy ? 90 : 70,
-    Math.min(heavy ? 220 : 160, Math.round((spanW * spanH) / (heavy ? 1800 : 2400))),
-  );
-  const slant = heavy ? -0.28 : -0.14;
-  const body = heavy ? 0xc5d7e6 : 0xd7ebf8;
+  const count = Math.max(70, Math.min(160, Math.round((spanW * spanH) / 2400)));
+  const slant = -0.14;
+  const body = 0xd7ebf8;
   const head = 0xf4fbff;
 
   const mist = Math.round(count * 0.8);
@@ -263,14 +315,14 @@ function drawRain(
     const phase = hashUnit(i * 5 + 102);
     const depth = hashUnit(i * 5 + 103);
     const wobble = hashUnit(i * 5 + 104);
-    const len = (heavy ? 6 : 4.5) + depth * (heavy ? 7 : 4.5);
-    const radius = (heavy ? 1.35 : 1.15) + depth * (heavy ? 1.05 : 0.7);
+    const len = 4.5 + depth * 4.5;
+    const radius = 1.15 + depth * 0.7;
     const lean = slant * (0.8 + wobble * 0.45) * len;
-    const speed = (heavy ? 860 : 580) * (0.55 + depth * 0.8) * pace;
+    const speed = 580 * (0.55 + depth * 0.8) * pace;
     const travel = spanH + len + 28;
     const y2 = box.top + wrap(phase * travel + time * speed, travel);
     const x2 = box.left + wrap(along * spanW + scroll * (0.06 + depth * 0.16) + time * slant * (18 + depth * 30) * pace, spanW);
-    const alpha = (heavy ? 0.5 : 0.4) + depth * (heavy ? 0.38 : 0.3);
+    const alpha = 0.4 + depth * 0.3;
     const slope = nearSlope(x2, scroll, floor);
     if (y2 < slope) {
       const x1 = x2 - lean;

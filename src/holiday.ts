@@ -41,36 +41,23 @@ function easterSunday(year: number): { month: number; day: number } {
   return { month: month - 1, day };
 }
 
-function onEasterWeekend(date: Date): boolean {
-  const easter = easterSunday(date.getFullYear());
-  const sunday = new Date(date.getFullYear(), easter.month, easter.day);
-  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const from = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() - 1);
-  const to = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + 1);
-  const time = day.getTime();
-  return time >= from.getTime() && time <= to.getTime();
-}
-
-// Fourth Thursday of November, plus the Friday after.
-function onThanksgiving(date: Date): boolean {
-  if (date.getMonth() !== 10) return false;
-  const first = new Date(date.getFullYear(), 10, 1).getDay();
-  const thursday = 1 + ((4 - first + 7) % 7) + 21;
-  const day = date.getDate();
-  return day === thursday || day === thursday + 1;
-}
-
-// Local calendar. A holiday covers its own day, and a short stretch around
-// the ones people keep up for more than a morning.
+// A holiday dresses the whole month it belongs to. Easter keeps the month of
+// Easter Sunday. When that Sunday is in March, St. Patrick's keeps the days
+// before the midpoint between March 17 and Easter.
 export function holidayForDate(date: Date): HolidayId | null {
   const month = date.getMonth();
   const day = date.getDate();
-  if ((month === 11 && day === 31) || (month === 0 && day === 1)) return 'newyear';
-  if (month === 1 && day >= 13 && day <= 15) return 'valentine';
-  if (month === 2 && day === 17) return 'patrick';
-  if (onEasterWeekend(date)) return 'easter';
-  if (month === 9 && day >= 24 && day <= 31) return 'halloween';
-  if (onThanksgiving(date)) return 'thanksgiving';
-  if (month === 11 && day >= 18 && day <= 26) return 'christmas';
+  if (month === 0) return 'newyear';
+  if (month === 1) return 'valentine';
+  if (month === 9) return 'halloween';
+  if (month === 10) return 'thanksgiving';
+  if (month === 11) return 'christmas';
+  const easter = easterSunday(date.getFullYear());
+  if (month === 2 && easter.month === 2) {
+    const mid = Math.floor((17 + easter.day) / 2);
+    return day < mid ? 'patrick' : 'easter';
+  }
+  if (month === easter.month) return 'easter';
+  if (month === 2) return 'patrick';
   return null;
 }
