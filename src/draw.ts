@@ -204,7 +204,10 @@ function drawMetalMedal(g: Graphics, x: number, y: number, r: number, metal: 'br
   g.circle(x, y, r * 0.78).fill(groove);
   g.circle(x, y, r * 0.7).fill(face);
   g.circle(x, y, r * 0.56).stroke({ width: Math.max(1.15, r * 0.06), color: groove });
-  g.arc(x, y, r * 0.6, Math.PI * 1.16, Math.PI * 1.8).stroke({
+  const shine = r * 0.6;
+  const shineStart = Math.PI * 1.16;
+  g.moveTo(x + Math.cos(shineStart) * shine, y + Math.sin(shineStart) * shine);
+  g.arc(x, y, shine, shineStart, Math.PI * 1.8).stroke({
     width: Math.max(1.4, r * 0.085),
     color: hot,
     cap: 'round',
