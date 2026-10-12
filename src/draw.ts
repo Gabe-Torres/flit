@@ -77,6 +77,59 @@ function plain(text: string, size: number, fill: number): Text {
   return label;
 }
 
+function drawStargate(g: Graphics, x: number, y: number, time: number): void {
+  const spin = time * 2.4;
+  g.circle(x, y, 32).fill({ color: 0x8ec8ff, alpha: 0.16 });
+  g.circle(x, y, 17.5).fill(0x123a66);
+  g.circle(x, y, 13.5).fill(0x2f7ec4);
+  g.circle(x, y, 8.5).fill({ color: 0xc5ebff, alpha: 0.92 });
+  g.circle(x, y, 4.6 + Math.sin(time * 3.1) * 0.55).fill(0xf7fdff);
+  for (let i = 0; i < 7; i++) {
+    const orbit = 4.2 + (i % 3) * 2.8;
+    const a = spin * (1.1 + (i % 3) * 0.28) + (i * Math.PI * 2) / 7;
+    const px = x + Math.cos(a) * orbit;
+    const py = y + Math.sin(a) * orbit * 0.8;
+    const tangent = a + Math.PI / 2;
+    const len = 2.8 + (i % 2) * 0.7;
+    const c = Math.cos(tangent);
+    const s = Math.sin(tangent);
+    const nx = -s * 0.95;
+    const ny = c * 0.95;
+    g.beginPath();
+    g.poly(
+      [px + c * len, py + s * len, px + nx, py + ny, px - c * len * 0.35, py - s * len * 0.35, px - nx, py - ny],
+      true,
+    ).fill({ color: i % 2 === 0 ? 0xf4fbff : 0x9fd4ff, alpha: 0.8 });
+  }
+  g.beginPath();
+  g.circle(x, y, 21).stroke({ width: 5.4, color: 0x2c3642 });
+  g.beginPath();
+  g.circle(x, y, 21).stroke({ width: 1.7, color: 0x8b9bab });
+  g.beginPath();
+  g.circle(x, y, 17.4).stroke({ width: 1.35, color: 0x141b24 });
+  for (let i = 0; i < 9; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI * 2) / 9;
+    const cx = x + Math.cos(a) * 21;
+    const cy = y + Math.sin(a) * 21;
+    g.beginPath();
+    g.circle(cx, cy, 2.05).fill(i === 0 ? 0xffffff : 0xd5e8f8);
+    g.beginPath();
+    g.circle(cx, cy, 1).fill(0xffffff);
+  }
+}
+
+function drawTitleStargate(g: Graphics, box: Box, time: number, reduce: boolean): void {
+  const r = 21;
+  const hudBottom = box.top + 62;
+  const titleTop = 74;
+  const bob = reduce ? 0 : Math.sin(time * 0.85) * 5;
+  const gap = titleTop - hudBottom;
+  const y = gap > r * 2 + 18 ? (hudBottom + titleTop) / 2 + bob : hudBottom + r + 10 + bob;
+  const span = box.right - box.left + r * 5;
+  const travel = reduce ? span * 0.22 : (time * 34) % span;
+  drawStargate(g, box.left - r * 2 + travel, y, reduce ? 0.6 : time);
+}
+
 function hill(
   g: Graphics,
   base: number,
@@ -342,6 +395,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     const holiday = run.holiday;
     const land = terrainFor(weather, season, holiday);
     drawSky(sky, weather, season, holiday, box, floor);
+    if (run.phase === 'ready') drawTitleStargate(sky, box, run.time, state.reduceMotion);
     drawClouds(scenery, weather, run.scroll, box);
     hill(scenery, floor - 78, land.hillFar, 16, 90, run.scroll * 0.35, box.left, box.right, floor);
     hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
