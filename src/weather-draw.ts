@@ -207,26 +207,89 @@ function tornado(g: Graphics, x: number, floor: number, time: number): void {
   }
 }
 
-function streaks(
+function hashUnit(n: number): number {
+  let x = n >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 0x7feb352d);
+  x = Math.imul(x ^ (x >>> 15), 0x846ca68b);
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+}
+
+function wrap(n: number, span: number): number {
+  const m = n % span;
+  return m < 0 ? m + span : m;
+}
+
+// The front hill in draw.ts: base floor-36, amplitude 12, period 54, scroll 0.55.
+function nearSlope(x: number, scroll: number, floor: number): number {
+  return floor - 36 + Math.sin((x + scroll * 0.55) / 54) * 12;
+}
+
+// Each drop keeps its own place, length, and speed. A shared grid of identical
+// slashes reads as stripes, so nothing here shares a column or a fall rate.
+function drawRain(
   g: Graphics,
-  count: number,
+  heavy: boolean,
   time: number,
   scroll: number,
   box: Box,
   floor: number,
-  speed: number,
-  lean: number,
-  length: number,
-  color: number,
-  alpha: number,
-  width: number,
+  reduceMotion: boolean,
 ): void {
   const spanW = Math.max(1, box.right - box.left);
   const spanH = Math.max(1, floor - box.top);
+  const pace = reduceMotion ? 0.25 : 1;
+  const count = Math.max(
+    heavy ? 90 : 70,
+    Math.min(heavy ? 220 : 160, Math.round((spanW * spanH) / (heavy ? 1800 : 2400))),
+  );
+  const slant = heavy ? -0.28 : -0.14;
+  const body = heavy ? 0xc5d7e6 : 0xd7ebf8;
+  const head = 0xf4fbff;
+
+  const mist = Math.round(count * 0.8);
+  for (let i = 0; i < mist; i++) {
+    const along = hashUnit(i * 3 + 11);
+    const phase = hashUnit(i * 3 + 12);
+    const depth = hashUnit(i * 3 + 13);
+    const x = box.left + wrap(along * spanW + scroll * 0.04 + time * slant * 18 * pace, spanW);
+    const y = box.top + wrap(phase * spanH + time * (160 + depth * 120) * pace, spanH);
+    const slope = nearSlope(x, scroll, floor);
+    if (y >= slope) continue;
+    g.circle(x, y, 0.65 + depth * 0.4).fill({ color: body, alpha: 0.14 + depth * 0.12 });
+  }
+
   for (let i = 0; i < count; i++) {
-    const x = box.left + ((i * 97 + scroll * 0.35) % spanW);
-    const y = box.top + ((i * 53 + time * speed) % spanH);
-    g.moveTo(x, y).lineTo(x + lean, y + length).stroke({ width, color, alpha, cap: 'round' });
+    const along = hashUnit(i * 5 + 101);
+    const phase = hashUnit(i * 5 + 102);
+    const depth = hashUnit(i * 5 + 103);
+    const wobble = hashUnit(i * 5 + 104);
+    const len = (heavy ? 6 : 4.5) + depth * (heavy ? 7 : 4.5);
+    const radius = (heavy ? 1.35 : 1.15) + depth * (heavy ? 1.05 : 0.7);
+    const lean = slant * (0.8 + wobble * 0.45) * len;
+    const speed = (heavy ? 860 : 580) * (0.55 + depth * 0.8) * pace;
+    const travel = spanH + len + 28;
+    const y2 = box.top + wrap(phase * travel + time * speed, travel);
+    const x2 = box.left + wrap(along * spanW + scroll * (0.06 + depth * 0.16) + time * slant * (18 + depth * 30) * pace, spanW);
+    const alpha = (heavy ? 0.5 : 0.4) + depth * (heavy ? 0.38 : 0.3);
+    const slope = nearSlope(x2, scroll, floor);
+    if (y2 < slope) {
+      const x1 = x2 - lean;
+      const y1 = y2 - len;
+      const mag = Math.hypot(lean, len) || 1;
+      const px = (-len / mag) * radius;
+      const py = (lean / mag) * radius;
+      const fill = { color: head, alpha };
+      g.poly([x1, y1, x2 + px, y2, x2 - px, y2], true).fill(fill);
+      g.circle(x2, y2, radius * 0.78).fill(fill);
+      g.circle(x2 - px * 0.12, y2 - radius * 0.25, radius * 0.32).fill({
+        color: 0xffffff,
+        alpha: Math.min(0.9, alpha + 0.22),
+      });
+    } else if (y2 < slope + 16) {
+      const fade = 1 - (y2 - slope) / 16;
+      const spread = (2.2 + depth * 3.4) * (0.45 + (1 - fade) * 0.9);
+      g.ellipse(x2, slope - 0.6, Math.max(1.3, spread), 1.15).stroke({ width: 1.15, color: head, alpha: fade * 0.7 });
+    }
   }
 }
 
@@ -456,7 +519,7 @@ export function drawAtmosphere(
 
   if (id === 'rain' || id === 'storm') {
     const heavy = id === 'storm';
-    streaks(g, heavy ? 90 : 48, time, scroll, box, floor, heavy ? 620 : 460, heavy ? -10 : -7, heavy ? 22 : 16, 0xd7e9f6, heavy ? 0.55 : 0.45, heavy ? 2 : 1.5);
+    drawRain(g, heavy, time, scroll, box, floor, reduceMotion);
     if (heavy && !reduceMotion && time % 3.4 < 0.1) {
       g.rect(box.left, box.top, wide, tall + 8).fill({ color: 0xfff6d8, alpha: 0.38 });
       const bx = box.left + wide * (0.25 + (Math.floor(time / 3.4) % 3) * 0.22);
