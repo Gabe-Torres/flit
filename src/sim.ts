@@ -116,8 +116,8 @@ export function createRun(seed = 1, mode: ModeId = 'easy'): Run {
   };
 }
 
-// One run in 100. 42949673 / 2^32 is the closest whole rate. The grab is timed
-// anywhere before pipe 25, then the chance is gone.
+// One run in 100. 42949673 / 2^32 is the closest whole rate. A hit is timed
+// after the first pipe clears and before pipe 25. Then the chance is gone.
 export const SNATCH_CHANCE_NUMERATOR = Math.round(2 ** 32 / 100);
 export const SNATCH_PIPE_LIMIT = 25;
 export const SNATCH_APPROACH = 0.92;
@@ -175,9 +175,9 @@ function mix(n: number): number {
 
 export function planSnatch(seed: number, mode: ModeId = 'easy'): number | null {
   if (mix(seed ^ 0xa5a5a5a5) >= SNATCH_CHANCE_NUMERATOR) return null;
+  const earliest = pipesClearTime(1, mode, seed);
   const latest = pipesClearTime(SNATCH_PIPE_LIMIT, mode, seed);
-  const when = 0.55 + (mix(seed ^ 0x3c6ef372) / 4294967296) * (latest - 0.55);
-  return when;
+  return earliest + (mix(seed ^ 0x3c6ef372) / 4294967296) * (latest - earliest);
 }
 
 export function snatchPose(
@@ -375,7 +375,8 @@ export function step(run: Run, dt: number): void {
   spawn(run);
 
   if (run.score >= SNATCH_PIPE_LIMIT) run.snatchAt = null;
-  if (run.snatchAt != null && run.playTime >= run.snatchAt && run.score < SNATCH_PIPE_LIMIT) {
+  // Scoring happens below, so a grab on the frame pipe 1 clears waits one step.
+  if (run.snatchAt != null && run.playTime >= run.snatchAt && run.score >= 1 && run.score < SNATCH_PIPE_LIMIT) {
     run.phase = 'snatched';
     run.snatchTime = 0;
     run.caughtY = run.bird.y;

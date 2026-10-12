@@ -19,7 +19,7 @@ The bird falls. You keep it in the air.
 - Each run has its own weather: clear, rain, a storm with a tornado, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
 - Each gate you clear is one point.
 - A gate or the ground ends the run.
-- Before you clear 25 pipes, there is a 1 in 100 chance a pterodactyl flies in, grabs you, and carries you away. After 25 pipes it does not come.
+- Each run has a 1 in 100 chance a pterodactyl flies in after you clear the first pipe, grabs you, and carries you away. The chance lasts until you clear 25 pipes.
 - After the score card, flap again to fly. The card lists your taps, the pipes you cleared, and your time in the air.
 
 ## Controls

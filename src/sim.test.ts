@@ -316,11 +316,19 @@ function playable(): ReturnType<typeof createRun> {
 
 {
   assert(planSnatch(1) === null, 'an ordinary seed stays safe');
-  const at = planSnatch(192);
-  assert(at != null && at >= 0.55 && at < pipesClearTime(), `the grab is before twenty-five pipes (${at})`);
-  let invites = 0;
-  for (let seed = 1; seed <= 1000000; seed++) if (planSnatch(seed) != null) invites += 1;
-  assert(invites === 9965, `the first million seeds invite the pterodactyl 9965 times (${invites})`);
+  const modes = ['easy', 'normal', 'hard', 'random'] as const;
+  for (const mode of modes) {
+    let invites = 0;
+    for (let seed = 1; seed <= 1000000; seed++) {
+      const at = planSnatch(seed, mode);
+      if (at == null) continue;
+      invites += 1;
+      const first = pipesClearTime(1, mode, seed);
+      const last = pipesClearTime(25, mode, seed);
+      assert(at >= first && at < last, `${mode} seed ${seed} is after pipe 1 and before pipe 25 (${at})`);
+    }
+    assert(invites === 9965, `${mode}: the first million seeds invite the pterodactyl 9965 times (${invites})`);
+  }
 }
 
 {
@@ -334,7 +342,7 @@ function playable(): ReturnType<typeof createRun> {
     step(run, 1 / 60);
   }
   assert(run.phase === 'snatched', 'the planned grab happens in flight');
-  assert(run.score < 25, `the grab is before twenty-five pipes (${run.score})`);
+  assert(run.score >= 1 && run.score < 25, `the grab is after pipe 1 and before pipe 25 (${run.score})`);
   const air = run.playTime;
   const score = run.score;
   assert(flap(run) === false, 'no flap in the talons');
@@ -346,13 +354,49 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
+  for (const mode of ['easy', 'normal', 'hard', 'random'] as const) {
+    for (const dt of [1 / 60, 0.05]) {
+      const run = createRun(192, mode);
+      flap(run);
+      for (let guard = 0; run.phase === 'play' && guard < 8000; guard++) {
+        const ahead = run.gates.find((gate) => gate.x + WORLD.pipeW >= WORLD.birdX - 40);
+        run.bird.y = ahead ? ahead.gapY : 280;
+        run.bird.vy = 0;
+        step(run, dt);
+      }
+      assert(run.phase === 'snatched', `${mode} at ${dt}s is snatched`);
+      assert(run.score >= 1 && run.score < 25, `${mode} at ${dt}s is after pipe 1 (${run.score})`);
+    }
+  }
+}
+
+{
+  const run = playable();
+  const clear = pipesClearTime(1);
+  run.playTime = clear - 0.01;
+  run.snatchAt = clear + 0.02;
+  run.bird.y = 300;
+  run.bird.vy = 0;
+  run.gates = [{ x: WORLD.firstX - WORLD.scroll * run.playTime, gapY: 300, open: WORLD.gap, scored: false }];
+  step(run, 0.05);
+  assert(run.score === 1, 'the frame that clears pipe 1 counts it');
+  assert(run.phase === 'play', 'that same frame does not snatch');
+  step(run, 0.05);
+  assert(run.phase === 'snatched', 'the grab lands on the next frame');
+  assert(run.score === 1, 'the grab keeps the first pipe');
+}
+
+{
   const run = playable();
   run.bird.y = 300;
   run.snatchAt = 0;
   run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 300, open: WORLD.gap, scored: false }];
   step(run, 0);
-  assert(run.phase === 'snatched', 'a due grab happens before scoring');
-  assert(run.score === 0, 'the grab skips the pipe');
+  assert(run.phase === 'play', 'pipe 1 scores before a grab');
+  assert(run.score === 1, 'the first pipe counts');
+  step(run, 0.05);
+  assert(run.phase === 'snatched', 'the grab follows the first pipe');
+  assert(run.score === 1, 'the grab adds no further pipe');
   const pose = snatchPose(0, run.caughtY, 700);
   assert(pose.dinoX === 700 && !pose.grabbed, 'the pterodactyl starts off to the side');
   const gone = snatchPose(SNATCH_DURATION, run.caughtY, 700);
