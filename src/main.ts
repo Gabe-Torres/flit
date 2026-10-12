@@ -125,7 +125,7 @@ function modeName(id: ModeId): string {
 function readTheme(): ThemeId {
   try {
     const saved = localStorage.getItem('flit-theme');
-    if (saved === 'mars' || saved === 'reef') {
+    if (saved === 'mars' || saved === 'reef' || saved === 'colony') {
       localStorage.setItem('flit-theme', 'classic');
       return 'classic';
     }

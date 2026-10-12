@@ -517,10 +517,10 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
 }
 
 {
-  assert(THEMES.map((theme) => theme.id).join() === 'classic,roman,colony', 'maps stay in menu order');
-  assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman,Colony', 'map names stay with their gates');
+  assert(THEMES.map((theme) => theme.id).join() === 'classic,roman', 'maps stay in menu order');
+  assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman', 'map names stay with their gates');
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
-  assert(!isThemeId('mars') && !isThemeId('reef') && !isThemeId('starter') && !isThemeId('pipes'), 'unknown maps fall through');
+  assert(!isThemeId('mars') && !isThemeId('reef') && !isThemeId('colony') && !isThemeId('pipes'), 'unknown maps fall through');
   assert(MODES.map((mode) => mode.id).join() === 'easy,normal,hard', 'difficulties stay in menu order');
   assert(!isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
 }
