@@ -462,6 +462,7 @@ pauseBtn.addEventListener('click', togglePause);
 muteBtn.addEventListener('click', toggleMute);
 window.addEventListener('resize', resize);
 window.visualViewport?.addEventListener('resize', resize);
+window.visualViewport?.addEventListener('scroll', resize);
 window.addEventListener('contextmenu', (event) => event.preventDefault());
 
 if (import.meta.env.PROD && 'caches' in window) {

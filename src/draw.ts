@@ -350,6 +350,44 @@ function drawHudMedal(g: Graphics, x: number, y: number, award: MedalName, time:
   drawMetalMedal(g, x, y, 11, award);
 }
 
+function isHomeScreen(): boolean {
+  const nav = navigator as Navigator & { standalone?: boolean };
+  return nav.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function measureView(): { width: number; height: number; top: number; left: number } {
+  const vv = window.visualViewport;
+  const width = Math.max(1, Math.round(vv?.width ?? window.innerWidth));
+  let height = Math.max(1, Math.round(vv?.height ?? window.innerHeight));
+  let top = Math.round(vv?.offsetTop ?? 0);
+  const left = Math.round(vv?.offsetLeft ?? 0);
+  // Installed on an iPhone, the viewport is shorter than the glass by about the status-bar height.
+  // That leftover is the light blue page color under the dirt. screen.height reaches the glass.
+  if (isHomeScreen()) {
+    const sw = window.screen.width;
+    const sh = window.screen.height;
+    const portrait = height >= width;
+    const screenW = portrait ? Math.min(sw, sh) : Math.max(sw, sh);
+    const screenH = portrait ? Math.max(sw, sh) : Math.min(sw, sh);
+    const gap = Math.round(screenH) - height;
+    if (gap > 0 && gap <= 140 && Math.abs(Math.round(screenW) - width) <= 80) {
+      height += gap;
+      top = 0;
+    }
+  }
+  return { width, height, top, left };
+}
+
+let pageDirt = -1;
+
+function matchPageToDirt(dirt: number): void {
+  if (pageDirt === dirt) return;
+  pageDirt = dirt;
+  const hex = `#${dirt.toString(16).padStart(6, '0')}`;
+  document.documentElement.style.backgroundColor = hex;
+  document.body.style.backgroundColor = hex;
+}
+
 function fit(cssW: number, cssH: number): { scale: number; ox: number; oy: number; box: Box } {
   const worldAspect = WORLD.w / WORLD.h;
   const screenAspect = cssW / Math.max(1, cssH);
@@ -382,7 +420,6 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const app = new Application();
   await app.init({
     canvas,
-    resizeTo: window,
     autoDensity: true,
     antialias: true,
     autoStart: false,
@@ -462,6 +499,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     const season = run.season;
     const holiday = run.holiday;
     const land = terrainFor(weather, season, holiday);
+    matchPageToDirt(land.dirt);
     drawSky(sky, weather, season, holiday, box, floor);
     if (run.phase === 'ready') drawTitleStargate(sky, box, run.time, state.reduceMotion);
     drawClouds(scenery, weather, run.scroll, box);
@@ -517,9 +555,19 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     app.render();
   };
 
+  const resize = (): void => {
+    const next = measureView();
+    canvas.style.top = `${next.top}px`;
+    canvas.style.left = `${next.left}px`;
+    canvas.style.width = `${next.width}px`;
+    canvas.style.height = `${next.height}px`;
+    app.renderer.resize(next.width, next.height);
+  };
+  resize();
+
   return {
     render,
-    resize: () => app.resize(),
+    resize,
   };
 }
 
@@ -563,6 +611,8 @@ function drawGround(
     const y = floor + depth;
     drawBuriedRuby(g, x, y, scale, land.dirt, sparkClock(reduce) + i * 0.73, reduce);
   }
+
+  drawBones(g, run, box, floor, land.dirt);
 }
 
 function hashUnit(i: number): number {
@@ -587,6 +637,91 @@ function drawBuriedRuby(
   paintRuby(g, x, y, s, time, reduce);
   g.ellipse(x, y + 5.2 * s, 11 * s, 3.5 * s).fill(dirt);
   drawRubyTwinkle(g, x, y, s, time, reduce);
+}
+
+const BONE = 0xf3e4c4;
+const BONE_WARM = 0xe7d2a6;
+const BONE_SHADOW = 0xd2b88a;
+const SOCKET = 0x3a2618;
+const IVORY = 0xfff8ea;
+
+function bonePoly(
+  g: Graphics,
+  x: number,
+  y: number,
+  face: number,
+  s: number,
+  pts: readonly number[],
+  color: number,
+): void {
+  const flat = new Array<number>(pts.length);
+  for (let i = 0; i < pts.length; i += 2) {
+    flat[i] = x + pts[i] * s * face;
+    flat[i + 1] = y + pts[i + 1] * s;
+  }
+  g.poly(flat, true).fill(color);
+}
+
+function drawBones(g: Graphics, run: Run, box: Box, floor: number, dirt: number): void {
+  const span = 280;
+  const first = Math.floor((box.left + run.scroll) / span) - 1;
+  const last = Math.floor((box.right + run.scroll) / span) + 1;
+  for (let i = first; i <= last; i++) {
+    if (hashUnit(i + 0x5b1e) < 0.68) continue;
+    const x = i * span - run.scroll + 24 + hashUnit(i + 0x2a07) * 120;
+    const y = Math.min(floor + 70 + hashUnit(i + 0x19c3) * 22, box.bottom - 16);
+    const face = hashUnit(i + 0x77d1) > 0.5 ? 1 : -1;
+    const kind = hashUnit(i + 0x8e21);
+    if (kind > 0.67) drawTrexSkull(g, x, y, face, dirt);
+    else if (kind > 0.34) drawRib(g, x, y, face, dirt);
+    else drawFemur(g, x, y, face, dirt);
+  }
+}
+
+function drawFemur(g: Graphics, x: number, y: number, face: number, dirt: number): void {
+  g.ellipse(x - 15 * face, y - 1, 5.2, 4.2).fill(BONE);
+  g.circle(x - 17.2 * face, y - 3.1, 2.3).fill(BONE_WARM);
+  g.circle(x - 13.4 * face, y + 1.8, 2).fill(BONE_WARM);
+  bonePoly(g, x, y, face, 1, [-12, -2.4, 12, -1.1, 11, 2.4, -13, 1.5], BONE);
+  g.ellipse(x + 13 * face, y + 1.1, 4.4, 3.6).fill(BONE);
+  g.ellipse(x + 14.2 * face, y + 2.4, 2.2, 1.5).fill(BONE_SHADOW);
+  g.ellipse(x, y + 4.2, 14, 3.2).fill(dirt);
+}
+
+function drawRib(g: Graphics, x: number, y: number, face: number, dirt: number): void {
+  bonePoly(
+    g,
+    x,
+    y,
+    face,
+    1,
+    [-15, 3, -11, -6, -4, -10, 5, -9, 13, -4, 16, 1, 11, -1, 5, -4, -3, -4.5, -8, -1, -11, 4],
+    BONE,
+  );
+  bonePoly(g, x, y, face, 1, [-8, 1, -5, -3, 2, -4, 8, -1, 5, -0.2, 1, -1.2, -4, 0.4], BONE_SHADOW);
+  g.ellipse(x, y + 4.5, 12, 3).fill(dirt);
+}
+
+function drawTrexSkull(g: Graphics, x: number, y: number, face: number, dirt: number): void {
+  const s = 1.2;
+  const cx = (dx: number) => x + dx * s * face;
+  const cy = (dy: number) => y + dy * s;
+  g.ellipse(cx(-10), cy(1), 4 * s, 3.4 * s).fill(BONE_SHADOW);
+  g.ellipse(cx(-3), cy(-1), 11 * s, 8.4 * s).fill(BONE);
+  bonePoly(g, x, y, face, s, [-2, -7.2, 8, -6.2, 18, -4, 24, -0.6, 21, 2.4, 6, 2.8, -2, 1.8], BONE);
+  g.ellipse(cx(-1), cy(-7.4), 6.4 * s, 2.1 * s).fill(BONE_WARM);
+  bonePoly(g, x, y, face, s, [-7, 4.6, 8, 4.8, 20, 7.2, 15, 10.4, 2, 9.2, -9, 7.2], BONE_WARM);
+  g.circle(cx(-5.5), cy(-1.4), 2.8 * s).fill(SOCKET);
+  g.circle(cx(-6.2), cy(-2.1), 0.8 * s).fill(IVORY);
+  g.ellipse(cx(4.5), cy(-0.4), 2.2 * s, 2.7 * s).fill(SOCKET);
+  g.ellipse(cx(16.5), cy(-2.6), 1.5 * s, 1.05 * s).fill(SOCKET);
+  for (const tooth of [2.2, 6.4, 10.6, 14.6, 18.4]) {
+    bonePoly(g, x, y, face, s, [tooth, 2.2, tooth + 1.6, 2.2, tooth + 0.8, 5.1], IVORY);
+  }
+  for (const tooth of [5.2, 9.4, 13.4]) {
+    bonePoly(g, x, y, face, s, [tooth, 5.5, tooth + 1.45, 5.5, tooth + 0.7, 3.1], IVORY);
+  }
+  g.ellipse(cx(6), cy(10.2), 14 * s, 3.4 * s).fill(dirt);
 }
 
 function drawPterodactyl(g: Graphics, flap: number, grabbed: boolean): void {
