@@ -11,6 +11,7 @@ export const BIRD_IDS = [
   'pterodactyl',
   'drone',
   'lander',
+  'hatak',
   'kiwi',
   'weka',
   'trout',
@@ -181,6 +182,26 @@ export const BIRDS: readonly BirdKind[] = [
         `<rect x="13.2" y="8.2" width="5.6" height="3.2" rx="0.6" fill="#163044"/>` +
         `<path d="M16 6V2.4" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>` +
         `<circle cx="16" cy="2.2" r="1.3" fill="#e23d3d"/>`,
+    ),
+  },
+  {
+    id: 'hatak',
+    name: "Ha'tak",
+    feather: '#e7c98a',
+    icon: icon(
+      `<ellipse cx="14.5" cy="28.4" rx="8.2" ry="1.35" fill="#f0c56e" opacity="0.8"/>` +
+        `<path d="M5.2 22.6 19.6 22.6 25.4 19.4 21.6 24.8 8.2 24.8Z" fill="#2c3036"/>` +
+        `<path d="M4 22.2 20.2 22.2 18.4 17.2 6.2 17.2Z" fill="#b8956a" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<path d="M20.2 22.2 26.2 18.8 23.8 14.6 18.4 17.2Z" fill="#8a7048" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<path d="M6.4 17.2 18.2 17.2 17 15.8 7.6 15.8Z" fill="#2c3036"/>` +
+        `<path d="M18.2 17.2 23.6 14.6 22.4 13.4 17 15.8Z" fill="#1e2228"/>` +
+        `<path d="M7.8 15.8 16.8 15.8 15.4 11.6 9.4 11.6Z" fill="#c6a36a" stroke="${STROKE}" stroke-width="0.65" stroke-linejoin="round"/>` +
+        `<path d="M16.8 15.8 22.2 13.4 20.4 9.8 15.4 11.6Z" fill="#9a7c52" stroke="${STROKE}" stroke-width="0.65" stroke-linejoin="round"/>` +
+        `<path d="M9.6 11.6 15.2 11.6 14.4 10.4 10.4 10.4Z" fill="#2c3036"/>` +
+        `<path d="M10.4 10.4 14.2 10.4 12.4 5.4Z" fill="#e2c48a" stroke="${STROKE}" stroke-width="0.65" stroke-linejoin="round"/>` +
+        `<path d="M14.2 10.4 18.4 9.4 12.4 5.4Z" fill="#b8956a" stroke="${STROKE}" stroke-width="0.65" stroke-linejoin="round"/>` +
+        `<circle cx="12.2" cy="8.2" r="0.95" fill="none" stroke="#3a332c" stroke-width="0.5"/>` +
+        `<path d="M11.75 8.9 12.2 9.8 12.65 8.9Z" fill="#3a332c"/>`,
     ),
   },
   {
@@ -624,6 +645,36 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     body.moveTo(10, 6).lineTo(18, 16).stroke({ width: 2.4, color: 0x6a3d16, cap: 'round' });
     body.ellipse(-18, 17, 4.4, 1.7).fill(0x8a5a32).stroke({ ...OUTLINE, width: 1.4 });
     body.ellipse(18, 17, 4.4, 1.7).fill(0x8a5a32).stroke({ ...OUTLINE, width: 1.4 });
+    return;
+  }
+
+  if (id === 'hatak') {
+    wing.rotation = 0;
+    const edge = { width: 1.45, color: 0x6a3d16, join: 'round' as const, cap: 'round' as const };
+    const glow = 0.3 + 0.2 * Math.sin(wingPhase * 3);
+    body.ellipse(-2, 16.2, 18, 3.2).fill({ color: 0xf0c56e, alpha: glow });
+    body.ellipse(-2, 15.2, 8, 1.4).fill({ color: 0xfff1c2, alpha: glow * 0.8 });
+    body.poly([-17, 10.4, 8, 10.4, 15.5, 6.8, 11.2, 13.4, -13, 13.4], true).fill(0x2c3036);
+    body.poly([-20, 10, 8, 10, 6, 3.2, -17, 3.2], true).fill(0xb8956a).stroke(edge);
+    body.poly([8, 10, 17, 6, 14.2, 0.2, 6, 3.2], true).fill(0x8a7048).stroke(edge);
+    body.poly([-17, 3.2, 6, 3.2, 5.2, 1.5, -15.4, 1.5], true).fill(0x2c3036);
+    body.poly([6, 3.2, 14.2, 0.2, 13.2, -1.2, 5.2, 1.5], true).fill(0x1e2228);
+    body.poly([-8.4, 9.2, -5.8, 9.2, -5.1, 4.1, -7.5, 4.1], true).fill(0x3a3e44);
+    for (const x of [-2.4, 0.2, 2.8]) body.roundRect(x, 5.4, 1.15, 3.2, 0.5).fill(0x6a5840);
+    body.poly([-15.4, 1.5, 5.2, 1.5, 3.4, -4.4, -12.6, -4.4], true).fill(0xc6a36a).stroke(edge);
+    body.poly([5.2, 1.5, 13.2, -1.2, 10.6, -6.4, 3.4, -4.4], true).fill(0x9a7c52).stroke(edge);
+    body.poly([-12.6, -4.4, 3.4, -4.4, 2.7, -6, -11.2, -6], true).fill(0x2c3036);
+    body.poly([3.4, -4.4, 10.6, -6.4, 9.6, -7.7, 2.7, -6], true).fill(0x1e2228);
+    body.poly([-6.4, 0.6, -4.4, 0.6, -3.7, -3.5, -5.6, -3.5], true).fill(0x3a3e44);
+    body.poly([-11.2, -6, 2.7, -6, 1.2, -11, -8.8, -11], true).fill(0xd4b47a).stroke(edge);
+    body.poly([2.7, -6, 9.6, -7.7, 7.6, -12.2, 1.2, -11], true).fill(0xa88860).stroke(edge);
+    body.poly([-8.8, -11, 1.2, -11, 0.6, -12.3, -7.6, -12.3], true).fill(0x2c3036);
+    body.poly([1.2, -11, 7.6, -12.2, 6.8, -13.3, 0.6, -12.3], true).fill(0x1e2228);
+    body.poly([-7.6, -12.3, 0.6, -12.3, 0.2, -19.6], true).fill(0xe2c48a).stroke(edge);
+    body.poly([0.6, -12.3, 6.8, -13.3, 0.2, -19.6], true).fill(0xb8956a).stroke(edge);
+    body.circle(-2.4, -15.7, 1.5).stroke({ width: 1.05, color: 0x3a332c });
+    body.circle(-2.4, -15.7, 0.48).fill(0x3a332c);
+    body.poly([-3.25, -14.2, -1.55, -14.2, -2.4, -12.65], true).fill(0x3a332c);
     return;
   }
 
