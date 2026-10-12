@@ -32,6 +32,8 @@ export type RenderState = {
   theme: ThemeId;
   modeName: string;
   modeBest: number;
+  // Tip joke. Null keeps the regular stats card. See src/tip-joke.ts.
+  tipBeat: 'ask' | 'kidding' | null;
 };
 
 export type Stage = {
@@ -548,6 +550,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   const ready = run.phase === 'ready';
   const playing = run.phase === 'play' || run.phase === 'dying' || run.phase === 'snatched';
   const over = run.phase === 'over';
+  const joke = state.tipBeat !== null;
   const wide = box.right - box.left;
   const tall = box.bottom - box.top;
 
@@ -556,12 +559,12 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.scoreText.visible = playing;
   labels.pauseTitle.visible = state.paused;
   labels.pauseHint.visible = state.paused;
-  labels.overTitle.visible = over;
+  labels.overTitle.visible = over && !joke;
   labels.medalName.visible = false;
-  labels.overScore.visible = over;
-  labels.overBest.visible = over;
-  labels.overStats.visible = over;
-  labels.retry.visible = over;
+  labels.overScore.visible = over && !joke;
+  labels.overBest.visible = over && !joke;
+  labels.overStats.visible = over && !joke;
+  labels.retry.visible = over && !joke;
   const controls = state.controls;
   labels.flyHint.text = controls.fly;
   labels.flyHint.style.fontSize = controls.touch ? 26 : 22;
@@ -647,6 +650,10 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   }
 
   g.rect(box.left, box.top, wide, tall).fill({ color: 0x14283c, alpha: 0.28 });
+  if (joke) {
+    if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal, sparkClock(state.reduceMotion), state.reduceMotion);
+    return;
+  }
   const award = medalForScore(run.score);
   const cardW = 304;
   const cardH = award ? 388 : 300;
