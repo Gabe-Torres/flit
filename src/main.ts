@@ -6,7 +6,6 @@ import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, st
 import { fieldName } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
 import { createTipJoke } from './tip-joke.ts';
-import { weatherById } from './weather.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
 const statusEl = document.querySelector<HTMLElement>('#status');
@@ -177,7 +176,7 @@ function bestLine(score: number): string {
 }
 
 function forecast(): string {
-  return `${fieldName(run.season, run.holiday)} · ${weatherById(run.weather).name}`;
+  return fieldName(run.season, run.holiday);
 }
 
 function paintForecast(): void {

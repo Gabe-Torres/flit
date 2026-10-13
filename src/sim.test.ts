@@ -21,7 +21,7 @@ import { controlHints } from './controls.ts';
 import { holidayForDate } from './holiday.ts';
 import { seasonForDate } from './season.ts';
 import { THEMES, isThemeId } from './themes.ts';
-import { WEATHERS, terrainFor, weatherForSeed } from './weather.ts';
+import { terrainFor } from './weather.ts';
 
 declare const process: { exit: (code: number) => never };
 
@@ -41,9 +41,6 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
-  const seen = new Set(Array.from({ length: 40 }, (_, i) => weatherForSeed(i + 1)));
-  assert(seen.size === WEATHERS.length, 'seeds cover every weather');
-  assert(createRun(4).weather === weatherForSeed(4), 'a run keeps its weather');
   assert(createRun(4).season === seasonForDate(new Date()), 'a run keeps the season');
   assert(createRun(4).holiday === holidayForDate(new Date()), 'a run keeps the holiday');
   assert(createRun(4).mode === 'easy', 'easy is the default course');
@@ -58,10 +55,8 @@ function playable(): ReturnType<typeof createRun> {
   assert(seasonForDate(new Date(2026, 11, 1)) === 'winter', 'December is winter');
   assert(seasonForDate(new Date(2026, 0, 15)) === 'winter', 'January is winter');
   assert(seasonForDate(new Date(2026, 1, 28)) === 'winter', 'February is winter');
-  assert(terrainFor('clear', 'autumn').grass !== terrainFor('clear', 'summer').grass, 'autumn grass is its own color');
-  assert(terrainFor('clear', 'spring').tuft !== terrainFor('clear', 'summer').tuft, 'spring tufts are their own color');
-  assert(terrainFor('blizzard', 'autumn').grass === terrainFor('blizzard', 'summer').grass, 'a blizzard stays snowy');
-  assert(terrainFor('rain', 'autumn').grass !== terrainFor('clear', 'autumn').grass, 'rain darkens the season');
+  assert(terrainFor('autumn').grass !== terrainFor('summer').grass, 'autumn grass is its own color');
+  assert(terrainFor('spring').tuft !== terrainFor('summer').tuft, 'spring tufts are their own color');
   assert(holidayForDate(new Date(2026, 9, 1)) === 'halloween', 'October 1 is Halloween');
   assert(holidayForDate(new Date(2026, 9, 11)) === 'halloween', 'October 11 is Halloween');
   assert(seasonForDate(new Date(2026, 9, 11)) === 'autumn', 'October 11 is autumn');
@@ -96,13 +91,8 @@ function playable(): ReturnType<typeof createRun> {
   assert(holidayForDate(new Date(2020, 3, 12)) === 'easter', 'Easter 2020 is April 12');
   assert(seasonForDate(new Date(2026, 6, 4)) === 'summer', 'July 4 is summer');
   assert(holidayForDate(new Date(2026, 6, 4)) === null, 'July 4 keeps the summer field');
-  assert(terrainFor('clear', 'autumn', 'halloween').grass !== terrainFor('clear', 'autumn').grass, 'halloween has its own ground');
-  assert(terrainFor('clear', 'winter', 'christmas').tuft !== terrainFor('clear', 'winter').tuft, 'christmas tufts are their own color');
-  assert(terrainFor('blizzard', 'winter', 'christmas').grass === terrainFor('blizzard', 'summer').grass, 'a blizzard stays snowy on a holiday');
-  assert(
-    terrainFor('rain', 'autumn', 'halloween').grass !== terrainFor('clear', 'autumn', 'halloween').grass,
-    'rain darkens the holiday',
-  );
+  assert(terrainFor('autumn', 'halloween').grass !== terrainFor('autumn').grass, 'halloween has its own ground');
+  assert(terrainFor('winter', 'christmas').tuft !== terrainFor('winter').tuft, 'christmas tufts are their own color');
 }
 
 {

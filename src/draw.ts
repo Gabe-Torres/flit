@@ -4,7 +4,7 @@ import type { ControlHints } from './controls.ts';
 import { WORLD, flightFacts, groundY, medalForScore, snatchPose, type MedalName, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
-import { drawAtmosphere, drawClouds, drawSeason, drawSky } from './weather-draw.ts';
+import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
 
 export type Particle = {
   x: number;
@@ -434,7 +434,6 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const scenery = new Graphics();
   const gateLayer = new Graphics();
   const ground = new Graphics();
-  const atmosphere = new Graphics();
   const fx = new Graphics();
   const dino = new Graphics();
   const bird = new Container();
@@ -442,7 +441,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const body = new Graphics();
   const uiGfx = new Graphics();
   bird.addChild(wing, body);
-  world.addChild(sky, scenery, gateLayer, ground, atmosphere, fx, bird, dino);
+  world.addChild(sky, scenery, gateLayer, ground, fx, bird, dino);
 
   const title = outlined('FLIT', 92, CREAM);
   const flyHint = plain('tap to fly', 26, INK);
@@ -492,27 +491,24 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     scenery.clear();
     gateLayer.clear();
     ground.clear();
-    atmosphere.clear();
     fx.clear();
     uiGfx.clear();
-    const weather = run.weather;
     const season = run.season;
     const holiday = run.holiday;
-    const land = terrainFor(weather, season, holiday);
+    const land = terrainFor(season, holiday);
     matchPageToDirt(land.dirt);
-    drawSky(sky, weather, season, holiday, box, floor);
+    drawSky(sky, season, holiday, box, floor);
     if (run.phase === 'ready') drawTitleStargate(sky, box, run.time, state.reduceMotion);
-    drawClouds(scenery, weather, run.scroll, box);
+    drawClouds(scenery, run.scroll, box);
     hill(scenery, floor - 78, land.hillFar, 16, 90, run.scroll * 0.35, box.left, box.right, floor);
     hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
-    drawSeason(scenery, season, holiday, weather, run.time, run.scroll, box, floor, state.reduceMotion);
+    drawSeason(scenery, season, holiday, run.time, run.scroll, box, floor, state.reduceMotion);
     const themeTime = state.reduceMotion ? 0 : run.time;
     if (run.phase === 'ready') drawThemedGate(gateLayer, state.theme, 326, 300, 156, box.top, floor, themeTime);
     for (const gate of run.gates) {
       drawThemedGate(gateLayer, state.theme, gate.x, gate.gapY, gate.open, box.top, floor, themeTime);
     }
     drawGround(ground, run, box, floor, land, state.reduceMotion);
-    drawAtmosphere(atmosphere, weather, run.time, run.scroll, box, floor, state.reduceMotion);
 
     const altitude = Math.max(0, floor - run.bird.y);
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });

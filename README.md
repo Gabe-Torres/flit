@@ -18,7 +18,6 @@ The bird falls. You keep it in the air.
 - Classic keeps the green gates. Roman builds stone columns wrapped in vines. The gaps stay the same. The choice stays in this browser.
 - On the title, a stargate drifts across the sky on every map. The wormhole turns.
 - The field follows the real date where you are: spring, summer, autumn, or winter. A holiday dresses the whole month it falls in: January is New Year, February is Valentine's Day, March is St. Patrick's Day, the month of Easter is Easter, October is Halloween, November is Thanksgiving, and December is Christmas.
-- Each run has its own weather: clear, rain, a blizzard, a heat wave, fog, or wind. A new run rolls a new sky.
 - Each gate you clear is one point.
 - A gate or the ground ends the run.
 - Each run has a 1 in 100 chance a pterodactyl flies in after you clear the first pipe, grabs you, and carries you away. The chance lasts until you clear 25 pipes.

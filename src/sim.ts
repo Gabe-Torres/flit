@@ -3,7 +3,6 @@
 
 import { holidayForDate, type HolidayId } from './holiday.ts';
 import { seasonForDate, type SeasonId } from './season.ts';
-import { weatherForSeed, type WeatherId } from './weather.ts';
 
 export const WORLD = {
   w: 390,
@@ -64,7 +63,6 @@ export type Run = {
   mode: ModeId;
   shake: number;
   sinceFlap: number;
-  weather: WeatherId;
   season: SeasonId;
   holiday: HolidayId | null;
   taps: number;
@@ -103,7 +101,6 @@ export function createRun(seed = 1, mode: ModeId = 'easy'): Run {
     mode,
     shake: 0,
     sinceFlap: 10,
-    weather: weatherForSeed(safe),
     season: seasonForDate(new Date()),
     holiday: holidayForDate(new Date()),
     taps: 0,

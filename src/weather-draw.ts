@@ -1,7 +1,7 @@
 import { FillGradient, type Graphics } from 'pixi.js';
 import type { HolidayId } from './holiday.ts';
 import type { SeasonId } from './season.ts';
-import { terrainFor, type WeatherId } from './weather.ts';
+import { terrainFor } from './weather.ts';
 
 type Box = { left: number; top: number; right: number; bottom: number };
 
@@ -14,46 +14,17 @@ function skyFill(stops: { offset: number; color: number }[]): FillGradient {
   });
 }
 
-const SKY: Record<WeatherId, FillGradient> = {
-  clear: skyFill([
-    { offset: 0, color: 0x67c4f6 },
-    { offset: 0.55, color: 0xb7e6fb },
-    { offset: 1, color: 0xffe7b8 },
-  ]),
-  rain: skyFill([
-    { offset: 0, color: 0x6d8ea3 },
-    { offset: 0.55, color: 0x9bb4c4 },
-    { offset: 1, color: 0xc9d5c4 },
-  ]),
-  blizzard: skyFill([
-    { offset: 0, color: 0xc5d6e4 },
-    { offset: 0.45, color: 0xe4eef4 },
-    { offset: 1, color: 0xf7f4ee },
-  ]),
-  heat: skyFill([
-    { offset: 0, color: 0xff9a3c },
-    { offset: 0.4, color: 0xffc15a },
-    { offset: 1, color: 0xffe3a0 },
-  ]),
-  fog: skyFill([
-    { offset: 0, color: 0xb7c4ce },
-    { offset: 0.5, color: 0xd5dde4 },
-    { offset: 1, color: 0xe6ece8 },
-  ]),
-  wind: skyFill([
-    { offset: 0, color: 0x67c4f6 },
-    { offset: 0.55, color: 0xb7e6fb },
-    { offset: 1, color: 0xffe7b8 },
-  ]),
-};
-
 const SEASON_SKY: Record<SeasonId, FillGradient> = {
   spring: skyFill([
     { offset: 0, color: 0x8ec8f0 },
     { offset: 0.5, color: 0xf7c6de },
     { offset: 1, color: 0xfff0d0 },
   ]),
-  summer: SKY.clear,
+  summer: skyFill([
+    { offset: 0, color: 0x67c4f6 },
+    { offset: 0.55, color: 0xb7e6fb },
+    { offset: 1, color: 0xffe7b8 },
+  ]),
   autumn: skyFill([
     { offset: 0, color: 0xf09a5a },
     { offset: 0.48, color: 0xf6c27a },
@@ -123,38 +94,19 @@ function cloud(g: Graphics, x: number, y: number, s: number, color: number, alph
 
 export function drawSky(
   g: Graphics,
-  id: WeatherId,
   season: SeasonId,
   holiday: HolidayId | null,
   box: Box,
   floor: number,
 ): void {
   const top = Math.min(box.top, floor - 1);
-  const dirt = terrainFor(id, season, holiday).dirt;
-  const festive = holiday && (id === 'clear' || id === 'wind');
-  const sky = festive ? HOLIDAY_SKY[holiday] : id === 'clear' || id === 'wind' ? SEASON_SKY[season] : SKY[id];
+  const dirt = terrainFor(season, holiday).dirt;
+  const sky = holiday ? HOLIDAY_SKY[holiday] : SEASON_SKY[season];
   g.rect(box.left, top, box.right - box.left, Math.max(1, floor - top)).fill(sky);
   if (box.bottom > floor) g.rect(box.left, floor, box.right - box.left, box.bottom - floor).fill(dirt);
 
-  if (id === 'blizzard') return;
-
-  const sunX = box.left + (box.right - box.left) * (id === 'heat' ? 0.86 : 0.2);
-  const sunY = box.top + (floor - box.top) * (id === 'heat' ? 0.14 : 0.2);
-  if (id === 'heat') {
-    g.circle(sunX, sunY, 118).fill({ color: 0xfff1c2, alpha: 0.34 });
-    g.circle(sunX, sunY, 72).fill({ color: 0xffd27a, alpha: 0.55 });
-    g.circle(sunX, sunY, 38).fill(0xfff3c4);
-    return;
-  }
-  if (id === 'fog') {
-    g.circle(sunX, sunY, 70).fill({ color: 0xfff6e0, alpha: 0.18 });
-    g.circle(sunX, sunY, 28).fill({ color: 0xfff6e0, alpha: 0.35 });
-    return;
-  }
-  if (id === 'rain') {
-    g.circle(sunX, sunY, 46).fill({ color: 0xfff6e0, alpha: 0.16 });
-    return;
-  }
+  const sunX = box.left + (box.right - box.left) * 0.2;
+  const sunY = box.top + (floor - box.top) * 0.2;
   if (holiday) {
     const sun = HOLIDAY_SUN[holiday];
     g.circle(sunX, sunY, sun.radius * 3).fill({ color: sun.color, alpha: sun.glow });
@@ -169,101 +121,18 @@ export function drawSky(
   g.circle(sunX, sunY, season === 'winter' ? 24 : 34).fill(sun);
 }
 
-export function drawClouds(g: Graphics, id: WeatherId, scroll: number, box: Box): void {
-  const speed = id === 'wind' ? 0.9 : 0.22;
+export function drawClouds(g: Graphics, scroll: number, box: Box): void {
   const band = 520;
-  const drift = scroll * speed;
-  const tint = id === 'rain' ? 0xd5dde6 : id === 'heat' ? 0xfff1d2 : 0xffffff;
-  const alpha = id === 'heat' ? 0.72 : id === 'fog' ? 0.55 : 0.94;
+  const drift = scroll * 0.22;
+  const tint = 0xffffff;
+  const alpha = 0.94;
   const start = Math.floor((box.left + drift) / band) - 1;
   const end = Math.floor((box.right + drift) / band) + 1;
   for (let i = start; i <= end; i++) {
     const origin = i * band - drift;
     cloud(g, origin + 36, 38, 0.82, tint, alpha);
-    if (id !== 'heat') cloud(g, origin + 250, id === 'blizzard' ? 180 : 448, 0.7, tint, alpha * 0.9);
+    cloud(g, origin + 250, 448, 0.7, tint, alpha * 0.9);
     cloud(g, origin + 430, 34, 1, tint, alpha);
-  }
-}
-
-function hashUnit(n: number): number {
-  let x = n >>> 0;
-  x = Math.imul(x ^ (x >>> 16), 0x7feb352d);
-  x = Math.imul(x ^ (x >>> 15), 0x846ca68b);
-  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
-}
-
-function wrap(n: number, span: number): number {
-  const m = n % span;
-  return m < 0 ? m + span : m;
-}
-
-// The front hill in draw.ts: base floor-36, amplitude 12, period 54, scroll 0.55.
-function nearSlope(x: number, scroll: number, floor: number): number {
-  return floor - 36 + Math.sin((x + scroll * 0.55) / 54) * 12;
-}
-
-// Each drop keeps its own place, length, and speed. A shared grid of identical
-// slashes reads as stripes, so nothing here shares a column or a fall rate.
-function drawRain(
-  g: Graphics,
-  time: number,
-  scroll: number,
-  box: Box,
-  floor: number,
-  reduceMotion: boolean,
-): void {
-  const spanW = Math.max(1, box.right - box.left);
-  const spanH = Math.max(1, floor - box.top);
-  const pace = reduceMotion ? 0.25 : 1;
-  const count = Math.max(70, Math.min(160, Math.round((spanW * spanH) / 2400)));
-  const slant = -0.14;
-  const body = 0xd7ebf8;
-  const head = 0xf4fbff;
-
-  const mist = Math.round(count * 0.8);
-  for (let i = 0; i < mist; i++) {
-    const along = hashUnit(i * 3 + 11);
-    const phase = hashUnit(i * 3 + 12);
-    const depth = hashUnit(i * 3 + 13);
-    const x = box.left + wrap(along * spanW + scroll * 0.04 + time * slant * 18 * pace, spanW);
-    const y = box.top + wrap(phase * spanH + time * (160 + depth * 120) * pace, spanH);
-    const slope = nearSlope(x, scroll, floor);
-    if (y >= slope) continue;
-    g.circle(x, y, 0.65 + depth * 0.4).fill({ color: body, alpha: 0.14 + depth * 0.12 });
-  }
-
-  for (let i = 0; i < count; i++) {
-    const along = hashUnit(i * 5 + 101);
-    const phase = hashUnit(i * 5 + 102);
-    const depth = hashUnit(i * 5 + 103);
-    const wobble = hashUnit(i * 5 + 104);
-    const len = 4.5 + depth * 4.5;
-    const radius = 1.15 + depth * 0.7;
-    const lean = slant * (0.8 + wobble * 0.45) * len;
-    const speed = 580 * (0.55 + depth * 0.8) * pace;
-    const travel = spanH + len + 28;
-    const y2 = box.top + wrap(phase * travel + time * speed, travel);
-    const x2 = box.left + wrap(along * spanW + scroll * (0.06 + depth * 0.16) + time * slant * (18 + depth * 30) * pace, spanW);
-    const alpha = 0.4 + depth * 0.3;
-    const slope = nearSlope(x2, scroll, floor);
-    if (y2 < slope) {
-      const x1 = x2 - lean;
-      const y1 = y2 - len;
-      const mag = Math.hypot(lean, len) || 1;
-      const px = (-len / mag) * radius;
-      const py = (lean / mag) * radius;
-      const fill = { color: head, alpha };
-      g.poly([x1, y1, x2 + px, y2, x2 - px, y2], true).fill(fill);
-      g.circle(x2, y2, radius * 0.78).fill(fill);
-      g.circle(x2 - px * 0.12, y2 - radius * 0.25, radius * 0.32).fill({
-        color: 0xffffff,
-        alpha: Math.min(0.9, alpha + 0.22),
-      });
-    } else if (y2 < slope + 16) {
-      const fade = 1 - (y2 - slope) / 16;
-      const spread = (2.2 + depth * 3.4) * (0.45 + (1 - fade) * 0.9);
-      g.ellipse(x2, slope - 0.6, Math.max(1.3, spread), 1.15).stroke({ width: 1.15, color: head, alpha: fade * 0.7 });
-    }
   }
 }
 
@@ -396,14 +265,12 @@ export function drawSeason(
   g: Graphics,
   season: SeasonId,
   holiday: HolidayId | null,
-  weather: WeatherId,
   time: number,
   scroll: number,
   box: Box,
   floor: number,
   reduceMotion: boolean,
 ): void {
-  if (weather === 'blizzard' || weather === 'heat') return;
   if (holiday) {
     drawHoliday(g, holiday, time, scroll, box, floor, reduceMotion);
     return;
@@ -472,58 +339,4 @@ export function drawSeason(
   }
 }
 
-export function drawAtmosphere(
-  g: Graphics,
-  id: WeatherId,
-  time: number,
-  scroll: number,
-  box: Box,
-  floor: number,
-  reduceMotion: boolean,
-): void {
-  const wide = box.right - box.left;
-  const tall = floor - box.top;
 
-  if (id === 'rain') drawRain(g, time, scroll, box, floor, reduceMotion);
-
-  if (id === 'blizzard') {
-    const spanW = Math.max(1, wide);
-    const spanH = Math.max(1, tall);
-    for (let i = 0; i < 70; i++) {
-      const x = box.left + ((i * 61 + time * 36 + scroll * 0.2) % spanW);
-      const y = box.top + ((i * 47 + time * 70) % spanH);
-      g.circle(x, y, 1.1 + (i % 3) * 0.7).fill({ color: 0xffffff, alpha: 0.88 });
-    }
-  }
-
-  if (id === 'heat') {
-    for (let i = 0; i < 6; i++) {
-      const y = floor - 36 - i * 26;
-      let x = box.left;
-      g.moveTo(x, y);
-      for (; x <= box.right; x += 18) {
-        g.lineTo(x, y + Math.sin((x + time * (reduceMotion ? 8 : 36)) / 16 + i) * 3);
-      }
-      g.stroke({ width: 2, color: 0xfff3c4, alpha: 0.28, cap: 'round' });
-    }
-  }
-
-  if (id === 'fog') {
-    const span = wide + 280;
-    for (let i = 0; i < 5; i++) {
-      const x = box.left - 80 + ((scroll * 0.12 + i * 210) % span);
-      const y = floor - 60 - i * 78;
-      g.ellipse(x, y, 180, 32).fill({ color: 0xffffff, alpha: 0.22 });
-    }
-  }
-
-  if (id === 'wind') {
-    const spanW = Math.max(1, wide);
-    const spanH = Math.max(1, tall);
-    for (let i = 0; i < 16; i++) {
-      const x = box.left + ((i * 140 + time * (reduceMotion ? 40 : 220)) % spanW);
-      const y = box.top + 30 + ((i * 97) % spanH);
-      g.poly([x, y, x + 12, y - 2, x + 5, y + 2], true).fill({ color: 0x8dcc62, alpha: 0.85 });
-    }
-  }
-}
