@@ -541,13 +541,26 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
 
 {
   const run = playable();
-  run.power = { kind: 'slow', age: 5.97, shots: 0 };
+  run.power = { kind: 'phase', age: 4.47, shots: 0 };
   run.bird.y = 280;
   run.gates = [];
   step(run, 0.02);
-  assert(run.power?.kind === 'slow', 'slow motion still has a moment left');
+  assert(run.power?.kind === 'phase', 'pass-through still has a moment left');
   step(run, 0.02);
-  assert(run.power === null, 'slow motion wears off');
+  assert(run.power === null, 'pass-through wears off');
+}
+
+{
+  const run = playable();
+  run.power = { kind: 'phase', age: 0, shots: 0 };
+  run.bird.y = 300;
+  run.gates = [{ x: WORLD.birdX - 20, gapY: 40, open: 40, scored: false }];
+  assert(!hits(run), 'pass-through ignores pipes');
+  run.power = null;
+  assert(hits(run), 'without pass-through the pipe is solid');
+  run.power = { kind: 'phase', age: 0, shots: 0 };
+  run.bird.y = groundY();
+  assert(hits(run), 'pass-through still hits the ground');
 }
 
 {
@@ -576,10 +589,7 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   powered.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
   powered.placed = 1;
   step(powered, 0.05);
-  assert(
-    powered.pickups.length === 1 && (powered.pickups[0].kind === 'slow' || powered.pickups[0].kind === 'fast'),
-    'test plants a power between pipes',
-  );
+  assert(powered.pickups.length === 1, 'test plants a power between pipes');
 }
 
 if (failed > 0) {

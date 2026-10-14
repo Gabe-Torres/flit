@@ -39,7 +39,7 @@ export type Gate = {
   scored: boolean;
 };
 
-export type PowerKind = 'slow' | 'fast';
+export type PowerKind = 'slow' | 'fast' | 'phase';
 
 export type Power = {
   kind: PowerKind;
@@ -56,9 +56,9 @@ export type Pickup = {
 export type Cue = 'pickup';
 
 // Test keeps the original gates. One power at a time: a new pickup replaces
-// whatever you hold. Slow motion and fast motion wear off.
-export const POWER_SECONDS = { slow: 6, fast: 3.5 } as const;
-const POWER_KINDS: PowerKind[] = ['slow', 'fast'];
+// whatever you hold. Slow motion, fast motion, and pass-through wear off.
+export const POWER_SECONDS = { slow: 6, fast: 3.5, phase: 4.5 } as const;
+const POWER_KINDS: PowerKind[] = ['slow', 'fast', 'phase'];
 const PICKUP_REACH = 28;
 const SLOW_PACE = 0.5;
 const FAST_PACE = 1.65;
@@ -331,7 +331,7 @@ export function powerLabel(run: Run): string | null {
   const power = run.power;
   if (!power) return null;
   const left = Math.max(0, Math.ceil(POWER_SECONDS[power.kind] - power.age));
-  const name = power.kind === 'slow' ? 'Slow' : 'Fast';
+  const name = power.kind === 'slow' ? 'Slow' : power.kind === 'fast' ? 'Fast' : 'Pass';
   return `${name} ${left}`;
 }
 
@@ -356,6 +356,7 @@ export function hits(run: Run): boolean {
   const y = run.bird.y;
   const r = WORLD.hitR;
   if (y + r >= groundY()) return true;
+  if (run.power?.kind === 'phase') return false;
   const x = WORLD.birdX;
   for (const gate of run.gates) {
     const openTop = gate.gapY - gate.open / 2;

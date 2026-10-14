@@ -1,7 +1,7 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
-import { WORLD, flightFacts, groundY, medalForScore, powerLabel, snatchPose, type MedalName, type Pickup, type Run } from './sim.ts';
+import { WORLD, flightFacts, groundY, medalForScore, powerLabel, snatchPose, type MedalName, type Pickup, type PowerKind, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
 import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
@@ -188,11 +188,21 @@ function drawStargate(g: Graphics, x: number, y: number, time: number): void {
   }
 }
 
+const PICKUP_COLOR: Record<PowerKind, number> = {
+  slow: 0x67c4f6,
+  fast: 0xff8a3a,
+  phase: 0xc59bff,
+};
+
 function drawPickup(g: Graphics, pickup: Pickup, time: number, reduce: boolean): void {
   const bob = reduce ? 0 : Math.sin(time * 4 + pickup.x * 0.02) * 3;
   const y = pickup.y + bob;
-  const color = pickup.kind === 'fast' ? 0xff8a3a : 0x67c4f6;
-  g.circle(pickup.x, y, 16).fill(color).stroke({ width: 3, color: INK });
+  g.circle(pickup.x, y, 16).fill(PICKUP_COLOR[pickup.kind]).stroke({ width: 3, color: INK });
+  if (pickup.kind === 'slow') {
+    g.circle(pickup.x, y, 6).stroke({ width: 2, color: CREAM });
+    g.moveTo(pickup.x, y).lineTo(pickup.x, y - 4.5).stroke({ width: 2, color: CREAM, cap: 'round' });
+    return;
+  }
   if (pickup.kind === 'fast') {
     g.poly(
       [pickup.x - 3, y - 7, pickup.x + 1, y - 1, pickup.x - 5, y - 1, pickup.x + 4, y + 7, pickup.x, y + 1, pickup.x + 6, y + 1],
@@ -200,8 +210,7 @@ function drawPickup(g: Graphics, pickup: Pickup, time: number, reduce: boolean):
     ).fill(CREAM);
     return;
   }
-  g.circle(pickup.x, y, 6).stroke({ width: 2, color: CREAM });
-  g.moveTo(pickup.x, y).lineTo(pickup.x, y - 4.5).stroke({ width: 2, color: CREAM, cap: 'round' });
+  g.circle(pickup.x, y, 6.5).stroke({ width: 2.4, color: CREAM });
 }
 
 function drawTitleStargate(g: Graphics, box: Box, time: number, reduce: boolean): void {
@@ -530,6 +539,9 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     for (const pickup of run.pickups) drawPickup(fx, pickup, run.time, state.reduceMotion);
     if (run.power?.kind === 'slow') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0x67c4f6, alpha: 0.18 });
     if (run.power?.kind === 'fast') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0xff8a3a, alpha: 0.18 });
+    if (run.power?.kind === 'phase') {
+      fx.circle(WORLD.birdX, run.bird.y, 26).stroke({ width: 2.4, color: CREAM, alpha: 0.85 });
+    }
 
     const altitude = Math.max(0, floor - run.bird.y);
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });
@@ -553,6 +565,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       bird.rotation = run.bird.rot;
     }
     drawSpecies(body, wing, state.wing, state.bird);
+    bird.alpha = run.power?.kind === 'phase' ? 0.55 : 1;
 
     drawUi(uiGfx, state, box, {
       title,
