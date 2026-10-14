@@ -526,6 +526,54 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   assert(medalForScore(100) === 'ruby', '100 earns a ruby');
 }
 
+{
+  const slow = createRun(1, 'test');
+  flap(slow);
+  slow.power = { kind: 'slow', age: 0, shots: 0 };
+  step(slow, 0.05);
+  assert(Math.abs(slow.scroll - WORLD.scroll * 0.5 * 0.05) < 1e-6, 'slow motion halves the scroll');
+}
+
+{
+  const run = playable();
+  run.power = { kind: 'slow', age: 5.97, shots: 0 };
+  run.bird.y = 280;
+  run.gates = [];
+  step(run, 0.02);
+  assert(run.power?.kind === 'slow', 'slow motion still has a moment left');
+  step(run, 0.02);
+  assert(run.power === null, 'slow motion wears off');
+}
+
+{
+  const run = playable();
+  run.bird.y = WORLD.readyY;
+  run.bird.vy = 0;
+  run.power = { kind: 'slow', age: 1, shots: 0 };
+  run.pickups = [{ x: WORLD.birdX, y: run.bird.y, kind: 'slow' }];
+  step(run, 0);
+  assert(run.power?.kind === 'slow' && run.power.age === 0, 'a new power replaces the old one');
+  assert(run.pickups.length === 0, 'the pickup is taken');
+}
+
+{
+  const normal = playable();
+  normal.mode = 'normal';
+  normal.bird.y = 300;
+  normal.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
+  normal.placed = 2;
+  step(normal, 0.05);
+  assert(normal.pickups.length === 0, 'normal has no powers');
+
+  const powered = playable();
+  powered.mode = 'test';
+  powered.bird.y = 300;
+  powered.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
+  powered.placed = 1;
+  step(powered, 0.05);
+  assert(powered.pickups.length === 1 && powered.pickups[0].kind === 'slow', 'test plants slow motion between pipes');
+}
+
 if (failed > 0) {
   console.error(`${failed} failed`);
   process.exit(1);

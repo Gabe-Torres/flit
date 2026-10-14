@@ -22,6 +22,7 @@ export type Audio = {
   score: () => void;
   hit: () => void;
   snatch: () => void;
+  pickup: () => void;
 };
 
 export function createAudio(): Audio {
@@ -112,6 +113,10 @@ export function createAudio(): Audio {
       noise(0.16, 0.04, 1700);
       tone(420, 0.18, 'sawtooth', 0.03, 560);
       tone(860, 0.24, 'triangle', 0.035, -280, 0.07);
+    },
+    pickup() {
+      tone(523, 0.07, 'sine', 0.05, 80);
+      tone(784, 0.12, 'sine', 0.045, 0, 0.06);
     },
   };
 }

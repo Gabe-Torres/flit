@@ -2,7 +2,7 @@ import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
-import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, step, type ModeId, type Run } from './sim.ts';
+import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, motionPace, powerLabel, step, type ModeId, type Run } from './sim.ts';
 import { fieldName } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
 import { createTipJoke } from './tip-joke.ts';
@@ -307,7 +307,8 @@ function describe(): void {
     setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. ${bestLine(bests[run.mode])}. ${modeName(run.mode)}. ${themeName(themeId)}. ${sky}. ${controls.againSpeak}`);
     return;
   }
-  setStatus(`Score ${run.score}. ${sky}.`);
+  const held = powerLabel(run);
+  setStatus(held ? `Score ${run.score}. ${held}. ${sky}.` : `Score ${run.score}. ${sky}.`);
 }
 
 function puff(count: number, life: number, spread: number): void {
@@ -534,6 +535,10 @@ function frame(now: number): void {
     pop = 1;
     puff(6, 0.28, 50);
   }
+  if (run.cues.includes('pickup')) {
+    audio.pickup();
+    puff(8, 0.3, 70);
+  }
   if (run.phase === 'over' && phase !== 'over') {
     tipJoke.onGameOver();
     if (run.score > bests[run.mode]) {
@@ -545,7 +550,8 @@ function frame(now: number): void {
 
   if (!paused) {
     const boost = Math.max(0, 1 - run.sinceFlap / 0.28);
-    wing += dt * ((run.phase === 'ready' ? 6 : 8) + boost * 26);
+    const pace = run.phase === 'play' ? motionPace(run) : 1;
+    wing += dt * pace * ((run.phase === 'ready' ? 6 : 8) + boost * 26);
     squash = Math.max(0, squash - dt * 3.2);
     pop = Math.max(0, pop - dt * 2.5);
     for (const p of particles) {

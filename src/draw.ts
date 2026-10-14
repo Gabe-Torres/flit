@@ -1,7 +1,7 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
-import { WORLD, flightFacts, groundY, medalForScore, snatchPose, type MedalName, type Run } from './sim.ts';
+import { WORLD, flightFacts, groundY, medalForScore, powerLabel, snatchPose, type MedalName, type Pickup, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
 import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
@@ -186,6 +186,14 @@ function drawStargate(g: Graphics, x: number, y: number, time: number): void {
     g.circle(lx, ly, engaged ? 1.85 : 1.4).fill(0xffffff);
     g.circle(lx - 0.35, ly - 0.4, engaged ? 0.55 : 0.4).fill({ color: 0xd7f1ff, alpha: 0.9 });
   }
+}
+
+function drawPickup(g: Graphics, pickup: Pickup, time: number, reduce: boolean): void {
+  const bob = reduce ? 0 : Math.sin(time * 4 + pickup.x * 0.02) * 3;
+  const y = pickup.y + bob;
+  g.circle(pickup.x, y, 16).fill(0x67c4f6).stroke({ width: 3, color: INK });
+  g.circle(pickup.x, y, 6).stroke({ width: 2, color: CREAM });
+  g.moveTo(pickup.x, y).lineTo(pickup.x, y - 4.5).stroke({ width: 2, color: CREAM, cap: 'round' });
 }
 
 function drawTitleStargate(g: Graphics, box: Box, time: number, reduce: boolean): void {
@@ -448,6 +456,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const modeName = outlined('Easy', 18, CREAM, INK, true);
   const modeScore = outlined('0', 32, CREAM, INK, true);
   const scoreText = outlined('0', 64, CREAM);
+  const powerText = outlined('', 22, CREAM);
   const pauseTitle = outlined('PAUSED', 40, CREAM);
   const pauseHint = plain('tap to resume', 20, 0x6d5848);
   const overTitle = outlined('GAME OVER', 36, 0xef5d4a);
@@ -464,6 +473,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     modeName,
     modeScore,
     scoreText,
+    powerText,
     pauseTitle,
     pauseHint,
     overTitle,
@@ -509,6 +519,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       drawThemedGate(gateLayer, state.theme, gate.x, gate.gapY, gate.open, box.top, floor, themeTime);
     }
     drawGround(ground, run, box, floor, land, state.reduceMotion);
+    for (const pickup of run.pickups) drawPickup(fx, pickup, run.time, state.reduceMotion);
+    if (run.power?.kind === 'slow') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0x67c4f6, alpha: 0.18 });
 
     const altitude = Math.max(0, floor - run.bird.y);
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });
@@ -539,6 +551,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       modeName,
       modeScore,
       scoreText,
+      powerText,
       pauseTitle,
       pauseHint,
       overTitle,
@@ -772,6 +785,7 @@ type Labels = {
   modeName: Text;
   modeScore: Text;
   scoreText: Text;
+  powerText: Text;
   pauseTitle: Text;
   pauseHint: Text;
   overTitle: Text;
@@ -800,6 +814,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
   labels.title.visible = ready;
   labels.flyHint.visible = ready;
   labels.scoreText.visible = playing;
+  labels.powerText.visible = playing && run.power != null;
   labels.pauseTitle.visible = state.paused;
   labels.pauseHint.visible = state.paused;
   labels.overTitle.visible = over && !joke;
@@ -850,6 +865,11 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
     labels.scoreText.text = String(run.score);
     labels.scoreText.position.set(cx, 74);
     labels.scoreText.scale.set(pop);
+    const held = powerLabel(run);
+    if (held) {
+      labels.powerText.text = held;
+      labels.powerText.position.set(cx, 118);
+    }
   }
 
   if (run.shake > 0) {

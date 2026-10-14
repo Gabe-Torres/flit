@@ -39,6 +39,28 @@ export type Gate = {
   scored: boolean;
 };
 
+export type PowerKind = 'slow';
+
+export type Power = {
+  kind: PowerKind;
+  age: number;
+  shots: number;
+};
+
+export type Pickup = {
+  x: number;
+  y: number;
+  kind: PowerKind;
+};
+
+export type Cue = 'pickup';
+
+// Test keeps the original gates. One power at a time: a new pickup replaces
+// whatever you hold. Slow motion wears off.
+export const POWER_SECONDS = { slow: 6 } as const;
+const PICKUP_REACH = 28;
+const SLOW_PACE = 0.5;
+
 export type ModeId = 'easy' | 'normal' | 'hard' | 'test';
 
 export const MODES: { id: ModeId; name: string }[] = [
@@ -72,6 +94,9 @@ export type Run = {
   snatchTime: number;
   caughtY: number;
   placed: number;
+  power: Power | null;
+  pickups: Pickup[];
+  cues: Cue[];
 };
 
 export function groundY(): number {
@@ -110,6 +135,9 @@ export function createRun(seed = 1, mode: ModeId = 'easy'): Run {
     snatchTime: -1,
     caughtY: WORLD.readyY,
     placed: 0,
+    power: null,
+    pickups: [],
+    cues: [],
   };
 }
 
@@ -247,14 +275,59 @@ function spawn(run: Run): void {
   }
   const spacing = pipeSpacing(slot, run.mode, run.origin);
   if (last.x <= WORLD.w + 36 - spacing) {
+    const x = last.x + spacing;
     run.gates.push({
-      x: last.x + spacing,
+      x,
       gapY: nextGap(run, last.gapY, open),
       open,
       scored: false,
     });
     run.placed += 1;
+    if (run.mode === 'test') fillGap(run, last.x, x);
   }
+}
+
+function fillGap(run: Run, left: number, right: number): void {
+  if (run.placed % 2 !== 0) return;
+  const mid = (left + right) / 2;
+  const top = 96;
+  const bot = groundY() - 72;
+  run.pickups.push({ x: mid, y: top + rand(run) * (bot - top), kind: 'slow' });
+}
+
+export function motionPace(run: Run): number {
+  if (run.power?.kind === 'slow') return SLOW_PACE;
+  return 1;
+}
+
+function grant(run: Run, kind: PowerKind): void {
+  run.power = { kind, age: 0, shots: 0 };
+  run.cues.push('pickup');
+}
+
+function expirePower(run: Run, dt: number): void {
+  const power = run.power;
+  if (!power) return;
+  power.age += dt;
+  if (power.age >= POWER_SECONDS[power.kind]) run.power = null;
+}
+
+function collectPickups(run: Run): void {
+  const keep: Pickup[] = [];
+  for (const pickup of run.pickups) {
+    const dx = pickup.x - WORLD.birdX;
+    const dy = pickup.y - run.bird.y;
+    if (dx * dx + dy * dy <= PICKUP_REACH * PICKUP_REACH) grant(run, pickup.kind);
+    else keep.push(pickup);
+  }
+  run.pickups = keep;
+}
+
+export function powerLabel(run: Run): string | null {
+  const power = run.power;
+  if (!power) return null;
+  const left = Math.max(0, Math.ceil(POWER_SECONDS[power.kind] - power.age));
+  return `Slow ${left}`;
 }
 
 export function circleHits(
@@ -315,6 +388,7 @@ function integrate(run: Run, dt: number): void {
 
 export function step(run: Run, dt: number): void {
   dt = clamp(dt, 0, 0.05);
+  run.cues = [];
   run.shake = Math.max(0, run.shake - dt);
 
   if (run.phase === 'ready') {
@@ -361,11 +435,17 @@ export function step(run: Run, dt: number): void {
   run.time += dt;
   run.playTime += dt;
   run.sinceFlap += dt;
-  run.scroll += WORLD.scroll * dt;
-  integrate(run, dt);
-  for (const gate of run.gates) gate.x -= WORLD.scroll * dt;
+  const pace = motionPace(run);
+  const travel = WORLD.scroll * pace * dt;
+  run.scroll += travel;
+  integrate(run, dt * pace);
+  for (const gate of run.gates) gate.x -= travel;
+  for (const pickup of run.pickups) pickup.x -= travel;
   run.gates = run.gates.filter((gate) => gate.x + WORLD.pipeW > -80);
+  run.pickups = run.pickups.filter((pickup) => pickup.x > -80);
   spawn(run);
+  expirePower(run, dt);
+  collectPickups(run);
 
   if (run.score >= SNATCH_PIPE_LIMIT) run.snatchAt = null;
   // Scoring happens below, so a grab on the frame pipe 1 clears waits one step.
