@@ -47,7 +47,7 @@ function playable(): ReturnType<typeof createRun> {
 {
   assert(createRun(4).season === seasonForDate(new Date()), 'a run keeps the season');
   assert(createRun(4).holiday === holidayForDate(new Date()), 'a run keeps the holiday');
-  assert(createRun(4).mode === 'easy', 'easy is the default course');
+  assert(createRun(4).mode === 'normal', 'normal is the default course');
   assert(createRun(4, 'hard').mode === 'hard', 'a run keeps the hard course');
   assert(createRun(4, 'normal').mode === 'normal', 'a run keeps the normal course');
   assert(createRun(4, 'test').mode === 'test', 'a run keeps the test course');
@@ -246,12 +246,12 @@ function playable(): ReturnType<typeof createRun> {
     step(run, 1 / 60);
   }
   assert(run.phase === 'play', 'a centered bird keeps flying');
-  assert(run.score < 5, `the opening is still the wide stretch (${run.score})`);
+  assert(run.score < 5, `the opening stretch is still the original (${run.score})`);
   assert(run.gates.length >= 2, 'gates keep coming');
-  assert(run.gates.every((gate) => gate.open === pipeOpening(0)), 'early openings stay tall');
+  assert(run.gates.every((gate) => gate.open === pipeOpening(0)), 'openings stay the original');
   for (let i = 1; i < run.gates.length; i++) {
     const gap = run.gates[i].x - run.gates[i - 1].x;
-    assert(Math.abs(gap - pipeSpacing(0)) < 0.05, `early gates stay wide (${gap})`);
+    assert(Math.abs(gap - pipeSpacing(0)) < 0.05, `gates keep the original distance (${gap})`);
   }
   for (let i = 1; i < run.gates.length; i++) {
     const jump = Math.abs(run.gates[i].gapY - run.gates[i - 1].gapY);
@@ -260,29 +260,8 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
-  assert(pipeSpacing(0) === pipeSpacing(4), 'the first five pipes share a distance');
-  assert(pipeSpacing(0) > pipeSpacing(5), 'pipe five pulls the next gate closer');
-  const tighten = pipeSpacing(0) - pipeSpacing(5);
-  assert(tighten === 30, 'each five pipes closes the gap by 30');
-  assert(tighten === pipeSpacing(5) - pipeSpacing(10), 'the second step matches');
-  assert(tighten === pipeSpacing(10) - pipeSpacing(15), 'the third step matches');
-  assert(pipeSpacing(19) === WORLD.spacing + tighten, 'pipe 19 is one step easier than the floor');
-  assert(pipeSpacing(20) === WORLD.spacing, 'pipe 20 is the closest the gates get');
-  assert(pipeSpacing(40) === WORLD.spacing, 'later pipes stay at the closest distance');
-  assert(pipeOpening(0) === WORLD.gap + (pipeSpacing(0) - WORLD.spacing), 'the opening eases by the same amount');
-  assert(pipeOpening(0) === pipeOpening(4), 'the first five pipes share an opening');
-  assert(pipeOpening(0) - pipeOpening(5) === pipeSpacing(0) - pipeSpacing(5), 'each five pipes shortens the opening like the distance');
-  assert(pipeOpening(20) === WORLD.gap, 'pipe 20 is the narrowest opening');
-  assert(pipeOpening(40) === WORLD.gap, 'later openings stay narrow');
-  assert(pipeSpacing(0, 'normal') === WORLD.spacing && pipeSpacing(40, 'normal') === WORLD.spacing, 'normal keeps the original distance');
-  assert(pipeOpening(0, 'normal') === WORLD.gap && pipeOpening(40, 'normal') === WORLD.gap, 'normal keeps the original opening');
-  assert(pipeSpacing(0, 'easy') > pipeSpacing(0, 'normal'), 'easy begins wider than the original');
-  const runWide = playable();
-  runWide.bird.y = 320 + 100;
-  runWide.gates = [{ x: WORLD.birdX - 20, gapY: 320, open: pipeOpening(0), scored: false }];
-  assert(!hits(runWide), 'the early opening clears a bird 100px off center');
-  runWide.gates[0].open = pipeOpening(40);
-  assert(hits(runWide), 'the final opening hits that same bird');
+  assert(pipeSpacing(0) === WORLD.spacing && pipeSpacing(40) === WORLD.spacing, 'the course keeps the original distance');
+  assert(pipeOpening(0) === WORLD.gap && pipeOpening(40) === WORLD.gap, 'the course keeps the original opening');
 
   const run = createRun(9);
   run.phase = 'play';
@@ -306,7 +285,7 @@ function playable(): ReturnType<typeof createRun> {
     }
   }
   assert(run.phase === 'play', 'the spacing run survives');
-  assert(run.score >= 45, `the run reaches the tight gates (${run.score})`);
+  assert(run.score >= 45, `the run clears the original course (${run.score})`);
   assert(gaps.length >= 45, `enough gates were measured (${gaps.length})`);
   for (let i = 0; i < gaps.length; i++) {
     assert(Math.abs(gaps[i] - pipeSpacing(i)) < 0.05, `gate ${i + 1} uses spacing ${pipeSpacing(i)} (${gaps[i]})`);
@@ -315,7 +294,7 @@ function playable(): ReturnType<typeof createRun> {
 
 {
   assert(planSnatch(1) === null, 'an ordinary seed stays safe');
-  const modes = ['easy', 'normal', 'hard'] as const;
+  const modes = ['normal', 'hard'] as const;
   for (const mode of modes) {
     let invites = 0;
     for (let seed = 1; seed <= 1000000; seed++) {
@@ -353,7 +332,7 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
-  for (const mode of ['easy', 'normal', 'hard'] as const) {
+  for (const mode of ['normal', 'hard'] as const) {
     for (const dt of [1 / 60, 0.05]) {
       const run = createRun(192, mode);
       flap(run);
@@ -428,7 +407,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(run.phase === 'play', 'a later roll cannot bring it back');
 }
 
-function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: number): { gaps: number[]; opens: number[]; jumps: number[] } {
+function clearedLayout(seed: number, mode: 'normal' | 'hard' | 'test', pipes: number): { gaps: number[]; opens: number[]; jumps: number[] } {
   const run = createRun(seed, mode);
   run.phase = 'play';
   run.snatchAt = null;
@@ -518,9 +497,9 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman', 'map names stay with their gates');
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
   assert(!isThemeId('mars') && !isThemeId('reef') && !isThemeId('colony') && !isThemeId('pipes'), 'unknown maps fall through');
-  assert(MODES.map((mode) => mode.id).join() === 'easy,normal,hard,test', 'difficulties stay in menu order');
+  assert(MODES.map((mode) => mode.id).join() === 'normal,hard,test', 'difficulties stay in menu order');
   assert(MODES.find((mode) => mode.id === 'test')?.name === 'Test', 'test keeps its menu name');
-  assert(!isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
+  assert(!isModeId('easy') && !isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
 }
 
 {
@@ -532,15 +511,10 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
 
 {
   const slow = createRun(1, 'test');
-  const quick = createRun(1, 'test');
   flap(slow);
-  flap(quick);
   slow.power = { kind: 'slow', age: 0, shots: 0 };
-  quick.power = { kind: 'fast', age: 0, shots: 0 };
   step(slow, 0.05);
-  step(quick, 0.05);
   assert(Math.abs(slow.scroll - WORLD.scroll * 0.5 * 0.05) < 1e-6, 'slow motion halves the scroll');
-  assert(Math.abs(quick.scroll - WORLD.scroll * 1.65 * 0.05) < 1e-6, 'fast motion speeds the scroll');
 }
 
 {
@@ -599,6 +573,21 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
 }
 
 {
+  const armed = playable();
+  armed.power = { kind: 'gun', age: 0, shots: GUN_SHOTS };
+  assert(flap(armed), 'a flap still flies');
+  assert(armed.power?.shots === GUN_SHOTS - 1 && armed.bolts.length === 1, 'a flap fires the blaster');
+  const quiet = playable();
+  quiet.power = { kind: 'slow', age: 0, shots: 0 };
+  flap(quiet);
+  assert(quiet.bolts.length === 0, 'a flap without the blaster does not fire');
+  const title = createRun(1, 'test');
+  title.power = { kind: 'gun', age: 0, shots: GUN_SHOTS };
+  flap(title);
+  assert(title.power?.shots === GUN_SHOTS && title.bolts.length === 0, 'the opening flap does not fire');
+}
+
+{
   const run = playable();
   run.power = { kind: 'gun', age: 0, shots: 2 };
   run.gates = [{ x: 900, gapY: 300, open: WORLD.gap, scored: false }];
@@ -620,16 +609,57 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   powered.bird.y = 300;
   powered.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
   powered.placed = 1;
+  powered.portalAt = 1;
   step(powered, 0.05);
   assert(powered.pickups.length === 1, 'test plants a power between pipes');
+  const prev = powered.gates[powered.gates.length - 2];
+  const born = powered.gates[powered.gates.length - 1];
+  const top = Math.max(prev.gapY - prev.open / 2, born.gapY - born.open / 2);
+  const bot = Math.min(prev.gapY + prev.open / 2, born.gapY + born.open / 2);
+  const y = bot > top ? (top + bot) / 2 : (prev.gapY + born.gapY) / 2;
+  assert(Math.abs(powered.pickups[0].y - y) < 0.01, 'the power sits in the shared opening');
+  assert(Math.abs(powered.pickups[0].x - (prev.x + WORLD.pipeW + born.x) / 2) < 0.01, 'the power sits between the pipes');
 
-  const gated = playable();
-  gated.mode = 'test';
-  gated.bird.y = 300;
-  gated.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
-  gated.placed = 2;
-  step(gated, 0.05);
-  assert(gated.portals.length === 1, 'test plants a stargate between pipes');
+}
+
+function portalMarks(seed: number, pipes: number): number[] {
+  const run = createRun(seed, 'test');
+  run.phase = 'play';
+  run.snatchAt = null;
+  run.bird.y = 12;
+  const marks: number[] = [];
+  let guard = 0;
+  while (run.placed < pipes && guard < pipes + 5) {
+    guard += 1;
+    if (run.gates.length > 0) {
+      const last = run.gates[run.gates.length - 1];
+      run.gates = [last];
+      last.x = 0;
+    }
+    const before = run.portals.length;
+    step(run, 0);
+    if (run.portals.length > before) marks.push(run.placed);
+  }
+  return marks;
+}
+
+{
+  const firsts = new Set<number>();
+  let doubles = 0;
+  let early = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const marks = portalMarks(seed, 400);
+    assert(marks.length > 0, `seed ${seed} eventually rolls a stargate`);
+    firsts.add(marks[0]);
+    if (marks[0] <= 20) early += 1;
+    if (marks.length > 1) doubles += 1;
+    for (let i = 1; i < marks.length; i++) {
+      assert(marks[i] - marks[i - 1] > 20, `seed ${seed} waits 20 pipes (${marks[i - 1]} then ${marks[i]})`);
+    }
+  }
+  assert(firsts.size > 1, 'the first stargate is not on a fixed pipe');
+  assert(early > 0, 'a stargate can show up before pipe 20');
+  assert(doubles > 0, 'after the quiet pipes the roll starts again');
 }
 
 {
@@ -654,6 +684,23 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   assert(portalY(run.portals[0], run.time) !== before, 'the stargate races up and down');
   assert(run.portals[0].x < 320, 'the stargate scrolls with the pipes');
   assert(run.score === 0, 'missing the stargate does not skip ahead');
+}
+
+{
+  const phone = playable();
+  phone.gates = [];
+  step(phone, 0);
+  assert(phone.gates.length === 1, 'the phone still starts with one pipe');
+  const wide = playable();
+  wide.viewRight = 980;
+  wide.gates = [];
+  step(wide, 0);
+  assert(wide.gates.length > 1, 'a wide view shows more than one pipe');
+  assert(wide.gates[wide.gates.length - 1].x > WORLD.w, 'the last pipe sits past the phone width');
+  wide.viewLeft = -520;
+  wide.gates.push({ x: -240, gapY: 300, open: WORLD.gap, scored: true });
+  step(wide, 0);
+  assert(wide.gates.some((gate) => gate.x < -80), 'a pipe stays until it leaves a wide screen');
 }
 
 if (failed > 0) {

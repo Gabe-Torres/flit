@@ -1,7 +1,7 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
-import { WORLD, flightFacts, groundY, medalForScore, portalY, powerLabel, snatchPose, type MedalName, type Pickup, type PowerKind, type Run } from './sim.ts';
+import { WORLD, flightFacts, groundY, medalForScore, pipeSpacing, portalY, powerLabel, snatchPose, type MedalName, type Pickup, type PowerKind, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
 import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
@@ -190,7 +190,6 @@ function drawStargate(g: Graphics, x: number, y: number, time: number): void {
 
 const PICKUP_COLOR: Record<PowerKind, number> = {
   slow: 0x67c4f6,
-  fast: 0xff8a3a,
   phase: 0xc59bff,
   gun: 0xf2c14b,
 };
@@ -202,13 +201,6 @@ function drawPickup(g: Graphics, pickup: Pickup, time: number, reduce: boolean):
   if (pickup.kind === 'slow') {
     g.circle(pickup.x, y, 6).stroke({ width: 2, color: CREAM });
     g.moveTo(pickup.x, y).lineTo(pickup.x, y - 4.5).stroke({ width: 2, color: CREAM, cap: 'round' });
-    return;
-  }
-  if (pickup.kind === 'fast') {
-    g.poly(
-      [pickup.x - 3, y - 7, pickup.x + 1, y - 1, pickup.x - 5, y - 1, pickup.x + 4, y + 7, pickup.x, y + 1, pickup.x + 6, y + 1],
-      true,
-    ).fill(CREAM);
     return;
   }
   if (pickup.kind === 'phase') {
@@ -459,6 +451,11 @@ function fit(cssW: number, cssH: number): { scale: number; ox: number; oy: numbe
   };
 }
 
+export function playfield(cssW: number, cssH: number): { left: number; right: number } {
+  const { box } = fit(cssW, cssH);
+  return { left: box.left, right: box.right };
+}
+
 export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const app = new Application();
   await app.init({
@@ -489,7 +486,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
 
   const title = outlined('FLIT', 92, CREAM);
   const flyHint = plain('tap to fly', 26, INK);
-  const modeName = outlined('Easy', 18, CREAM, INK, true);
+  const modeName = outlined('Normal', 18, CREAM, INK, true);
   const modeScore = outlined('0', 32, CREAM, INK, true);
   const scoreText = outlined('0', 64, CREAM);
   const powerText = outlined('', 22, CREAM);
@@ -550,7 +547,13 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     hill(scenery, floor - 36, land.hillNear, 12, 54, run.scroll * 0.55, box.left, box.right, floor);
     drawSeason(scenery, season, holiday, run.time, run.scroll, box, floor, state.reduceMotion);
     const themeTime = state.reduceMotion ? 0 : run.time;
-    if (run.phase === 'ready') drawThemedGate(gateLayer, state.theme, 326, 300, 156, box.top, floor, themeTime);
+    if (run.phase === 'ready') {
+      drawThemedGate(gateLayer, state.theme, 326, 300, 156, box.top, floor, themeTime);
+      const spacing = pipeSpacing(0, run.mode, run.origin);
+      for (let x = 326 + spacing; x < box.right + WORLD.pipeW; x += spacing) {
+        drawThemedGate(gateLayer, state.theme, x, 300, 156, box.top, floor, themeTime);
+      }
+    }
     for (const gate of run.gates) {
       drawThemedGate(gateLayer, state.theme, gate.x, gate.gapY, gate.open, box.top, floor, themeTime);
     }
@@ -563,7 +566,6 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     for (const pickup of run.pickups) drawPickup(fx, pickup, run.time, state.reduceMotion);
     for (const bolt of run.bolts) drawBolt(fx, bolt.x, bolt.y);
     if (run.power?.kind === 'slow') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0x67c4f6, alpha: 0.18 });
-    if (run.power?.kind === 'fast') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0xff8a3a, alpha: 0.18 });
     if (run.power?.kind === 'phase') {
       fx.circle(WORLD.birdX, run.bird.y, 26).stroke({ width: 2.4, color: CREAM, alpha: 0.85 });
     }

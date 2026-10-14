@@ -39,7 +39,7 @@ export type Gate = {
   scored: boolean;
 };
 
-export type PowerKind = 'slow' | 'fast' | 'phase' | 'gun';
+export type PowerKind = 'slow' | 'phase' | 'gun';
 
 export type Power = {
   kind: PowerKind;
@@ -66,24 +66,25 @@ export type Bolt = {
 export type Cue = 'pickup' | 'warp' | 'blast';
 
 // Test keeps the original gates. One power at a time: a new pickup replaces
-// whatever you hold. Slow, fast, and pass-through wear off. The blaster is
-// three shots, and each shot removes one pipe. A stargate between pipes races
-// up and down; flying through it skips ten pipes ahead.
-export const POWER_SECONDS = { slow: 6, fast: 3.5, phase: 4.5 } as const;
+// whatever you hold. Slow motion and pass-through wear off. The blaster is
+// three shots, a flap fires one, and each shot removes one pipe. A stargate is
+// a rare roll. After one appears, the next 20 pipes cannot have another. Flying
+// through it skips ten pipes ahead.
+export const POWER_SECONDS = { slow: 6, phase: 4.5 } as const;
 export const GUN_SHOTS = 3;
 export const WARP_PIPES = 10;
-const POWER_KINDS: PowerKind[] = ['slow', 'fast', 'phase', 'gun'];
+const PORTAL_ODDS = 25;
+const PORTAL_QUIET = 20;
+const POWER_KINDS: PowerKind[] = ['slow', 'phase', 'gun'];
 const PICKUP_REACH = 28;
 const BOLT_SPEED = 720;
 const PORTAL_SPIN = 5.2;
 const PORTAL_REACH = 34;
 const SLOW_PACE = 0.5;
-const FAST_PACE = 1.65;
 
-export type ModeId = 'easy' | 'normal' | 'hard' | 'test';
+export type ModeId = 'normal' | 'hard' | 'test';
 
 export const MODES: { id: ModeId; name: string }[] = [
-  { id: 'easy', name: 'Easy' },
   { id: 'normal', name: 'Normal' },
   { id: 'hard', name: 'Hard' },
   { id: 'test', name: 'Test' },
@@ -113,6 +114,9 @@ export type Run = {
   snatchTime: number;
   caughtY: number;
   placed: number;
+  portalAt: number;
+  viewLeft: number;
+  viewRight: number;
   power: Power | null;
   pickups: Pickup[];
   portals: Portal[];
@@ -134,7 +138,7 @@ export function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
-export function createRun(seed = 1, mode: ModeId = 'easy'): Run {
+export function createRun(seed = 1, mode: ModeId = 'normal'): Run {
   const safe = seed >>> 0 || 1;
   return {
     phase: 'ready',
@@ -156,6 +160,9 @@ export function createRun(seed = 1, mode: ModeId = 'easy'): Run {
     snatchTime: -1,
     caughtY: WORLD.readyY,
     placed: 0,
+    portalAt: 0,
+    viewLeft: 0,
+    viewRight: WORLD.w,
     power: null,
     pickups: [],
     portals: [],
@@ -174,37 +181,26 @@ export const SNATCH_DURATION = SNATCH_APPROACH + SNATCH_CARRY;
 const TALON_X = -6;
 const TALON_Y = 40;
 
-// Easy tightens every 5 pipes, by 30px of distance and 30px of opening.
-// The floor is the original distance and opening. Normal stays on that floor.
+// Normal and Test stay on the original distance and opening.
 // Hard stays on that floor or tighter, and its hole can sit anywhere.
-const EASE_EVERY = 5;
-const EASE_STEP = 30;
-const EASE_STEPS = 4;
 const HARD_SPACE = 64;
 const HARD_OPEN = 48;
-
-function easeLeft(cleared: number): number {
-  const steps = Math.min(EASE_STEPS, Math.max(0, Math.floor(cleared / EASE_EVERY)));
-  return (EASE_STEPS - steps) * EASE_STEP;
-}
 
 function roll(origin: number, index: number, salt: number): number {
   return mix(origin ^ Math.imul(index + 1, 0x9e3779b1) ^ salt) / 4294967296;
 }
 
-export function pipeSpacing(cleared: number, mode: ModeId = 'easy', origin = 1): number {
-  if (mode === 'normal' || mode === 'test') return WORLD.spacing;
+export function pipeSpacing(cleared: number, mode: ModeId = 'normal', origin = 1): number {
   if (mode === 'hard') return WORLD.spacing - roll(origin, cleared, 0x51a7c0de) * HARD_SPACE;
-  return WORLD.spacing + easeLeft(cleared);
+  return WORLD.spacing;
 }
 
-export function pipeOpening(cleared: number, mode: ModeId = 'easy', origin = 1): number {
-  if (mode === 'normal' || mode === 'test') return WORLD.gap;
+export function pipeOpening(cleared: number, mode: ModeId = 'normal', origin = 1): number {
   if (mode === 'hard') return WORLD.gap - roll(origin, cleared, 0xc0ffee21) * HARD_OPEN;
-  return WORLD.gap + easeLeft(cleared);
+  return WORLD.gap;
 }
 
-export function pipesClearTime(pipes = SNATCH_PIPE_LIMIT, mode: ModeId = 'easy', origin = 1): number {
+export function pipesClearTime(pipes = SNATCH_PIPE_LIMIT, mode: ModeId = 'normal', origin = 1): number {
   let travel = WORLD.firstX + WORLD.pipeW - WORLD.birdX;
   for (let i = 0; i < pipes - 1; i++) travel += pipeSpacing(i, mode, origin);
   return travel / WORLD.scroll;
@@ -217,7 +213,7 @@ function mix(n: number): number {
   return (x ^ (x >>> 16)) >>> 0;
 }
 
-export function planSnatch(seed: number, mode: ModeId = 'easy'): number | null {
+export function planSnatch(seed: number, mode: ModeId = 'normal'): number | null {
   if (mix(seed ^ 0xa5a5a5a5) >= SNATCH_CHANCE_NUMERATOR) return null;
   const earliest = pipesClearTime(1, mode, seed);
   const latest = pipesClearTime(SNATCH_PIPE_LIMIT, mode, seed);
@@ -286,18 +282,22 @@ function nextGap(run: Run, around: number, open: number): number {
 }
 
 function spawn(run: Run): void {
-  const last = run.gates[run.gates.length - 1];
-  // Hard gates vary in distance, so the roll follows how many have been placed.
-  // Easy and normal still follow the cleared score.
-  const slot = run.mode === 'hard' ? Math.max(0, run.placed - 1) : run.score;
-  const open = pipeOpening(slot, run.mode, run.origin);
-  if (!last) {
-    run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY, open), open, scored: false });
-    run.placed += 1;
-    return;
-  }
-  const spacing = pipeSpacing(slot, run.mode, run.origin);
-  if (last.x <= WORLD.w + 36 - spacing) {
+  // A phone ends at the portrait width. A wide screen keeps laying pipes until
+  // the next one is past the visible edge, so the course ahead stays in view.
+  const edge = Math.max(WORLD.w, run.viewRight);
+  for (let guard = 0; guard < 24; guard++) {
+    const last = run.gates[run.gates.length - 1];
+    // Hard gates vary in distance, so the roll follows how many have been placed.
+    // The other courses follow the cleared score.
+    const slot = run.mode === 'hard' ? Math.max(0, run.placed - 1) : run.score;
+    const open = pipeOpening(slot, run.mode, run.origin);
+    if (!last) {
+      run.gates.push({ x: WORLD.firstX, gapY: nextGap(run, WORLD.readyY, open), open, scored: false });
+      run.placed += 1;
+      continue;
+    }
+    const spacing = pipeSpacing(slot, run.mode, run.origin);
+    if (last.x > edge + 36 - spacing) return;
     const x = last.x + spacing;
     run.gates.push({
       x,
@@ -310,17 +310,26 @@ function spawn(run: Run): void {
   }
 }
 
+function sharedOpening(a: Gate, b: Gate): number {
+  const top = Math.max(a.gapY - a.open / 2, b.gapY - b.open / 2);
+  const bot = Math.min(a.gapY + a.open / 2, b.gapY + b.open / 2);
+  if (bot > top) return (top + bot) / 2;
+  return (a.gapY + b.gapY) / 2;
+}
+
 function fillGap(run: Run, left: number, right: number): void {
-  const mid = (left + right) / 2;
-  if (run.placed % 3 === 0) {
+  const mid = (left + WORLD.pipeW + right) / 2;
+  const quiet = run.portalAt !== 0 && run.placed - run.portalAt <= PORTAL_QUIET;
+  if (!quiet && rand(run) * PORTAL_ODDS < 1) {
     run.portals.push({ x: mid, phase: rand(run) * Math.PI * 2 });
+    run.portalAt = run.placed;
     return;
   }
   if (run.placed % 2 === 0) {
+    const prev = run.gates[run.gates.length - 2];
+    const next = run.gates[run.gates.length - 1];
     const kind = POWER_KINDS[Math.floor(rand(run) * POWER_KINDS.length)];
-    const top = 96;
-    const bot = groundY() - 72;
-    run.pickups.push({ x: mid, y: top + rand(run) * (bot - top), kind });
+    run.pickups.push({ x: mid, y: sharedOpening(prev, next), kind });
   }
 }
 
@@ -334,7 +343,6 @@ export function portalY(portal: Portal, time: number): number {
 
 export function motionPace(run: Run): number {
   if (run.power?.kind === 'slow') return SLOW_PACE;
-  if (run.power?.kind === 'fast') return FAST_PACE;
   return 1;
 }
 
@@ -412,7 +420,7 @@ function flyBolts(run: Run, dt: number): void {
       run.cues.push('blast');
       continue;
     }
-    if (bolt.x < WORLD.w + WORLD.spacing) keep.push(bolt);
+    if (bolt.x < Math.max(WORLD.w, run.viewRight) + WORLD.spacing) keep.push(bolt);
   }
   run.bolts = keep;
 }
@@ -422,7 +430,7 @@ export function powerLabel(run: Run): string | null {
   if (!power) return null;
   if (power.kind === 'gun') return `Blaster ${power.shots}`;
   const left = Math.max(0, Math.ceil(POWER_SECONDS[power.kind] - power.age));
-  const name = power.kind === 'slow' ? 'Slow' : power.kind === 'fast' ? 'Fast' : 'Pass';
+  const name = power.kind === 'slow' ? 'Slow' : 'Pass';
   return `${name} ${left}`;
 }
 
@@ -469,6 +477,7 @@ export function hits(run: Run): boolean {
 
 export function flap(run: Run): boolean {
   if (run.phase === 'dying' || run.phase === 'snatched' || run.phase === 'over') return false;
+  const flying = run.phase === 'play';
   if (run.phase === 'ready') {
     run.phase = 'play';
     run.snatchAt = planSnatch(run.origin, run.mode);
@@ -477,6 +486,7 @@ export function flap(run: Run): boolean {
   run.bird.vy = WORLD.flap;
   run.bird.rot = Math.min(run.bird.rot, -0.25);
   run.sinceFlap = 0;
+  if (flying) shoot(run);
   return true;
 }
 
@@ -548,9 +558,10 @@ export function step(run: Run, dt: number): void {
   for (const gate of run.gates) gate.x -= travel;
   for (const pickup of run.pickups) pickup.x -= travel;
   for (const portal of run.portals) portal.x -= travel;
-  run.gates = run.gates.filter((gate) => gate.x + WORLD.pipeW > -80);
-  run.pickups = run.pickups.filter((pickup) => pickup.x > -80);
-  run.portals = run.portals.filter((portal) => portal.x > -80);
+  const behind = Math.min(-80, run.viewLeft - WORLD.pipeW);
+  run.gates = run.gates.filter((gate) => gate.x + WORLD.pipeW > behind);
+  run.pickups = run.pickups.filter((pickup) => pickup.x > behind);
+  run.portals = run.portals.filter((portal) => portal.x > behind);
   spawn(run);
   flyBolts(run, dt);
   expirePower(run, dt);

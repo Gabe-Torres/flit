@@ -1,7 +1,7 @@
 import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
-import { createStage, type Particle, type Stage } from './draw.ts';
+import { createStage, playfield, type Particle, type Stage } from './draw.ts';
 import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
 import { fieldName } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
@@ -100,19 +100,15 @@ function writeBird(id: BirdId): void {
 function readMode(): ModeId {
   try {
     const saved = localStorage.getItem('flit-mode');
-    if (saved === 'starter') {
-      localStorage.setItem('flit-mode', 'easy');
-      return 'easy';
-    }
-    if (saved === 'random') {
+    if (saved === 'starter' || saved === 'easy' || saved === 'random') {
       localStorage.setItem('flit-mode', 'normal');
       return 'normal';
     }
     if (saved && isModeId(saved)) return saved;
   } catch {
-    // Storage can be blocked. Easy is the default.
+    // Storage can be blocked. Normal is the default.
   }
-  return 'easy';
+  return 'normal';
 }
 
 function writeMode(id: ModeId): void {
@@ -124,7 +120,7 @@ function writeMode(id: ModeId): void {
 }
 
 function modeName(id: ModeId): string {
-  return MODES.find((mode) => mode.id === id)?.name ?? 'Easy';
+  return MODES.find((mode) => mode.id === id)?.name ?? 'Normal';
 }
 
 function readTheme(): ThemeId {
@@ -159,11 +155,20 @@ function bestKey(id: ModeId): string {
 
 function readBests(): Record<ModeId, number> {
   const legacy = readNumber('flit-best');
-  const easy = readNumber(bestKey('easy'));
-  if (legacy > easy) writeNumber(bestKey('easy'), legacy);
+  const fromEasy = readNumber('flit-best-easy');
+  const normal = readNumber(bestKey('normal'));
+  const kept = Math.max(normal, legacy, fromEasy);
+  if (kept > normal) writeNumber(bestKey('normal'), kept);
+  if (legacy > 0 || fromEasy > 0) {
+    try {
+      localStorage.removeItem('flit-best');
+      localStorage.removeItem('flit-best-easy');
+    } catch {
+      // The score is already on Normal for this visit.
+    }
+  }
   return {
-    easy: Math.max(easy, legacy),
-    normal: readNumber(bestKey('normal')),
+    normal: kept,
     hard: readNumber(bestKey('hard')),
     test: readNumber(bestKey('test')),
   };
@@ -311,7 +316,7 @@ function describe(): void {
   }
   const held = powerLabel(run);
   const armed = run.power?.kind === 'gun';
-  const fire = armed ? (controls.touch ? 'Tap Shoot to fire.' : 'Press F to shoot.') : '';
+  const fire = armed ? (controls.touch ? 'Each tap fires.' : 'Each flap fires.') : '';
   const detail = [held, fire].filter(Boolean).join('. ');
   setStatus(detail ? `Score ${run.score}. ${detail}. ${sky}.` : `Score ${run.score}. ${sky}.`);
 }
@@ -379,7 +384,10 @@ function onFly(): void {
     resetRun(true);
     return;
   }
+  const charges = run.power?.kind === 'gun' ? run.power.shots : 0;
   if (!flap(run)) return;
+  const left = run.power?.kind === 'gun' ? run.power.shots : 0;
+  if (charges > left) audio.shot();
   squash = 1;
   audio.flap();
   puff(5, 0.32, 80);
@@ -545,6 +553,9 @@ function frame(now: number): void {
   const score = run.score;
   const scrolled = run.scroll;
 
+  const field = playfield(Math.max(1, view.clientWidth), Math.max(1, view.clientHeight));
+  run.viewLeft = field.left;
+  run.viewRight = field.right;
   if (!paused) step(run, dt);
 
   const moved = run.scroll - scrolled;
