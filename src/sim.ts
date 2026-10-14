@@ -39,12 +39,13 @@ export type Gate = {
   scored: boolean;
 };
 
-export type ModeId = 'easy' | 'normal' | 'hard';
+export type ModeId = 'easy' | 'normal' | 'hard' | 'test';
 
 export const MODES: { id: ModeId; name: string }[] = [
   { id: 'easy', name: 'Easy' },
   { id: 'normal', name: 'Normal' },
   { id: 'hard', name: 'Hard' },
+  { id: 'test', name: 'Test' },
 ];
 
 export function isModeId(id: string): id is ModeId {
@@ -141,13 +142,13 @@ function roll(origin: number, index: number, salt: number): number {
 }
 
 export function pipeSpacing(cleared: number, mode: ModeId = 'easy', origin = 1): number {
-  if (mode === 'normal') return WORLD.spacing;
+  if (mode === 'normal' || mode === 'test') return WORLD.spacing;
   if (mode === 'hard') return WORLD.spacing - roll(origin, cleared, 0x51a7c0de) * HARD_SPACE;
   return WORLD.spacing + easeLeft(cleared);
 }
 
 export function pipeOpening(cleared: number, mode: ModeId = 'easy', origin = 1): number {
-  if (mode === 'normal') return WORLD.gap;
+  if (mode === 'normal' || mode === 'test') return WORLD.gap;
   if (mode === 'hard') return WORLD.gap - roll(origin, cleared, 0xc0ffee21) * HARD_OPEN;
   return WORLD.gap + easeLeft(cleared);
 }

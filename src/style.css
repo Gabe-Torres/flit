@@ -62,12 +62,13 @@ body {
 #modes,
 #themes {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 #modes button,
 #themes button {
-  flex: 1;
+  flex: 1 1 72px;
   width: auto;
   min-width: 0;
   height: 40px;

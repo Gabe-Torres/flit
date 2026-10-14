@@ -163,6 +163,7 @@ function readBests(): Record<ModeId, number> {
     easy: Math.max(easy, legacy),
     normal: readNumber(bestKey('normal')),
     hard: readNumber(bestKey('hard')),
+    test: readNumber(bestKey('test')),
   };
 }
 

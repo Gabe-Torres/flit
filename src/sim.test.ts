@@ -46,6 +46,9 @@ function playable(): ReturnType<typeof createRun> {
   assert(createRun(4).mode === 'easy', 'easy is the default course');
   assert(createRun(4, 'hard').mode === 'hard', 'a run keeps the hard course');
   assert(createRun(4, 'normal').mode === 'normal', 'a run keeps the normal course');
+  assert(createRun(4, 'test').mode === 'test', 'a run keeps the test course');
+  assert(pipeSpacing(0, 'test') === pipeSpacing(0, 'normal'), 'test uses the original distance');
+  assert(pipeOpening(3, 'test') === pipeOpening(3, 'normal'), 'test uses the original opening');
   assert(seasonForDate(new Date(2026, 2, 1)) === 'spring', 'March is spring');
   assert(seasonForDate(new Date(2026, 4, 31)) === 'spring', 'May is spring');
   assert(seasonForDate(new Date(2026, 5, 1)) === 'summer', 'June is summer');
@@ -511,7 +514,8 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman', 'map names stay with their gates');
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
   assert(!isThemeId('mars') && !isThemeId('reef') && !isThemeId('colony') && !isThemeId('pipes'), 'unknown maps fall through');
-  assert(MODES.map((mode) => mode.id).join() === 'easy,normal,hard', 'difficulties stay in menu order');
+  assert(MODES.map((mode) => mode.id).join() === 'easy,normal,hard,test', 'difficulties stay in menu order');
+  assert(MODES.find((mode) => mode.id === 'test')?.name === 'Test', 'test keeps its menu name');
   assert(!isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
 }
 
