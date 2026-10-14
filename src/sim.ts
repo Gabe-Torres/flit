@@ -39,7 +39,7 @@ export type Gate = {
   scored: boolean;
 };
 
-export type PowerKind = 'slow' | 'fast' | 'phase';
+export type PowerKind = 'slow' | 'fast' | 'phase' | 'gun';
 
 export type Power = {
   kind: PowerKind;
@@ -53,13 +53,21 @@ export type Pickup = {
   kind: PowerKind;
 };
 
-export type Cue = 'pickup';
+export type Bolt = {
+  x: number;
+  y: number;
+};
+
+export type Cue = 'pickup' | 'blast';
 
 // Test keeps the original gates. One power at a time: a new pickup replaces
 // whatever you hold. Slow motion, fast motion, and pass-through wear off.
+// The blaster is three shots, and each shot removes one pipe.
 export const POWER_SECONDS = { slow: 6, fast: 3.5, phase: 4.5 } as const;
-const POWER_KINDS: PowerKind[] = ['slow', 'fast', 'phase'];
+export const GUN_SHOTS = 3;
+const POWER_KINDS: PowerKind[] = ['slow', 'fast', 'phase', 'gun'];
 const PICKUP_REACH = 28;
+const BOLT_SPEED = 720;
 const SLOW_PACE = 0.5;
 const FAST_PACE = 1.65;
 
@@ -98,6 +106,7 @@ export type Run = {
   placed: number;
   power: Power | null;
   pickups: Pickup[];
+  bolts: Bolt[];
   cues: Cue[];
 };
 
@@ -139,6 +148,7 @@ export function createRun(seed = 1, mode: ModeId = 'easy'): Run {
     placed: 0,
     power: null,
     pickups: [],
+    bolts: [],
     cues: [],
   };
 }
@@ -305,13 +315,14 @@ export function motionPace(run: Run): number {
 }
 
 function grant(run: Run, kind: PowerKind): void {
-  run.power = { kind, age: 0, shots: 0 };
+  run.bolts = [];
+  run.power = { kind, age: 0, shots: kind === 'gun' ? GUN_SHOTS : 0 };
   run.cues.push('pickup');
 }
 
 function expirePower(run: Run, dt: number): void {
   const power = run.power;
-  if (!power) return;
+  if (!power || power.kind === 'gun') return;
   power.age += dt;
   if (power.age >= POWER_SECONDS[power.kind]) run.power = null;
 }
@@ -327,12 +338,47 @@ function collectPickups(run: Run): void {
   run.pickups = keep;
 }
 
+function boltHitsGate(bolt: Bolt, gate: Gate): boolean {
+  const reach = 7;
+  if (bolt.x + reach < gate.x || bolt.x - reach > gate.x + WORLD.pipeW) return false;
+  const openTop = gate.gapY - gate.open / 2;
+  const openBot = gate.gapY + gate.open / 2;
+  return bolt.y <= openTop + reach || bolt.y >= openBot - reach;
+}
+
+function flyBolts(run: Run, dt: number): void {
+  if (run.bolts.length === 0) return;
+  const keep: Bolt[] = [];
+  for (const bolt of run.bolts) {
+    bolt.x += BOLT_SPEED * dt;
+    const gate = run.gates.find((item) => boltHitsGate(bolt, item));
+    if (gate) {
+      run.gates = run.gates.filter((item) => item !== gate);
+      run.shake = Math.max(run.shake, 0.14);
+      run.cues.push('blast');
+      continue;
+    }
+    if (bolt.x < WORLD.w + WORLD.spacing) keep.push(bolt);
+  }
+  run.bolts = keep;
+}
+
 export function powerLabel(run: Run): string | null {
   const power = run.power;
   if (!power) return null;
+  if (power.kind === 'gun') return `Blaster ${power.shots}`;
   const left = Math.max(0, Math.ceil(POWER_SECONDS[power.kind] - power.age));
   const name = power.kind === 'slow' ? 'Slow' : power.kind === 'fast' ? 'Fast' : 'Pass';
   return `${name} ${left}`;
+}
+
+export function shoot(run: Run): boolean {
+  if (run.phase !== 'play') return false;
+  if (run.power?.kind !== 'gun' || run.power.shots <= 0) return false;
+  run.power.shots -= 1;
+  run.bolts.push({ x: WORLD.birdX + 22, y: run.bird.y });
+  if (run.power.shots <= 0) run.power = null;
+  return true;
 }
 
 export function circleHits(
@@ -450,6 +496,7 @@ export function step(run: Run, dt: number): void {
   run.gates = run.gates.filter((gate) => gate.x + WORLD.pipeW > -80);
   run.pickups = run.pickups.filter((pickup) => pickup.x > -80);
   spawn(run);
+  flyBolts(run, dt);
   expirePower(run, dt);
   collectPickups(run);
 

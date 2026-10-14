@@ -23,6 +23,8 @@ export type Audio = {
   hit: () => void;
   snatch: () => void;
   pickup: () => void;
+  shot: () => void;
+  blast: () => void;
 };
 
 export function createAudio(): Audio {
@@ -117,6 +119,14 @@ export function createAudio(): Audio {
     pickup() {
       tone(523, 0.07, 'sine', 0.05, 80);
       tone(784, 0.12, 'sine', 0.045, 0, 0.06);
+    },
+    shot() {
+      noise(0.05, 0.045, 1900);
+      tone(880, 0.06, 'square', 0.028, -460);
+    },
+    blast() {
+      noise(0.12, 0.06, 380);
+      tone(196, 0.14, 'triangle', 0.05, -90);
     },
   };
 }

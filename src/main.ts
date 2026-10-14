@@ -2,7 +2,7 @@ import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
 import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
 import { createStage, type Particle, type Stage } from './draw.ts';
-import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, motionPace, powerLabel, step, type ModeId, type Run } from './sim.ts';
+import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
 import { fieldName } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
 import { createTipJoke } from './tip-joke.ts';
@@ -17,7 +17,8 @@ const birdNameQuery = document.querySelector<HTMLElement>('#bird-name');
 const birdsQuery = document.querySelector<HTMLElement>('#birds');
 const modesQuery = document.querySelector<HTMLElement>('#modes');
 const themesQuery = document.querySelector<HTMLElement>('#themes');
-if (!canvas || !statusEl || !pauseQuery || !muteQuery || !optionsQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery || !themesQuery) {
+const shootQuery = document.querySelector<HTMLButtonElement>('#shoot');
+if (!canvas || !statusEl || !pauseQuery || !muteQuery || !optionsQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery || !themesQuery || !shootQuery) {
   throw new Error('Flit is missing a page element');
 }
 const view = canvas;
@@ -30,6 +31,7 @@ const birdNameEl = birdNameQuery;
 const birdsEl = birdsQuery;
 const modesEl = modesQuery;
 const themesEl = themesQuery;
+const shootBtn = shootQuery;
 
 const audio = createAudio();
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -308,7 +310,10 @@ function describe(): void {
     return;
   }
   const held = powerLabel(run);
-  setStatus(held ? `Score ${run.score}. ${held}. ${sky}.` : `Score ${run.score}. ${sky}.`);
+  const armed = run.power?.kind === 'gun';
+  const fire = armed ? (controls.touch ? 'Tap Shoot to fire.' : 'Press F to shoot.') : '';
+  const detail = [held, fire].filter(Boolean).join('. ');
+  setStatus(detail ? `Score ${run.score}. ${detail}. ${sky}.` : `Score ${run.score}. ${sky}.`);
 }
 
 function puff(count: number, life: number, spread: number): void {
@@ -344,6 +349,20 @@ function resetRun(andFly: boolean): void {
   audio.flap();
   puff(5, 0.35, 90);
   describe();
+}
+
+function paintArm(): void {
+  const armed = !paused && run.phase === 'play' && run.power?.kind === 'gun';
+  shootBtn.hidden = !armed;
+  if (!armed || !run.power) return;
+  shootBtn.textContent = `Shoot ${run.power.shots}`;
+}
+
+function onShoot(): void {
+  if (paused || menuOpen) return;
+  if (!shoot(run)) return;
+  audio.unlock();
+  audio.shot();
 }
 
 function onFly(): void {
@@ -414,6 +433,11 @@ window.addEventListener('keydown', (event) => {
     onFly();
     return;
   }
+  if (event.code === 'KeyF') {
+    event.preventDefault();
+    onShoot();
+    return;
+  }
   if (event.code === 'KeyP') {
     event.preventDefault();
     togglePause();
@@ -461,6 +485,7 @@ for (const bird of BIRDS) {
 optionsBtn.addEventListener('click', toggleMenu);
 pauseBtn.addEventListener('click', togglePause);
 muteBtn.addEventListener('click', toggleMute);
+shootBtn.addEventListener('click', onShoot);
 window.addEventListener('resize', resize);
 window.visualViewport?.addEventListener('resize', resize);
 window.visualViewport?.addEventListener('scroll', resize);
@@ -506,6 +531,7 @@ if (import.meta.env.DEV) {
         return themeId;
       },
       chooseTheme,
+      shoot: onShoot,
     },
   });
 }
@@ -539,6 +565,10 @@ function frame(now: number): void {
     audio.pickup();
     puff(8, 0.3, 70);
   }
+  if (run.cues.includes('blast')) {
+    audio.blast();
+    puff(10, 0.28, 90);
+  }
   if (run.phase === 'over' && phase !== 'over') {
     tipJoke.onGameOver();
     if (run.score > bests[run.mode]) {
@@ -567,6 +597,7 @@ function frame(now: number): void {
   describe();
   paintForecast();
   paintMenu();
+  paintArm();
   stage?.render({
     run,
     best: shownBest(),

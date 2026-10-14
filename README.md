@@ -15,7 +15,7 @@ The bird falls. You keep it in the air.
 - On the title, and again after a run, a button beside pause opens the flyer, the map, and the difficulty.
 - Pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, magpie, pterodactyl, drone, lunar lander, Ha'tak, kiwi, weka, flying rainbow trout, rocket shark, or Mew. The choice stays in this browser.
 - Easy begins with far gates and a tall opening. Every 5 you clear, the next ones sit a little closer and the opening gets a little shorter. After 20, they match the original. Normal is that original distance and opening from the first gate. Hard is tighter than that original, and the hole can sit anywhere. Test keeps that original course and adds powers. The choice stays in this browser.
-- In Test, powers sit between the pipes. You can hold one. Picking up another replaces it. Slow motion, fast motion, and passing through pipes wear off.
+- In Test, powers sit between the pipes. You can hold one. Picking up another replaces it. Slow motion, fast motion, and passing through pipes wear off. A blaster gives three shots, and one shot removes a pipe.
 - Classic keeps the green gates. Roman builds stone columns wrapped in vines. The gaps stay the same. The choice stays in this browser.
 - On the title, a stargate drifts across the sky on every map. The wormhole turns.
 - The field follows the real date where you are: spring, summer, autumn, or winter. A holiday dresses the whole month it falls in: January is New Year, February is Valentine's Day, March is St. Patrick's Day, the month of Easter is Easter, October is Halloween, November is Thanksgiving, and December is Christmas.
@@ -30,11 +30,13 @@ On a phone:
 
 - Tap the screen to flap. The same tap starts a run, resumes a pause, and starts the next run after the score card.
 - A button beside pause opens the flyer, the map, and the difficulty. The other corner buttons pause and mute.
+- In Test, a Shoot button appears while you hold the blaster.
 
 On a computer:
 
 - Click the screen, or press Space, Up, or W, to flap. The same control starts a run, resumes a pause, and starts the next run after the score card.
 - P pauses. M mutes. R returns to the title. The corner buttons pause and mute too, and the one beside pause opens the flyer, the map, and the difficulty.
+- In Test, F fires the blaster. The Shoot button does too.
 
 Each difficulty keeps its own best score in this browser. That score sits in the top left, under the name of the difficulty you have selected, and the medal that score earned sits beside the number. A run of 30 earns bronze, 70 silver, and 100 a ruby. A few more rubies are buried in the dirt. They are just sitting there. Deeper down, a bone turns up now and then, and one of them is a T. rex skull.
 

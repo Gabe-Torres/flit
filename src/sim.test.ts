@@ -14,8 +14,10 @@ import {
   pipesClearTime,
   planSnatch,
   restY,
+  shoot,
   snatchPose,
   step,
+  GUN_SHOTS,
 } from './sim.ts';
 import { controlHints } from './controls.ts';
 import { holidayForDate } from './holiday.ts';
@@ -568,10 +570,38 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   run.bird.y = WORLD.readyY;
   run.bird.vy = 0;
   run.power = { kind: 'slow', age: 1, shots: 0 };
-  run.pickups = [{ x: WORLD.birdX, y: run.bird.y, kind: 'slow' }];
+  run.bolts = [{ x: 180, y: 200 }];
+  run.pickups = [{ x: WORLD.birdX, y: run.bird.y, kind: 'gun' }];
   step(run, 0);
-  assert(run.power?.kind === 'slow' && run.power.age === 0, 'a new power replaces the old one');
+  assert(run.power?.kind === 'gun' && run.power.shots === GUN_SHOTS, 'a new power replaces the old one');
+  assert(run.bolts.length === 0, 'replacing the blaster drops a shot in the air');
   assert(run.pickups.length === 0, 'the pickup is taken');
+}
+
+{
+  const run = playable();
+  run.power = { kind: 'gun', age: 0, shots: GUN_SHOTS };
+  run.bird.y = 300;
+  run.gates = [{ x: 240, gapY: 80, open: 80, scored: false }];
+  assert(shoot(run) && run.power?.shots === 2, 'the blaster spends one charge');
+  assert(shoot(run) && run.power?.shots === 1, 'the second shot spends another');
+  let guard = 0;
+  while (run.gates.some((gate) => gate.x < 400) && guard < 40) {
+    step(run, 0.05);
+    guard += 1;
+  }
+  assert(run.gates.every((gate) => gate.x >= 400), 'one shot removes the pipe it hits');
+  assert(shoot(run), 'the last charge still fires');
+  assert(run.power === null, 'the last shot puts the blaster away');
+  assert(!shoot(run), 'there is no fourth shot');
+}
+
+{
+  const run = playable();
+  run.power = { kind: 'gun', age: 0, shots: 2 };
+  run.gates = [{ x: 900, gapY: 300, open: WORLD.gap, scored: false }];
+  for (let i = 0; i < 30; i++) step(run, 0.05);
+  assert(run.power?.kind === 'gun' && run.power.shots === 2, 'the blaster stays until its shots are gone');
 }
 
 {

@@ -192,6 +192,7 @@ const PICKUP_COLOR: Record<PowerKind, number> = {
   slow: 0x67c4f6,
   fast: 0xff8a3a,
   phase: 0xc59bff,
+  gun: 0xf2c14b,
 };
 
 function drawPickup(g: Graphics, pickup: Pickup, time: number, reduce: boolean): void {
@@ -210,7 +211,24 @@ function drawPickup(g: Graphics, pickup: Pickup, time: number, reduce: boolean):
     ).fill(CREAM);
     return;
   }
-  g.circle(pickup.x, y, 6.5).stroke({ width: 2.4, color: CREAM });
+  if (pickup.kind === 'phase') {
+    g.circle(pickup.x, y, 6.5).stroke({ width: 2.4, color: CREAM });
+    return;
+  }
+  g.roundRect(pickup.x - 8, y - 4, 11, 8, 2).fill(INK);
+  g.rect(pickup.x + 3, y - 2, 6, 4).fill(CREAM);
+  g.rect(pickup.x + 8, y - 3.2, 3, 6.4).fill(INK);
+}
+
+function drawBolt(g: Graphics, x: number, y: number): void {
+  g.roundRect(x - 18, y - 3, 20, 6, 3).fill(0xffb15a);
+  g.circle(x + 4, y, 4.2).fill(CREAM);
+}
+
+function drawBlaster(g: Graphics): void {
+  g.roundRect(10, -4.5, 16, 9, 2).fill(INK);
+  g.rect(24, -2.4, 9, 4.8).fill(0x6a3d16);
+  g.rect(31, -3.4, 4, 6.8).fill(0xf2c14b);
 }
 
 function drawTitleStargate(g: Graphics, box: Box, time: number, reduce: boolean): void {
@@ -464,8 +482,9 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const bird = new Container();
   const wing = new Graphics();
   const body = new Graphics();
+  const gear = new Graphics();
   const uiGfx = new Graphics();
-  bird.addChild(wing, body);
+  bird.addChild(wing, body, gear);
   world.addChild(sky, scenery, gateLayer, ground, fx, bird, dino);
 
   const title = outlined('FLIT', 92, CREAM);
@@ -537,6 +556,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     }
     drawGround(ground, run, box, floor, land, state.reduceMotion);
     for (const pickup of run.pickups) drawPickup(fx, pickup, run.time, state.reduceMotion);
+    for (const bolt of run.bolts) drawBolt(fx, bolt.x, bolt.y);
     if (run.power?.kind === 'slow') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0x67c4f6, alpha: 0.18 });
     if (run.power?.kind === 'fast') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0xff8a3a, alpha: 0.18 });
     if (run.power?.kind === 'phase') {
@@ -565,7 +585,9 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       bird.rotation = run.bird.rot;
     }
     drawSpecies(body, wing, state.wing, state.bird);
+    gear.clear();
     bird.alpha = run.power?.kind === 'phase' ? 0.55 : 1;
+    if (run.power?.kind === 'gun' && !carried) drawBlaster(gear);
 
     drawUi(uiGfx, state, box, {
       title,
