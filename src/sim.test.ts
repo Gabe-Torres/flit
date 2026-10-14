@@ -13,10 +13,12 @@ import {
   pipeSpacing,
   pipesClearTime,
   planSnatch,
+  portalY,
   restY,
   shoot,
   snatchPose,
   step,
+  WARP_PIPES,
   GUN_SHOTS,
 } from './sim.ts';
 import { controlHints } from './controls.ts';
@@ -611,7 +613,7 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   normal.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
   normal.placed = 2;
   step(normal, 0.05);
-  assert(normal.pickups.length === 0, 'normal has no powers');
+  assert(normal.pickups.length === 0 && normal.portals.length === 0, 'normal has no powers');
 
   const powered = playable();
   powered.mode = 'test';
@@ -620,6 +622,38 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   powered.placed = 1;
   step(powered, 0.05);
   assert(powered.pickups.length === 1, 'test plants a power between pipes');
+
+  const gated = playable();
+  gated.mode = 'test';
+  gated.bird.y = 300;
+  gated.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
+  gated.placed = 2;
+  step(gated, 0.05);
+  assert(gated.portals.length === 1, 'test plants a stargate between pipes');
+}
+
+{
+  const run = playable();
+  run.time = 0;
+  run.bird.vy = 0;
+  run.bird.y = portalY({ x: WORLD.birdX, phase: 0 }, 0);
+  run.portals = [{ x: WORLD.birdX, phase: 0 }];
+  run.gates = [{ x: 360, gapY: 300, open: WORLD.gap, scored: false }];
+  step(run, 0);
+  assert(run.score === WARP_PIPES, 'the stargate skips ten pipes');
+  assert(run.portals.length === 0, 'the stargate is spent');
+  assert(run.gates.length === 1 && run.gates[0].x > WORLD.birdX + 200, 'the next pipe is ahead');
+}
+
+{
+  const run = playable();
+  run.bird.y = 12;
+  run.portals = [{ x: 320, phase: 0 }];
+  const before = portalY(run.portals[0], run.time);
+  step(run, 0.05);
+  assert(portalY(run.portals[0], run.time) !== before, 'the stargate races up and down');
+  assert(run.portals[0].x < 320, 'the stargate scrolls with the pipes');
+  assert(run.score === 0, 'missing the stargate does not skip ahead');
 }
 
 if (failed > 0) {

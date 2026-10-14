@@ -556,7 +556,11 @@ function frame(now: number): void {
     audio.snatch();
     puff(12, 0.45, 140);
   }
-  if (run.score !== score) {
+  if (run.cues.includes('warp')) {
+    audio.warp();
+    pop = 1;
+    puff(16, 0.4, 140);
+  } else if (run.score !== score) {
     audio.score();
     pop = 1;
     puff(6, 0.28, 50);

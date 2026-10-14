@@ -1,7 +1,7 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
-import { WORLD, flightFacts, groundY, medalForScore, powerLabel, snatchPose, type MedalName, type Pickup, type PowerKind, type Run } from './sim.ts';
+import { WORLD, flightFacts, groundY, medalForScore, portalY, powerLabel, snatchPose, type MedalName, type Pickup, type PowerKind, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
 import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
@@ -555,6 +555,11 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       drawThemedGate(gateLayer, state.theme, gate.x, gate.gapY, gate.open, box.top, floor, themeTime);
     }
     drawGround(ground, run, box, floor, land, state.reduceMotion);
+    for (const portal of run.portals) {
+      const y = portalY(portal, run.time);
+      fx.rect(portal.x - 1.4, 86, 2.8, floor - 48 - 86).fill({ color: 0x9fd4ff, alpha: 0.2 });
+      drawStargate(fx, portal.x, y, run.time);
+    }
     for (const pickup of run.pickups) drawPickup(fx, pickup, run.time, state.reduceMotion);
     for (const bolt of run.bolts) drawBolt(fx, bolt.x, bolt.y);
     if (run.power?.kind === 'slow') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0x67c4f6, alpha: 0.18 });

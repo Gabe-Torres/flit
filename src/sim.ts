@@ -53,21 +53,30 @@ export type Pickup = {
   kind: PowerKind;
 };
 
+export type Portal = {
+  x: number;
+  phase: number;
+};
+
 export type Bolt = {
   x: number;
   y: number;
 };
 
-export type Cue = 'pickup' | 'blast';
+export type Cue = 'pickup' | 'warp' | 'blast';
 
 // Test keeps the original gates. One power at a time: a new pickup replaces
-// whatever you hold. Slow motion, fast motion, and pass-through wear off.
-// The blaster is three shots, and each shot removes one pipe.
+// whatever you hold. Slow, fast, and pass-through wear off. The blaster is
+// three shots, and each shot removes one pipe. A stargate between pipes races
+// up and down; flying through it skips ten pipes ahead.
 export const POWER_SECONDS = { slow: 6, fast: 3.5, phase: 4.5 } as const;
 export const GUN_SHOTS = 3;
+export const WARP_PIPES = 10;
 const POWER_KINDS: PowerKind[] = ['slow', 'fast', 'phase', 'gun'];
 const PICKUP_REACH = 28;
 const BOLT_SPEED = 720;
+const PORTAL_SPIN = 5.2;
+const PORTAL_REACH = 34;
 const SLOW_PACE = 0.5;
 const FAST_PACE = 1.65;
 
@@ -106,6 +115,7 @@ export type Run = {
   placed: number;
   power: Power | null;
   pickups: Pickup[];
+  portals: Portal[];
   bolts: Bolt[];
   cues: Cue[];
 };
@@ -148,6 +158,7 @@ export function createRun(seed = 1, mode: ModeId = 'easy'): Run {
     placed: 0,
     power: null,
     pickups: [],
+    portals: [],
     bolts: [],
     cues: [],
   };
@@ -300,12 +311,25 @@ function spawn(run: Run): void {
 }
 
 function fillGap(run: Run, left: number, right: number): void {
-  if (run.placed % 2 !== 0) return;
   const mid = (left + right) / 2;
-  const kind = POWER_KINDS[Math.floor(rand(run) * POWER_KINDS.length)];
-  const top = 96;
-  const bot = groundY() - 72;
-  run.pickups.push({ x: mid, y: top + rand(run) * (bot - top), kind });
+  if (run.placed % 3 === 0) {
+    run.portals.push({ x: mid, phase: rand(run) * Math.PI * 2 });
+    return;
+  }
+  if (run.placed % 2 === 0) {
+    const kind = POWER_KINDS[Math.floor(rand(run) * POWER_KINDS.length)];
+    const top = 96;
+    const bot = groundY() - 72;
+    run.pickups.push({ x: mid, y: top + rand(run) * (bot - top), kind });
+  }
+}
+
+export function portalY(portal: Portal, time: number): number {
+  const top = 86;
+  const bot = groundY() - 48;
+  const mid = (top + bot) / 2;
+  const amp = (bot - top) / 2;
+  return mid + Math.sin(time * PORTAL_SPIN + portal.phase) * amp;
 }
 
 export function motionPace(run: Run): number {
@@ -336,6 +360,36 @@ function collectPickups(run: Run): void {
     else keep.push(pickup);
   }
   run.pickups = keep;
+}
+
+function warpAhead(run: Run): void {
+  run.score += WARP_PIPES;
+  run.pickups = [];
+  run.portals = [];
+  run.bolts = [];
+  run.gates = [];
+  const open = pipeOpening(run.score, run.mode, run.origin);
+  run.gates.push({
+    x: WORLD.birdX + 300,
+    gapY: nextGap(run, run.bird.y, open),
+    open,
+    scored: false,
+  });
+  run.placed += WARP_PIPES;
+  run.shake = 0.22;
+  run.cues.push('warp');
+}
+
+function takePortal(run: Run): boolean {
+  for (const portal of run.portals) {
+    const dx = portal.x - WORLD.birdX;
+    const dy = portalY(portal, run.time) - run.bird.y;
+    if (dx * dx + dy * dy <= PORTAL_REACH * PORTAL_REACH) {
+      warpAhead(run);
+      return true;
+    }
+  }
+  return false;
 }
 
 function boltHitsGate(bolt: Bolt, gate: Gate): boolean {
@@ -493,12 +547,15 @@ export function step(run: Run, dt: number): void {
   integrate(run, dt * pace);
   for (const gate of run.gates) gate.x -= travel;
   for (const pickup of run.pickups) pickup.x -= travel;
+  for (const portal of run.portals) portal.x -= travel;
   run.gates = run.gates.filter((gate) => gate.x + WORLD.pipeW > -80);
   run.pickups = run.pickups.filter((pickup) => pickup.x > -80);
+  run.portals = run.portals.filter((portal) => portal.x > -80);
   spawn(run);
   flyBolts(run, dt);
   expirePower(run, dt);
   collectPickups(run);
+  if (takePortal(run)) return;
 
   if (run.score >= SNATCH_PIPE_LIMIT) run.snatchAt = null;
   // Scoring happens below, so a grab on the frame pipe 1 clears waits one step.
