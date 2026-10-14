@@ -528,10 +528,15 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
 
 {
   const slow = createRun(1, 'test');
+  const quick = createRun(1, 'test');
   flap(slow);
+  flap(quick);
   slow.power = { kind: 'slow', age: 0, shots: 0 };
+  quick.power = { kind: 'fast', age: 0, shots: 0 };
   step(slow, 0.05);
+  step(quick, 0.05);
   assert(Math.abs(slow.scroll - WORLD.scroll * 0.5 * 0.05) < 1e-6, 'slow motion halves the scroll');
+  assert(Math.abs(quick.scroll - WORLD.scroll * 1.65 * 0.05) < 1e-6, 'fast motion speeds the scroll');
 }
 
 {
@@ -571,7 +576,10 @@ function clearedLayout(seed: number, mode: 'easy' | 'normal' | 'hard', pipes: nu
   powered.gates = [{ x: 100, gapY: 300, open: WORLD.gap, scored: false }];
   powered.placed = 1;
   step(powered, 0.05);
-  assert(powered.pickups.length === 1 && powered.pickups[0].kind === 'slow', 'test plants slow motion between pipes');
+  assert(
+    powered.pickups.length === 1 && (powered.pickups[0].kind === 'slow' || powered.pickups[0].kind === 'fast'),
+    'test plants a power between pipes',
+  );
 }
 
 if (failed > 0) {

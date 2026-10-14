@@ -39,7 +39,7 @@ export type Gate = {
   scored: boolean;
 };
 
-export type PowerKind = 'slow';
+export type PowerKind = 'slow' | 'fast';
 
 export type Power = {
   kind: PowerKind;
@@ -56,10 +56,12 @@ export type Pickup = {
 export type Cue = 'pickup';
 
 // Test keeps the original gates. One power at a time: a new pickup replaces
-// whatever you hold. Slow motion wears off.
-export const POWER_SECONDS = { slow: 6 } as const;
+// whatever you hold. Slow motion and fast motion wear off.
+export const POWER_SECONDS = { slow: 6, fast: 3.5 } as const;
+const POWER_KINDS: PowerKind[] = ['slow', 'fast'];
 const PICKUP_REACH = 28;
 const SLOW_PACE = 0.5;
+const FAST_PACE = 1.65;
 
 export type ModeId = 'easy' | 'normal' | 'hard' | 'test';
 
@@ -290,13 +292,15 @@ function spawn(run: Run): void {
 function fillGap(run: Run, left: number, right: number): void {
   if (run.placed % 2 !== 0) return;
   const mid = (left + right) / 2;
+  const kind = POWER_KINDS[Math.floor(rand(run) * POWER_KINDS.length)];
   const top = 96;
   const bot = groundY() - 72;
-  run.pickups.push({ x: mid, y: top + rand(run) * (bot - top), kind: 'slow' });
+  run.pickups.push({ x: mid, y: top + rand(run) * (bot - top), kind });
 }
 
 export function motionPace(run: Run): number {
   if (run.power?.kind === 'slow') return SLOW_PACE;
+  if (run.power?.kind === 'fast') return FAST_PACE;
   return 1;
 }
 
@@ -327,7 +331,8 @@ export function powerLabel(run: Run): string | null {
   const power = run.power;
   if (!power) return null;
   const left = Math.max(0, Math.ceil(POWER_SECONDS[power.kind] - power.age));
-  return `Slow ${left}`;
+  const name = power.kind === 'slow' ? 'Slow' : 'Fast';
+  return `${name} ${left}`;
 }
 
 export function circleHits(

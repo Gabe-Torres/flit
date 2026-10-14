@@ -191,7 +191,15 @@ function drawStargate(g: Graphics, x: number, y: number, time: number): void {
 function drawPickup(g: Graphics, pickup: Pickup, time: number, reduce: boolean): void {
   const bob = reduce ? 0 : Math.sin(time * 4 + pickup.x * 0.02) * 3;
   const y = pickup.y + bob;
-  g.circle(pickup.x, y, 16).fill(0x67c4f6).stroke({ width: 3, color: INK });
+  const color = pickup.kind === 'fast' ? 0xff8a3a : 0x67c4f6;
+  g.circle(pickup.x, y, 16).fill(color).stroke({ width: 3, color: INK });
+  if (pickup.kind === 'fast') {
+    g.poly(
+      [pickup.x - 3, y - 7, pickup.x + 1, y - 1, pickup.x - 5, y - 1, pickup.x + 4, y + 7, pickup.x, y + 1, pickup.x + 6, y + 1],
+      true,
+    ).fill(CREAM);
+    return;
+  }
   g.circle(pickup.x, y, 6).stroke({ width: 2, color: CREAM });
   g.moveTo(pickup.x, y).lineTo(pickup.x, y - 4.5).stroke({ width: 2, color: CREAM, cap: 'round' });
 }
@@ -521,6 +529,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     drawGround(ground, run, box, floor, land, state.reduceMotion);
     for (const pickup of run.pickups) drawPickup(fx, pickup, run.time, state.reduceMotion);
     if (run.power?.kind === 'slow') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0x67c4f6, alpha: 0.18 });
+    if (run.power?.kind === 'fast') fx.circle(WORLD.birdX, run.bird.y, 30).fill({ color: 0xff8a3a, alpha: 0.18 });
 
     const altitude = Math.max(0, floor - run.bird.y);
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });
