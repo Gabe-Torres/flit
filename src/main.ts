@@ -100,7 +100,7 @@ function writeBird(id: BirdId): void {
 function readMode(): ModeId {
   try {
     const saved = localStorage.getItem('flit-mode');
-    if (saved === 'starter' || saved === 'easy' || saved === 'random') {
+    if (saved === 'starter' || saved === 'random') {
       localStorage.setItem('flit-mode', 'normal');
       return 'normal';
     }
@@ -155,19 +155,18 @@ function bestKey(id: ModeId): string {
 
 function readBests(): Record<ModeId, number> {
   const legacy = readNumber('flit-best');
-  const fromEasy = readNumber('flit-best-easy');
   const normal = readNumber(bestKey('normal'));
-  const kept = Math.max(normal, legacy, fromEasy);
+  const kept = Math.max(normal, legacy);
   if (kept > normal) writeNumber(bestKey('normal'), kept);
-  if (legacy > 0 || fromEasy > 0) {
+  if (legacy > 0) {
     try {
       localStorage.removeItem('flit-best');
-      localStorage.removeItem('flit-best-easy');
     } catch {
       // The score is already on Normal for this visit.
     }
   }
   return {
+    easy: readNumber(bestKey('easy')),
     normal: kept,
     hard: readNumber(bestKey('hard')),
     test: readNumber(bestKey('test')),
@@ -317,7 +316,8 @@ function describe(): void {
   const held = powerLabel(run);
   const armed = run.power?.kind === 'gun';
   const fire = armed ? (controls.touch ? 'Each tap fires.' : 'Each flap fires.') : '';
-  const detail = [held, fire].filter(Boolean).join('. ');
+  const life = run.lives > 0 ? '1 life' : '';
+  const detail = [life, held, fire].filter(Boolean).join('. ');
   setStatus(detail ? `Score ${run.score}. ${detail}. ${sky}.` : `Score ${run.score}. ${sky}.`);
 }
 
@@ -583,6 +583,10 @@ function frame(now: number): void {
   if (run.cues.includes('blast')) {
     audio.blast();
     puff(10, 0.28, 90);
+  }
+  if (run.cues.includes('revive')) {
+    audio.revive();
+    puff(10, 0.32, 80);
   }
   if (run.phase === 'over' && phase !== 'over') {
     tipJoke.onGameOver();

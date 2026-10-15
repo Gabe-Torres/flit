@@ -63,7 +63,7 @@ export type Bolt = {
   y: number;
 };
 
-export type Cue = 'pickup' | 'warp' | 'blast';
+export type Cue = 'pickup' | 'warp' | 'blast' | 'revive';
 
 // Test keeps the original gates. One power at a time: a new pickup replaces
 // whatever you hold. Slow motion and pass-through wear off. The blaster is
@@ -82,9 +82,10 @@ const PORTAL_SPIN = 5.2;
 const PORTAL_REACH = 34;
 const SLOW_PACE = 0.5;
 
-export type ModeId = 'normal' | 'hard' | 'test';
+export type ModeId = 'easy' | 'normal' | 'hard' | 'test';
 
 export const MODES: { id: ModeId; name: string }[] = [
+  { id: 'easy', name: 'Easy' },
   { id: 'normal', name: 'Normal' },
   { id: 'hard', name: 'Hard' },
   { id: 'test', name: 'Test' },
@@ -115,6 +116,8 @@ export type Run = {
   caughtY: number;
   placed: number;
   portalAt: number;
+  lives: number;
+  mercy: number;
   viewLeft: number;
   viewRight: number;
   power: Power | null;
@@ -161,6 +164,8 @@ export function createRun(seed = 1, mode: ModeId = 'normal'): Run {
     caughtY: WORLD.readyY,
     placed: 0,
     portalAt: 0,
+    lives: mode === 'easy' ? 1 : 0,
+    mercy: 0,
     viewLeft: 0,
     viewRight: WORLD.w,
     power: null,
@@ -181,21 +186,28 @@ export const SNATCH_DURATION = SNATCH_APPROACH + SNATCH_CARRY;
 const TALON_X = -6;
 const TALON_Y = 40;
 
+// Easy is a little roomier than the original, and it stays that way.
+// The old course started much wider and only later matched this one.
 // Normal and Test stay on the original distance and opening.
 // Hard stays on that floor or tighter, and its hole can sit anywhere.
+const EASY_SPACE = 48;
+const EASY_OPEN = 36;
 const HARD_SPACE = 64;
 const HARD_OPEN = 48;
+const MERCY = 1.25;
 
 function roll(origin: number, index: number, salt: number): number {
   return mix(origin ^ Math.imul(index + 1, 0x9e3779b1) ^ salt) / 4294967296;
 }
 
 export function pipeSpacing(cleared: number, mode: ModeId = 'normal', origin = 1): number {
+  if (mode === 'easy') return WORLD.spacing + EASY_SPACE;
   if (mode === 'hard') return WORLD.spacing - roll(origin, cleared, 0x51a7c0de) * HARD_SPACE;
   return WORLD.spacing;
 }
 
 export function pipeOpening(cleared: number, mode: ModeId = 'normal', origin = 1): number {
+  if (mode === 'easy') return WORLD.gap + EASY_OPEN;
   if (mode === 'hard') return WORLD.gap - roll(origin, cleared, 0xc0ffee21) * HARD_OPEN;
   return WORLD.gap;
 }
@@ -490,6 +502,17 @@ export function flap(run: Run): boolean {
   return true;
 }
 
+function revive(run: Run): void {
+  run.lives -= 1;
+  run.mercy = MERCY;
+  run.phase = 'play';
+  run.bird.vy = 0;
+  run.bird.rot = 0;
+  if (run.bird.y + WORLD.hitR >= groundY()) run.bird.y = groundY() - WORLD.hitR - 8;
+  run.shake = 0.22;
+  run.cues.push('revive');
+}
+
 function integrate(run: Run, dt: number): void {
   run.bird.vy = Math.min(WORLD.maxFall, run.bird.vy + WORLD.gravity * dt);
   run.bird.y += run.bird.vy * dt;
@@ -579,7 +602,12 @@ export function step(run: Run, dt: number): void {
     return;
   }
 
-  if (hits(run)) {
+  if (run.mercy > 0) run.mercy = Math.max(0, run.mercy - dt);
+  if (run.mercy <= 0 && hits(run)) {
+    if (run.lives > 0) {
+      revive(run);
+      return;
+    }
     run.phase = 'dying';
     run.bird.vy = Math.min(run.bird.vy, -240);
     run.shake = 0.32;

@@ -26,6 +26,7 @@ export type Audio = {
   warp: () => void;
   shot: () => void;
   blast: () => void;
+  revive: () => void;
 };
 
 export function createAudio(): Audio {
@@ -132,6 +133,10 @@ export function createAudio(): Audio {
     blast() {
       noise(0.12, 0.06, 380);
       tone(196, 0.14, 'triangle', 0.05, -90);
+    },
+    revive() {
+      tone(392, 0.08, 'sine', 0.05, 90);
+      tone(587, 0.14, 'sine', 0.045, 40, 0.07);
     },
   };
 }

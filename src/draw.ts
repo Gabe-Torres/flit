@@ -593,7 +593,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     }
     drawSpecies(body, wing, state.wing, state.bird);
     gear.clear();
-    bird.alpha = run.power?.kind === 'phase' ? 0.55 : 1;
+    if (run.mercy > 0) bird.alpha = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(run.time * 22));
+    else bird.alpha = run.power?.kind === 'phase' ? 0.55 : 1;
     if (run.power?.kind === 'gun' && !carried) drawBlaster(gear);
 
     drawUi(uiGfx, state, box, {
@@ -847,6 +848,12 @@ type Labels = {
   retry: Text;
 };
 
+function drawHeart(g: Graphics, x: number, y: number): void {
+  g.poly([x, y + 5, x - 8, y - 2, x - 4, y - 7, x, y - 3, x + 4, y - 7, x + 8, y - 2], true)
+    .fill(0xef5d4a)
+    .stroke({ width: 2, color: INK });
+}
+
 function card(g: Graphics, x: number, y: number, w: number, h: number): void {
   g.roundRect(x + 4, y + 6, w, h, 24).fill({ color: INK, alpha: 0.16 });
   g.roundRect(x, y, w, h, 24).fill(0xfff8ea).stroke({ width: 4, color: INK });
@@ -921,6 +928,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
       labels.powerText.text = held;
       labels.powerText.position.set(cx, 118);
     }
+    if (run.lives > 0) drawHeart(g, cx + labels.scoreText.width / 2 + 16, 70);
   }
 
   if (run.shake > 0) {

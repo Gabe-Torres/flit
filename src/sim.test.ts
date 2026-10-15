@@ -180,6 +180,37 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
+  const run = createRun(3, 'easy');
+  assert(run.lives === 1, 'easy starts with one life');
+  run.phase = 'play';
+  run.snatchAt = null;
+  const y = 280;
+  run.bird.y = y;
+  run.bird.vy = 40;
+  run.gates = [{ x: WORLD.birdX - 20, gapY: y + 160, open: WORLD.gap, scored: false }];
+  step(run, 0);
+  assert(run.phase === 'play', 'the extra life keeps the flight going');
+  assert(run.lives === 0, 'the life is spent');
+  assert(run.bird.y === y, 'the bird comes back at the crash');
+  assert(run.mercy > 1, 'the return stays safe for a moment');
+  step(run, 0);
+  assert(run.phase === 'play', 'the pipe is safe during the return');
+  run.mercy = 0;
+  step(run, 0);
+  const ended: string = run.phase;
+  assert(ended === 'dying', 'the next hit ends the run');
+
+  const dirt = createRun(3, 'easy');
+  dirt.phase = 'play';
+  dirt.snatchAt = null;
+  dirt.bird.y = groundY();
+  dirt.gates = [];
+  step(dirt, 0);
+  assert(dirt.phase === 'play' && dirt.lives === 0, 'the ground spends the life');
+  assert(dirt.bird.y < groundY() - WORLD.hitR && dirt.bird.y > groundY() - 40, 'the bird comes back just above the ground');
+}
+
+{
   const run = playable();
   run.bird.y = 320;
   run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 320, open: WORLD.gap, scored: false }];
@@ -262,6 +293,9 @@ function playable(): ReturnType<typeof createRun> {
 {
   assert(pipeSpacing(0) === WORLD.spacing && pipeSpacing(40) === WORLD.spacing, 'the course keeps the original distance');
   assert(pipeOpening(0) === WORLD.gap && pipeOpening(40) === WORLD.gap, 'the course keeps the original opening');
+  assert(pipeSpacing(0, 'easy') === WORLD.spacing + 48 && pipeSpacing(40, 'easy') === WORLD.spacing + 48, 'easy stays a little wider');
+  assert(pipeOpening(0, 'easy') === WORLD.gap + 36 && pipeOpening(40, 'easy') === WORLD.gap + 36, 'easy stays a little taller');
+  assert(pipeSpacing(0, 'easy') < WORLD.spacing + 120, 'easy is tighter than the old course');
 
   const run = createRun(9);
   run.phase = 'play';
@@ -294,7 +328,7 @@ function playable(): ReturnType<typeof createRun> {
 
 {
   assert(planSnatch(1) === null, 'an ordinary seed stays safe');
-  const modes = ['normal', 'hard'] as const;
+  const modes = ['easy', 'normal', 'hard'] as const;
   for (const mode of modes) {
     let invites = 0;
     for (let seed = 1; seed <= 1000000; seed++) {
@@ -332,7 +366,7 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
-  for (const mode of ['normal', 'hard'] as const) {
+  for (const mode of ['easy', 'normal', 'hard'] as const) {
     for (const dt of [1 / 60, 0.05]) {
       const run = createRun(192, mode);
       flap(run);
@@ -497,9 +531,9 @@ function clearedLayout(seed: number, mode: 'normal' | 'hard' | 'test', pipes: nu
   assert(THEMES.map((theme) => theme.name).join() === 'Classic,Roman', 'map names stay with their gates');
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
   assert(!isThemeId('mars') && !isThemeId('reef') && !isThemeId('colony') && !isThemeId('pipes'), 'unknown maps fall through');
-  assert(MODES.map((mode) => mode.id).join() === 'normal,hard,test', 'difficulties stay in menu order');
+  assert(MODES.map((mode) => mode.id).join() === 'easy,normal,hard,test', 'difficulties stay in menu order');
   assert(MODES.find((mode) => mode.id === 'test')?.name === 'Test', 'test keeps its menu name');
-  assert(!isModeId('easy') && !isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
+  assert(isModeId('easy') && !isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
 }
 
 {
