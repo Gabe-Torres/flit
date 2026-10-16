@@ -5,7 +5,6 @@ import { createStage, playfield, type Particle, type Stage } from './draw.ts';
 import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
 import { fieldName } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
-import { createTipJoke } from './tip-joke.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
 const statusEl = document.querySelector<HTMLElement>('#status');
@@ -35,7 +34,6 @@ const shootBtn = shootQuery;
 
 const audio = createAudio();
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const tipJoke = createTipJoke();
 
 let modeId = readMode();
 let themeId = readTheme();
@@ -302,11 +300,6 @@ function describe(): void {
     return;
   }
   if (run.phase === 'over') {
-    const joke = tipJoke.line();
-    if (joke) {
-      setStatus(joke);
-      return;
-    }
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
     const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
@@ -342,7 +335,6 @@ function resetRun(andFly: boolean): void {
   pop = 0;
   squash = 0;
   paused = false;
-  tipJoke.clear();
   paintPause();
   if (!andFly) {
     describe();
@@ -380,7 +372,6 @@ function onFly(): void {
     return;
   }
   if (run.phase === 'over') {
-    if (tipJoke.consumeFly()) return;
     resetRun(true);
     return;
   }
@@ -589,13 +580,11 @@ function frame(now: number): void {
     puff(10, 0.32, 80);
   }
   if (run.phase === 'over' && phase !== 'over') {
-    tipJoke.onGameOver();
     if (run.score > bests[run.mode]) {
       bests[run.mode] = run.score;
       writeNumber(bestKey(run.mode), run.score);
     }
   }
-  tipJoke.tick();
 
   if (!paused) {
     const boost = Math.max(0, 1 - run.sinceFlap / 0.28);
@@ -631,7 +620,6 @@ function frame(now: number): void {
     theme: themeId,
     modeName: modeName(modeId),
     modeBest: bests[modeId],
-    tipBeat: tipJoke.beat(),
   });
   requestAnimationFrame(frame);
 }
