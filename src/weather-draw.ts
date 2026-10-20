@@ -236,10 +236,32 @@ function drawHoliday(
     }
   }
   if (holiday === 'halloween') {
-    for (let i = 0; i < 10; i++) {
-      const x = box.left + ((i * 97 + time * 28 * pace + scroll * 0.16) % wide);
-      const y = box.top + ((i * 61 + time * 18 * pace) % (tall * 0.72));
-      g.poly([x, y, x - 8, y - 4, x - 3, y, x, y + 2, x + 3, y, x + 8, y - 4], true).fill({ color: 0x2b2118, alpha: 0.9 });
+    for (let i = 0; i < 4; i++) {
+      const roll = unit(i * 17 + 3);
+      const lane = unit(i * 29 + 11);
+      const speed = 16 + roll * 26;
+      const x = box.left + ((i * 211 + time * speed * pace + scroll * (0.05 + roll * 0.14)) % wide);
+      const y = box.top + 36 + lane * tall * 0.48 + Math.sin(time * (0.8 + roll) + i * 1.7) * 14;
+      const wing = 5 + roll * 7;
+      const flap = Math.sin(time * (5 + roll * 4) + i) * (2 + roll * 2.4);
+      const face = i % 2 === 0 ? 1 : -1;
+      g.poly(
+        [
+          x,
+          y,
+          x - (wing + flap) * face,
+          y - 3 - flap,
+          x - 2.4 * face,
+          y,
+          x,
+          y + 2,
+          x + 2.4 * face,
+          y,
+          x + (wing * 0.72 + flap * 0.4) * face,
+          y - 2 - flap * 0.5,
+        ],
+        true,
+      ).fill({ color: 0x2b2118, alpha: 0.7 + lane * 0.25 });
     }
   }
   if (holiday === 'thanksgiving') {
@@ -337,6 +359,11 @@ export function drawSeason(
       g.circle(x, y, 1.2 + (i % 3) * 0.5).fill({ color: 0xffffff, alpha: 0.9 });
     }
   }
+}
+
+function unit(n: number): number {
+  const x = Math.sin(n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
 }
 
 

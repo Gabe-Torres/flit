@@ -9,6 +9,7 @@ import { THEMES, isThemeId, type ThemeId } from './themes.ts';
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
 const statusEl = document.querySelector<HTMLElement>('#status');
 const pauseQuery = document.querySelector<HTMLButtonElement>('#pause');
+const fullQuery = document.querySelector<HTMLButtonElement>('#full');
 const muteQuery = document.querySelector<HTMLButtonElement>('#mute');
 const optionsQuery = document.querySelector<HTMLButtonElement>('#options');
 const rosterQuery = document.querySelector<HTMLElement>('#roster');
@@ -17,12 +18,13 @@ const birdsQuery = document.querySelector<HTMLElement>('#birds');
 const modesQuery = document.querySelector<HTMLElement>('#modes');
 const themesQuery = document.querySelector<HTMLElement>('#themes');
 const shootQuery = document.querySelector<HTMLButtonElement>('#shoot');
-if (!canvas || !statusEl || !pauseQuery || !muteQuery || !optionsQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery || !themesQuery || !shootQuery) {
+if (!canvas || !statusEl || !pauseQuery || !fullQuery || !muteQuery || !optionsQuery || !rosterQuery || !birdNameQuery || !birdsQuery || !modesQuery || !themesQuery || !shootQuery) {
   throw new Error('Flit is missing a page element');
 }
 const view = canvas;
 const statusNode = statusEl;
 const pauseBtn = pauseQuery;
+const fullBtn = fullQuery;
 const muteBtn = muteQuery;
 const optionsBtn = optionsQuery;
 const roster = rosterQuery;
@@ -269,6 +271,41 @@ function paintPause(): void {
   pauseBtn.setAttribute('aria-label', paused ? 'Resume' : 'Pause');
 }
 
+type FullNode = HTMLElement & { webkitRequestFullscreen?: () => void };
+type FullDoc = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => void };
+
+function fullScreenOffered(): boolean {
+  if (hints().touch) return false;
+  const node = document.documentElement as FullNode;
+  return typeof node.requestFullscreen === 'function' || typeof node.webkitRequestFullscreen === 'function';
+}
+
+function isFullScreen(): boolean {
+  const doc = document as FullDoc;
+  return document.fullscreenElement != null || doc.webkitFullscreenElement != null;
+}
+
+function paintFull(): void {
+  const on = isFullScreen();
+  fullBtn.hidden = !fullScreenOffered();
+  fullBtn.classList.toggle('is-full', on);
+  fullBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  fullBtn.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen');
+}
+
+function toggleFull(): void {
+  if (!fullScreenOffered()) return;
+  const node = document.documentElement as FullNode;
+  const doc = document as FullDoc;
+  if (isFullScreen()) {
+    if (document.exitFullscreen) void document.exitFullscreen().catch(() => undefined);
+    else doc.webkitExitFullscreen?.();
+    return;
+  }
+  if (node.requestFullscreen) void node.requestFullscreen().catch(() => undefined);
+  else node.webkitRequestFullscreen?.();
+}
+
 function setStatus(text: string): void {
   if (text === lastStatus) return;
   lastStatus = text;
@@ -407,6 +444,7 @@ function fromRoster(event: Event): boolean {
 
 function resize(): void {
   stage?.resize();
+  paintFull();
 }
 
 window.addEventListener('pointerdown', (event) => {
@@ -483,7 +521,10 @@ for (const bird of BIRDS) {
 
 optionsBtn.addEventListener('click', toggleMenu);
 pauseBtn.addEventListener('click', togglePause);
+fullBtn.addEventListener('click', toggleFull);
 muteBtn.addEventListener('click', toggleMute);
+document.addEventListener('fullscreenchange', paintFull);
+document.addEventListener('webkitfullscreenchange', paintFull);
 shootBtn.addEventListener('click', onShoot);
 window.addEventListener('resize', resize);
 window.visualViewport?.addEventListener('resize', resize);
@@ -500,6 +541,7 @@ if (import.meta.env.PROD && 'caches' in window) {
 
 paintMute();
 paintPause();
+paintFull();
 paintBird();
 paintMode();
 paintTheme();

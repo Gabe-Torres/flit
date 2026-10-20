@@ -152,8 +152,21 @@ body {
   gap: 8px;
 }
 
-#options[hidden] {
+#options[hidden],
+#full[hidden] {
   display: none;
+}
+
+#full .shrink {
+  display: none;
+}
+
+#full.is-full .expand {
+  display: none;
+}
+
+#full.is-full .shrink {
+  display: block;
 }
 
 button {

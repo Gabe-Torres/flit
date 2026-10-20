@@ -1,7 +1,7 @@
 import { Application, Container, Graphics, Text } from 'pixi.js';
 import { drawSpecies, type BirdId } from './birds.ts';
 import type { ControlHints } from './controls.ts';
-import { WORLD, flightFacts, groundY, medalForScore, pipeSpacing, portalY, powerLabel, snatchPose, type MedalName, type Pickup, type PowerKind, type Run } from './sim.ts';
+import { WORLD, courseEdge, flightFacts, groundY, medalForScore, pipeSpacing, portalY, powerLabel, snatchPose, type MedalName, type Pickup, type PowerKind, type Run } from './sim.ts';
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
 import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
@@ -245,7 +245,8 @@ function hill(
   floor: number,
 ): void {
   const points: number[] = [left, floor];
-  for (let x = left; x <= right; x += 8) {
+  const step = right - left > 800 ? 16 : 8;
+  for (let x = left; x <= right; x += step) {
     points.push(x, base + Math.sin((x + scroll) / period) * amp);
   }
   points.push(right, floor);
@@ -449,6 +450,14 @@ function fit(cssW: number, cssH: number): { scale: number; ox: number; oy: numbe
   };
 }
 
+function viewResolution(cssW: number, cssH: number): number {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const long = Math.max(cssW, cssH);
+  // A phone stays sharp. A maximized desktop redraws a huge canvas every frame.
+  if (long <= 1100) return dpr;
+  return Math.min(dpr, 1920 / long);
+}
+
 export function playfield(cssW: number, cssH: number): { left: number; right: number } {
   const { box } = fit(cssW, cssH);
   return { left: box.left, right: box.right };
@@ -461,10 +470,11 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     autoDensity: true,
     antialias: true,
     autoStart: false,
-    resolution: Math.min(window.devicePixelRatio || 1, 2),
+    resolution: viewResolution(window.innerWidth, window.innerHeight),
     background: 0x67c4f6,
   });
   app.stage.eventMode = 'none';
+  let unsafeTop = 0;
 
   const world = new Container();
   const ui = new Container();
@@ -548,7 +558,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     if (run.phase === 'ready') {
       drawThemedGate(gateLayer, state.theme, 326, 300, 156, box.top, floor, themeTime);
       const spacing = pipeSpacing(0, run.mode, run.origin);
-      for (let x = 326 + spacing; x < box.right + WORLD.pipeW; x += spacing) {
+      const edge = courseEdge(box.right, spacing);
+      for (let x = 326 + spacing; x < edge + WORLD.pipeW; x += spacing) {
         drawThemedGate(gateLayer, state.theme, x, 300, 156, box.top, floor, themeTime);
       }
     }
@@ -595,7 +606,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     else bird.alpha = run.power?.kind === 'phase' ? 0.55 : 1;
     if (run.power?.kind === 'gun' && !carried) drawBlaster(gear);
 
-    drawUi(uiGfx, state, box, {
+    drawUi(uiGfx, state, box, unsafeTop / scale, {
       title,
       flyHint,
       modeName,
@@ -620,7 +631,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     canvas.style.left = `${next.left}px`;
     canvas.style.width = `${next.width}px`;
     canvas.style.height = `${next.height}px`;
-    app.renderer.resize(next.width, next.height);
+    unsafeTop = statusBarInset(next.top);
+    app.renderer.resize(next.width, next.height, viewResolution(next.width, next.height));
   };
   resize();
 
@@ -857,7 +869,16 @@ function card(g: Graphics, x: number, y: number, w: number, h: number): void {
   g.roundRect(x, y, w, h, 24).fill(0xfff8ea).stroke({ width: 4, color: INK });
 }
 
-function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void {
+function statusBarInset(canvasTop: number): number {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);pointer-events:none;visibility:hidden;';
+  document.body.append(probe);
+  const inset = probe.getBoundingClientRect().height;
+  probe.remove();
+  return Math.max(0, inset - canvasTop);
+}
+
+function drawUi(g: Graphics, state: RenderState, box: Box, clearTop: number, labels: Labels): void {
   const { run } = state;
   const cx = WORLD.w / 2;
   const ready = run.phase === 'ready';
@@ -896,7 +917,8 @@ function drawUi(g: Graphics, state: RenderState, box: Box, labels: Labels): void
     labels.modeName.text = state.modeName;
     labels.modeScore.text = String(state.modeBest);
     const hudX = box.left + 16;
-    const hudY = box.top + 10;
+    // The name sits in the corner. On an iPhone that corner is under the clock.
+    const hudY = box.top + 10 + clearTop;
     const scoreDrop = controls.touch ? 30 : 24;
     labels.modeName.position.set(hudX, hudY);
     labels.modeScore.position.set(hudX, hudY + scoreDrop);

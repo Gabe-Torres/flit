@@ -118,6 +118,7 @@ export type Run = {
   portalAt: number;
   lives: number;
   mercy: number;
+  fall: number;
   viewLeft: number;
   viewRight: number;
   power: Power | null;
@@ -166,6 +167,7 @@ export function createRun(seed = 1, mode: ModeId = 'normal'): Run {
     portalAt: 0,
     lives: mode === 'easy' ? 1 : 0,
     mercy: 0,
+    fall: 0,
     viewLeft: 0,
     viewRight: WORLD.w,
     power: null,
@@ -195,6 +197,16 @@ const EASY_OPEN = 36;
 const HARD_SPACE = 64;
 const HARD_OPEN = 48;
 const MERCY = 1.25;
+// Long enough to see the tumble, short enough that a high crash does not
+// make you watch the whole drop.
+const CRASH_BEAT = 0.42;
+// A wide screen shows a couple of columns past the phone. Filling a big
+// monitor with gates is what makes a maximized window stutter.
+const LOOK_AHEAD = 2;
+
+export function courseEdge(viewRight: number, spacing: number): number {
+  return Math.min(Math.max(WORLD.w, viewRight), WORLD.w + spacing * LOOK_AHEAD);
+}
 
 function roll(origin: number, index: number, salt: number): number {
   return mix(origin ^ Math.imul(index + 1, 0x9e3779b1) ^ salt) / 4294967296;
@@ -294,9 +306,8 @@ function nextGap(run: Run, around: number, open: number): number {
 }
 
 function spawn(run: Run): void {
-  // A phone ends at the portrait width. A wide screen keeps laying pipes until
-  // the next one is past the visible edge, so the course ahead stays in view.
-  const edge = Math.max(WORLD.w, run.viewRight);
+  // A phone ends at the portrait width. A wide screen lays a couple more
+  // columns so the next pipes stay in view, then stops.
   for (let guard = 0; guard < 24; guard++) {
     const last = run.gates[run.gates.length - 1];
     // Hard gates vary in distance, so the roll follows how many have been placed.
@@ -309,6 +320,7 @@ function spawn(run: Run): void {
       continue;
     }
     const spacing = pipeSpacing(slot, run.mode, run.origin);
+    const edge = courseEdge(run.viewRight, spacing);
     if (last.x > edge + 36 - spacing) return;
     const x = last.x + spacing;
     run.gates.push({
@@ -432,7 +444,7 @@ function flyBolts(run: Run, dt: number): void {
       run.cues.push('blast');
       continue;
     }
-    if (bolt.x < Math.max(WORLD.w, run.viewRight) + WORLD.spacing) keep.push(bolt);
+    if (bolt.x < courseEdge(run.viewRight, WORLD.spacing) + WORLD.spacing) keep.push(bolt);
   }
   run.bolts = keep;
 }
@@ -542,14 +554,16 @@ export function step(run: Run, dt: number): void {
   if (run.phase === 'dying') {
     run.time += dt;
     run.sinceFlap += dt;
+    run.fall += dt;
     run.bird.vy = Math.min(WORLD.maxFall, run.bird.vy + WORLD.gravity * dt);
     run.bird.y += run.bird.vy * dt;
     run.bird.rot += (1.45 - run.bird.rot) * Math.min(1, dt * 6);
-    if (run.bird.y >= restY()) {
+    const landed = run.bird.y >= restY();
+    if (landed) {
       run.bird.y = restY();
       run.bird.vy = 0;
-      run.phase = 'over';
     }
+    if (landed || run.fall >= CRASH_BEAT) run.phase = 'over';
     return;
   }
 
@@ -609,6 +623,7 @@ export function step(run: Run, dt: number): void {
       return;
     }
     run.phase = 'dying';
+    run.fall = 0;
     run.bird.vy = Math.min(run.bird.vy, -240);
     run.shake = 0.32;
     if (run.bird.y > restY()) run.bird.y = restY();

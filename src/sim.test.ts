@@ -245,6 +245,21 @@ function playable(): ReturnType<typeof createRun> {
 }
 
 {
+  const run = playable();
+  run.phase = 'dying';
+  run.fall = 0;
+  run.bird.y = 40;
+  run.bird.vy = 0;
+  for (let i = 0; i < 18; i++) step(run, 1 / 60);
+  const early: string = run.phase;
+  assert(early === 'dying', 'a high crash stays visible for a beat');
+  for (let i = 0; i < 12; i++) step(run, 1 / 60);
+  const later: string = run.phase;
+  assert(later === 'over', 'the score card does not wait out a long fall');
+  assert(run.bird.y < restY() - 80, 'the card appears while the bird is still in the air');
+}
+
+{
   const run = createRun(2);
   assert(flap(run), 'a tap counts');
   flap(run);
@@ -735,6 +750,14 @@ function portalMarks(seed: number, pipes: number): number[] {
   wide.gates.push({ x: -240, gapY: 300, open: WORLD.gap, scored: true });
   step(wide, 0);
   assert(wide.gates.some((gate) => gate.x < -80), 'a pipe stays until it leaves a wide screen');
+  const huge = playable();
+  huge.viewRight = 4000;
+  huge.gates = [];
+  step(huge, 0);
+  assert(huge.gates.length <= 4, 'a huge screen still keeps only a few pipes');
+  const last = huge.gates[huge.gates.length - 1];
+  assert(last.x > WORLD.w, 'the extra pipes still sit past the phone');
+  assert(last.x <= WORLD.w + pipeSpacing(0) * 2 + WORLD.pipeW, 'pipes stop a couple of columns past the phone');
 }
 
 if (failed > 0) {
