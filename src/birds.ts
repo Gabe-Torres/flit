@@ -1,4 +1,5 @@
 import type { Graphics } from 'pixi.js';
+import type { HolidayId } from './holiday.ts';
 
 export const BIRD_IDS = [
   'finch',
@@ -17,6 +18,8 @@ export const BIRD_IDS = [
   'trout',
   'shark',
   'mew',
+  'bat',
+  'kitten',
 ] as const;
 
 export type BirdId = (typeof BIRD_IDS)[number];
@@ -26,6 +29,8 @@ export type BirdKind = {
   name: string;
   feather: string;
   icon: string;
+  // Set for a flyer that only joins the list during that holiday month.
+  season?: HolidayId;
 };
 
 const INK = '#2b2118';
@@ -298,6 +303,45 @@ export const BIRDS: readonly BirdKind[] = [
         `<path d="M12.8 21.6 12.2 23.4M15.8 21.8 16.4 23.6" stroke="#f48cb8" stroke-width="1.15" stroke-linecap="round"/>`,
     ),
   },
+  {
+    id: 'bat',
+    name: 'Bat',
+    feather: '#4a3428',
+    season: 'halloween',
+    icon: icon(
+      `<path d="M16 16 4 8 7 16 2 20 14 18Z" fill="#3a2a4a" stroke="${STROKE}" stroke-width="1.1" stroke-linejoin="round"/>` +
+        `<path d="M16 16 28 8 25 16 30 20 18 18Z" fill="#2b2118" stroke="${STROKE}" stroke-width="1.1" stroke-linejoin="round"/>` +
+        `<ellipse cx="16" cy="18" rx="5.2" ry="4.4" fill="#2b2118" stroke="${STROKE}" stroke-width="1.2"/>` +
+        `<path d="M12.2 12.2 14 6.4 16.2 12.4Z" fill="#2b2118" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<path d="M19.8 12.2 18 6.4 15.8 12.4Z" fill="#2b2118" stroke="${STROKE}" stroke-width="0.9" stroke-linejoin="round"/>` +
+        `<circle cx="14.4" cy="16.6" r="1.35" fill="#f2c14b"/>` +
+        `<circle cx="17.8" cy="16.6" r="1.35" fill="#f2c14b"/>` +
+        `<circle cx="14.7" cy="16.6" r="0.5" fill="${INK}"/>` +
+        `<circle cx="18.1" cy="16.6" r="0.5" fill="${INK}"/>` +
+        `<path d="M15.2 19.2 16 21.2 16.8 19.2" fill="#fffdf6" stroke="${INK}" stroke-width="0.5" stroke-linejoin="round"/>`,
+    ),
+  },
+  {
+    id: 'kitten',
+    name: 'Kitten',
+    feather: '#c4966a',
+    icon: icon(
+      `<path d="M7 18c-2-6 2-10 6-8" fill="none" stroke="#7a4e32" stroke-width="2.1" stroke-linecap="round"/>` +
+        `<ellipse cx="13" cy="20" rx="6.4" ry="4.2" fill="#c4966a" stroke="${STROKE}" stroke-width="1.2"/>` +
+        `<ellipse cx="13.4" cy="21.6" rx="3.2" ry="1.8" fill="#fff3e4"/>` +
+        `<path d="M9.2 14.6 10.4 9.2 13.2 15Z" fill="#7a4e32" stroke="${STROKE}" stroke-width="0.8" stroke-linejoin="round"/>` +
+        `<path d="M14.2 14.2 16.6 8.6 18.6 14.6Z" fill="#7a4e32" stroke="${STROKE}" stroke-width="0.8" stroke-linejoin="round"/>` +
+        `<circle cx="18.6" cy="18.2" r="4.6" fill="#c4966a" stroke="${STROKE}" stroke-width="1.1"/>` +
+        `<ellipse cx="21.4" cy="19.2" rx="2.3" ry="1.7" fill="#fff3e4" stroke="${STROKE}" stroke-width="0.7"/>` +
+        `<circle cx="22.2" cy="19.3" r="0.7" fill="${INK}"/>` +
+        `<ellipse cx="10.2" cy="23.2" rx="1.15" ry="2.3" fill="#c4966a" stroke="${STROKE}" stroke-width="0.7"/>` +
+        `<ellipse cx="9.6" cy="25.4" rx="1.3" ry="0.8" fill="#c4966a" stroke="${STROKE}" stroke-width="0.6"/>` +
+        `<ellipse cx="15.4" cy="23.6" rx="1.05" ry="2.5" fill="#c4966a" stroke="${STROKE}" stroke-width="0.7"/>` +
+        `<ellipse cx="16.4" cy="26" rx="1.35" ry="0.8" fill="#c4966a" stroke="${STROKE}" stroke-width="0.6"/>` +
+        `<circle cx="19.2" cy="16.8" r="1.35" fill="#fff" stroke="${STROKE}" stroke-width="0.6"/>` +
+        `<circle cx="19.7" cy="16.9" r="0.6" fill="${INK}"/>`,
+    ),
+  },
 ];
 
 const BY_ID = new Map(BIRDS.map((bird) => [bird.id, bird]));
@@ -308,6 +352,11 @@ export function isBirdId(value: string): value is BirdId {
 
 export function birdById(id: BirdId): BirdKind {
   return BY_ID.get(id) ?? BIRDS[0];
+}
+
+export function birdOffered(id: BirdId, holiday: HolidayId | null): boolean {
+  const season = birdById(id).season;
+  return season == null || season === holiday;
 }
 
 const OUTLINE = { width: 2.5, color: 0x6a3d16, join: 'round' as const, cap: 'round' as const };
@@ -773,6 +822,49 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
       alpha: 0.95,
     });
     body.circle(bx + 18, by + 15, 4.4).stroke({ width: 1.5, color: 0xffffff, alpha: 0.9 });
+    return;
+  }
+
+  if (id === 'bat') {
+    const lift = flapAngle * 8;
+    // Both membranes hinge on the shoulder, behind the head, and sweep upward.
+    wing.position.set(-2, -1);
+    wing.rotation = flapAngle * 0.42;
+    wing.poly([0, 2, -8, -16, -20, -8, -28, 2, -16, 8, 0, 5], true).fill(0x3a2a4a).stroke(OUTLINE);
+    wing.poly([-2, 0, -14, -6, -12, 4], true).fill(0x241628);
+    body.ellipse(-1, 3, 12, 8).fill(0x2b2118).stroke(OUTLINE);
+    body.ellipse(0, 6, 7, 3.6).fill(0x4a3428);
+    body.poly([-2, -1, 1, -18 - lift, 12, -14 - lift * 0.65, 8, -2, -2, 2], true).fill(0x241820).stroke(OUTLINE);
+    body.poly([0, -2, 4, -12 - lift * 0.7, 8, -8 - lift * 0.3], true).fill(0x3a2a4a);
+    body.circle(10, -1, 6.6).fill(0x2b2118).stroke(OUTLINE);
+    body.poly([6, -4, 8, -15, 12, -5], true).fill(0x2b2118).stroke(OUTLINE);
+    body.poly([7.2, -5, 8.4, -12, 11, -5.4], true).fill(0xf3a0b0);
+    body.poly([11, -5, 15, -14, 16, -4], true).fill(0x2b2118).stroke(OUTLINE);
+    body.poly([12.2, -5, 14.6, -11, 15.2, -4.6], true).fill(0xf3a0b0);
+    body.poly([13.4, 2.4, 14.6, 5.2, 15.6, 2.2], true).fill(0xfffdf6);
+    body.poly([15.2, 2.2, 16.2, 4.8, 17.2, 1.8], true).fill(0xfffdf6);
+    eye(body, 12, -2, 2.3);
+    return;
+  }
+
+  if (id === 'kitten') {
+    wing.rotation = 0;
+    const wag = flapAngle * 3.2;
+    body.moveTo(-2, 2).bezierCurveTo(1, 10, -4, 18, -9, 21).bezierCurveTo(-13, 22.6, -14.2, 19, -10.4, 17.2).bezierCurveTo(-7, 15.4, -5, 10, -4.4, 4).closePath().fill(0xc4966a).stroke(OUTLINE);
+    body.moveTo(4, 3).bezierCurveTo(9, 10, 10, 17, 7.2, 22).bezierCurveTo(5.2, 24.4, 1.6, 22.4, 2.8, 18.6).bezierCurveTo(3.8, 14.4, 2.6, 8, 4, 3).closePath().fill(0xc4966a).stroke(OUTLINE);
+    body.moveTo(-11, 1).quadraticCurveTo(-18, -6 - wag, -12, -14 - wag).stroke({ width: 4.6, color: 0x7a4e32, cap: 'round' });
+    body.circle(-12, -14 - wag, 2.3).fill(0x7a4e32);
+    body.ellipse(0, 3, 12.5, 7.6).fill(0xc4966a).stroke(OUTLINE);
+    body.ellipse(1, 5.4, 7, 3.6).fill(0xfff3e4);
+    body.circle(12, -1, 7.6).fill(0xc4966a).stroke(OUTLINE);
+    body.poly([6, -5, 8, -16, 12, -6], true).fill(0x7a4e32).stroke(OUTLINE);
+    body.poly([11, -6, 14, -17, 17, -5], true).fill(0x7a4e32).stroke(OUTLINE);
+    body.poly([12.2, -6, 14, -13, 16, -5.6], true).fill(0xf3a0b0);
+    body.ellipse(17, 1.4, 3.8, 2.7).fill(0xfff3e4).stroke({ ...OUTLINE, width: 1.7 });
+    body.ellipse(18.6, 1.5, 1.15, 0.9).fill(0x2b2118);
+    body.circle(14, -2.4, 2.5).fill(0xffffff).stroke({ ...OUTLINE, width: 1.6 });
+    body.circle(14.8, -2.3, 1.2).fill(0x1c1720);
+    body.circle(14.2, -2.9, 0.45).fill(0xffffff);
     return;
   }
 

@@ -27,10 +27,18 @@ export type RenderState = {
   reduceMotion: boolean;
   particles: Particle[];
   bird: BirdId;
+  cannon: CannonLaunch | null;
   controls: ControlHints;
   theme: ThemeId;
   modeName: string;
   modeBest: number;
+};
+
+export type CannonLaunch = {
+  scroll: number;
+  y: number;
+  age: number;
+  boosted: boolean;
 };
 
 export type Stage = {
@@ -581,6 +589,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
 
     const altitude = Math.max(0, floor - run.bird.y);
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });
+    const cannon = kittenCannon(state, floor);
+    if (cannon) drawKittenCannon(fx, cannon);
     for (const p of state.particles) {
       fx.circle(p.x, p.y, p.r).fill({ color: p.color, alpha: Math.max(0, p.life / p.max) });
     }
@@ -599,8 +609,18 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       dino.position.set(0, 0);
       bird.position.set(WORLD.birdX, run.bird.y);
       bird.rotation = run.bird.rot;
+      if (cannon?.loaded) {
+        bird.position.set(cannon.seatX, cannon.seatY);
+        bird.rotation = cannon.angle;
+      } else if (cannon && state.cannon && !state.cannon.boosted) {
+        const t = Math.min(1, state.cannon.age / CANNON_LAUNCH);
+        const along = t * t * (3 - 2 * t);
+        bird.position.set(cannon.lipX + (WORLD.birdX - cannon.lipX) * along, run.bird.y);
+        bird.rotation = cannon.angle;
+      }
     }
     drawSpecies(body, wing, state.wing, state.bird);
+    if (cannon && !carried) drawCannonLip(dino, cannon);
     gear.clear();
     if (run.mercy > 0) bird.alpha = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(run.time * 22));
     else bird.alpha = run.power?.kind === 'phase' ? 0.55 : 1;
@@ -640,6 +660,122 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     render,
     resize,
   };
+}
+
+type CannonPose = {
+  muzzleX: number;
+  muzzleY: number;
+  lipX: number;
+  lipY: number;
+  angle: number;
+  length: number;
+  seatX: number;
+  seatY: number;
+  loaded: boolean;
+  flash: number;
+  smoke: number;
+};
+
+const CANNON_ANGLE = -0.24;
+const CANNON_LENGTH = 118;
+const CANNON_BACK = -20;
+export const CANNON_LAUNCH = 0.34;
+
+export function cannonMouth(floor: number): { x: number; y: number; angle: number } {
+  const wheelY = floor - 28;
+  return {
+    x: CANNON_BACK + Math.cos(CANNON_ANGLE) * CANNON_LENGTH,
+    y: wheelY + Math.sin(CANNON_ANGLE) * CANNON_LENGTH,
+    angle: CANNON_ANGLE,
+  };
+}
+
+function kittenCannon(state: RenderState, floor: number): CannonPose | null {
+  if (state.bird !== 'kitten') return null;
+  const shot = state.cannon;
+  const loaded = state.run.phase === 'ready' && shot == null;
+  if (!loaded && shot == null) return null;
+  const drift = shot == null ? 0 : state.run.scroll - shot.scroll;
+  if (shot && (shot.age > 1.8 || drift > 520)) return null;
+
+  const kick = shot ? Math.max(0, 1 - shot.age / 0.22) * 16 : 0;
+  const wheelX = CANNON_BACK - drift - Math.cos(CANNON_ANGLE) * kick;
+  const wheelY = floor - 28 - Math.sin(CANNON_ANGLE) * kick;
+  const lipX = CANNON_BACK - drift + Math.cos(CANNON_ANGLE) * CANNON_LENGTH;
+  const lipY = floor - 28 + Math.sin(CANNON_ANGLE) * CANNON_LENGTH;
+  const muzzleX = wheelX + Math.cos(CANNON_ANGLE) * CANNON_LENGTH;
+  const muzzleY = wheelY + Math.sin(CANNON_ANGLE) * CANNON_LENGTH;
+  const back = 4;
+  return {
+    muzzleX,
+    muzzleY,
+    lipX,
+    lipY,
+    angle: CANNON_ANGLE,
+    length: CANNON_LENGTH,
+    seatX: muzzleX - Math.cos(CANNON_ANGLE) * back,
+    seatY: muzzleY - Math.sin(CANNON_ANGLE) * back,
+    loaded,
+    flash: shot ? Math.max(0, 1 - shot.age / 0.12) : 0,
+    smoke: shot ? Math.max(0, 1 - shot.age / 0.5) : 0,
+  };
+}
+
+function cannonSpace(pose: CannonPose): (lx: number, ly: number) => [number, number] {
+  const c = Math.cos(pose.angle);
+  const s = Math.sin(pose.angle);
+  return (lx, ly) => [pose.muzzleX + lx * c - ly * s, pose.muzzleY + lx * s + ly * c];
+}
+
+function cannonPoly(g: Graphics, at: (lx: number, ly: number) => [number, number], pts: readonly number[], color: number): void {
+  const flat: number[] = [];
+  for (let i = 0; i < pts.length; i += 2) {
+    const [x, y] = at(pts[i], pts[i + 1]);
+    flat.push(x, y);
+  }
+  g.poly(flat, true).fill(color).stroke({ width: 3, color: INK, join: 'round', cap: 'round' });
+}
+
+function drawKittenCannon(g: Graphics, pose: CannonPose): void {
+  const at = cannonSpace(pose);
+  const length = pose.length;
+  cannonPoly(g, at, [-length + 8, -18, -24, -16, -8, -15, -8, 15, -24, 16, -length + 8, 18], 0x8e979f);
+  cannonPoly(g, at, [-length + 18, -13, -40, -11, -40, -5, -length + 18, -7], 0xd7e0e6);
+  cannonPoly(g, at, [-length + 36, -20, -length + 52, -20, -length + 52, 20, -length + 36, 20], 0x2c333a);
+  cannonPoly(g, at, [-78, -19, -60, -19, -60, 19, -78, 19], 0x2c333a);
+  cannonPoly(g, at, [-length - 8, 10, -length + 36, 6, -length + 28, 30, -length - 16, 28], 0x8d522c);
+  cannonPoly(g, at, [-length + 4, 6, -length - 46, 8, -length - 50, 18, -length + 2, 16], 0x6b3a1c);
+
+  const [farX, farY] = at(-length + 18, 12);
+  g.circle(farX, farY, 16).fill(0x69381c).stroke({ width: 2.6, color: INK });
+  const [wheelX, wheelY] = at(-length, 4);
+  g.circle(wheelX, wheelY, 28).fill(0x8d522c).stroke({ width: 3, color: INK });
+  g.circle(wheelX, wheelY, 18).fill(0x9a6236);
+  for (let i = 0; i < 6; i++) {
+    const spoke = (i / 6) * Math.PI;
+    const [x0, y0] = at(-length + Math.cos(spoke) * 5, 4 + Math.sin(spoke) * 5);
+    const [x1, y1] = at(-length + Math.cos(spoke) * 16, 4 + Math.sin(spoke) * 16);
+    g.moveTo(x0, y0).lineTo(x1, y1).stroke({ width: 2.4, color: 0x5c3218, cap: 'round' });
+  }
+  g.circle(wheelX, wheelY, 5.5).fill(0xd1a85a).stroke({ width: 2.2, color: INK });
+
+  if (pose.smoke > 0) {
+    const grow = (1 - pose.smoke) * 18;
+    g.circle(pose.lipX + 8, pose.lipY - 14 - grow, 8 + grow * 0.6).fill({ color: 0xd5dde4, alpha: 0.4 * pose.smoke });
+  }
+}
+
+function drawCannonLip(g: Graphics, pose: CannonPose): void {
+  const at = cannonSpace(pose);
+  cannonPoly(g, at, [-40, -17, -6, -16, -6, 16, -40, 17], 0x8e979f);
+  cannonPoly(g, at, [-36, -12, -12, -11, -12, -5, -36, -6], 0xd7e0e6);
+  cannonPoly(g, at, [-22, -19, -4, -18, -4, 18, -22, 19], 0x2c333a);
+  const [boreX, boreY] = at(-10, 0);
+  g.circle(boreX, boreY, 9).fill(0x14181c);
+  if (pose.flash > 0) {
+    g.circle(pose.muzzleX, pose.muzzleY, 14).fill({ color: 0xfff1c2, alpha: pose.flash * 0.8 });
+    g.circle(pose.muzzleX, pose.muzzleY, 6).fill({ color: 0xf08a2a, alpha: pose.flash });
+  }
 }
 
 function drawGround(

@@ -13,7 +13,7 @@ Flit is a one-button flyer in the tradition of Flappy Bird. [PixiJS](https://pix
 The bird falls. You keep it in the air.
 
 - On the title, and again after a run, a button beside pause opens the flyer, the map, and the difficulty.
-- Pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, magpie, pterodactyl, drone, lunar lander, Ha'tak, kiwi, weka, flying rainbow trout, rocket shark, or Mew. The choice stays in this browser.
+- Pick a flyer: finch, flamingo, penguin, cardinal, blue jay, pelican, magpie, pterodactyl, drone, lunar lander, Ha'tak, kiwi, weka, flying rainbow trout, rocket shark, Mew, or a flying kitten. The kitten is fired from a cannon when a run starts. A bat joins the list in October. The choice stays in this browser.
 - Easy gives a little more room between the gates and a slightly taller opening than Normal, and one extra life. The first time you hit a gate or the ground, you come back at that spot. The next hit ends the run. Normal is the original distance and opening from the first gate. Hard is tighter than that original, and the hole can sit anywhere. Test keeps that original course and adds powers. The choice stays in this browser.
 - In Test, powers sit in the gap between the pipes. You can hold one. Picking up another replaces it. Slow motion and passing through pipes wear off. A blaster gives three shots, and each flap fires one. One shot removes a pipe. A stargate is a rare random find, and another cannot appear for the next 20 pipes. It races up and down. Fly through it and you skip 10 pipes ahead.
 - Classic keeps the green gates. Roman builds stone columns wrapped in vines. The gaps stay the same. The choice stays in this browser.

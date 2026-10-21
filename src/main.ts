@@ -1,9 +1,9 @@
 import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
-import { BIRDS, birdById, isBirdId, type BirdId } from './birds.ts';
-import { createStage, playfield, type Particle, type Stage } from './draw.ts';
-import { MODES, WORLD, createRun, flap, flightFacts, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
-import { fieldName } from './holiday.ts';
+import { BIRDS, birdById, birdOffered, isBirdId, type BirdId } from './birds.ts';
+import { CANNON_LAUNCH, cannonMouth, createStage, playfield, type CannonLaunch, type Particle, type Stage } from './draw.ts';
+import { MODES, WORLD, createRun, flap, flightFacts, groundY, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
+import { fieldName, holidayForDate } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
@@ -50,6 +50,7 @@ let squash = 0;
 let particles: Particle[] = [];
 let lastStatus = '';
 let stage: Stage | null = null;
+let cannon: CannonLaunch | null = null;
 
 function mixSeed(): number {
   return (Date.now() ^ Math.floor(Math.random() * 0x100000000)) >>> 0 || 1;
@@ -72,6 +73,7 @@ function writeNumber(key: string, value: number): void {
 }
 
 function readBird(): BirdId {
+  const holiday = holidayForDate(new Date());
   try {
     const saved = localStorage.getItem('flit-bird');
     if (saved === 'dodo') {
@@ -82,7 +84,7 @@ function readBird(): BirdId {
       localStorage.setItem('flit-bird', 'finch');
       return 'finch';
     }
-    if (saved && isBirdId(saved)) return saved;
+    if (saved && isBirdId(saved) && birdOffered(saved, holiday)) return saved;
   } catch {
     // Storage can be blocked. The finch is the default.
   }
@@ -366,8 +368,36 @@ function puff(count: number, life: number, spread: number): void {
   }
 }
 
+function armCannon(): void {
+  if (birdId !== 'kitten') return;
+  const mouth = cannonMouth(groundY());
+  cannon = { scroll: run.scroll, y: mouth.y, age: 0, boosted: false };
+  run.bird.y = mouth.y;
+  run.bird.vy = 0;
+  run.bird.rot = mouth.angle;
+  audio.blast();
+}
+
+function coastCannon(): void {
+  if (!cannon || cannon.boosted) return;
+  const mouth = cannonMouth(groundY());
+  if (cannon.age < CANNON_LAUNCH) {
+    const t = cannon.age / CANNON_LAUNCH;
+    const along = t * t * (3 - 2 * t);
+    const exitY = mouth.y + (WORLD.birdX - mouth.x) * Math.tan(mouth.angle);
+    run.bird.y = mouth.y + (exitY - mouth.y) * along;
+    run.bird.vy = 0;
+    run.bird.rot = mouth.angle;
+    return;
+  }
+  cannon.boosted = true;
+  run.bird.vy = WORLD.flap;
+  run.bird.rot = -0.25;
+}
+
 function resetRun(andFly: boolean): void {
   run = createRun(mixSeed(), modeId);
+  cannon = null;
   particles = [];
   pop = 0;
   squash = 0;
@@ -378,6 +408,7 @@ function resetRun(andFly: boolean): void {
     return;
   }
   flap(run);
+  armCannon();
   squash = 1;
   audio.unlock();
   audio.flap();
@@ -412,8 +443,10 @@ function onFly(): void {
     resetRun(true);
     return;
   }
+  const starting = run.phase === 'ready';
   const charges = run.power?.kind === 'gun' ? run.power.shots : 0;
   if (!flap(run)) return;
+  if (starting) armCannon();
   const left = run.power?.kind === 'gun' ? run.power.shots : 0;
   if (charges > left) audio.shot();
   squash = 1;
@@ -509,7 +542,9 @@ for (const mode of MODES) {
   modesEl.append(button);
 }
 
+const holiday = holidayForDate(new Date());
 for (const bird of BIRDS) {
+  if (!birdOffered(bird.id, holiday)) continue;
   const button = document.createElement('button');
   button.type = 'button';
   button.dataset.bird = bird.id;
@@ -589,7 +624,14 @@ function frame(now: number): void {
   const field = playfield(Math.max(1, view.clientWidth), Math.max(1, view.clientHeight));
   run.viewLeft = field.left;
   run.viewRight = field.right;
-  if (!paused) step(run, dt);
+  if (!paused) {
+    step(run, dt);
+    if (cannon) {
+      cannon.age += dt;
+      if (cannon.age > 1.8) cannon = null;
+    }
+    coastCannon();
+  }
 
   const moved = run.scroll - scrolled;
   if (run.phase === 'dying' && phase !== 'dying') {
@@ -658,6 +700,7 @@ function frame(now: number): void {
     reduceMotion,
     particles,
     bird: birdId,
+    cannon,
     controls: hints(),
     theme: themeId,
     modeName: modeName(modeId),

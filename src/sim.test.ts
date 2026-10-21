@@ -22,6 +22,7 @@ import {
   GUN_SHOTS,
 } from './sim.ts';
 import { controlHints } from './controls.ts';
+import { birdOffered } from './birds.ts';
 import { holidayForDate } from './holiday.ts';
 import { seasonForDate } from './season.ts';
 import { THEMES, isThemeId } from './themes.ts';
@@ -98,6 +99,11 @@ function playable(): ReturnType<typeof createRun> {
   assert(holidayForDate(new Date(2020, 3, 12)) === 'easter', 'Easter 2020 is April 12');
   assert(seasonForDate(new Date(2026, 6, 4)) === 'summer', 'July 4 is summer');
   assert(holidayForDate(new Date(2026, 6, 4)) === null, 'July 4 keeps the summer field');
+  assert(birdOffered('bat', 'halloween'), 'the bat is out in October');
+  assert(!birdOffered('bat', null), 'the bat stays off a normal field');
+  assert(!birdOffered('bat', 'christmas'), 'the bat stays off at Christmas');
+  assert(birdOffered('kitten', null), 'the kitten flies in any month');
+  assert(birdOffered('finch', 'halloween'), 'the finch stays through Halloween');
   assert(terrainFor('autumn', 'halloween').grass !== terrainFor('autumn').grass, 'halloween has its own ground');
   assert(terrainFor('winter', 'christmas').tuft !== terrainFor('winter').tuft, 'christmas tufts are their own color');
 }
