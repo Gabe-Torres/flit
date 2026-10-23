@@ -23,6 +23,7 @@ import {
 } from './sim.ts';
 import { controlHints } from './controls.ts';
 import { birdOffered } from './birds.ts';
+import { RAMP_RISE, rampLip, runnerRideY, runnerSkim } from './runner.ts';
 import { holidayForDate } from './holiday.ts';
 import { seasonForDate } from './season.ts';
 import { THEMES, isThemeId } from './themes.ts';
@@ -104,6 +105,12 @@ function playable(): ReturnType<typeof createRun> {
   assert(!birdOffered('bat', 'christmas'), 'the bat stays off at Christmas');
   assert(birdOffered('kitten', null), 'the kitten flies in any month');
   assert(birdOffered('finch', 'halloween'), 'the finch stays through Halloween');
+  assert(birdOffered('runner', null), 'the neon runner is always in the list');
+  const floor = groundY();
+  const waiting = runnerRideY(floor, rampLip(0, null));
+  assert(!waiting.launch && waiting.y === runnerSkim(floor), 'the runner waits on the ground before the ramp');
+  const launched = runnerRideY(floor, WORLD.birdX);
+  assert(launched.launch && launched.y === runnerSkim(floor) - RAMP_RISE, 'the ramp lip throws the runner up');
   assert(terrainFor('autumn', 'halloween').grass !== terrainFor('autumn').grass, 'halloween has its own ground');
   assert(terrainFor('winter', 'christmas').tuft !== terrainFor('winter').tuft, 'christmas tufts are their own color');
 }

@@ -20,6 +20,7 @@ export const BIRD_IDS = [
   'mew',
   'bat',
   'kitten',
+  'runner',
 ] as const;
 
 export type BirdId = (typeof BIRD_IDS)[number];
@@ -341,6 +342,18 @@ export const BIRDS: readonly BirdKind[] = [
         `<ellipse cx="16.4" cy="26" rx="1.35" ry="0.8" fill="#c4966a" stroke="${STROKE}" stroke-width="0.6"/>` +
         `<circle cx="19.2" cy="16.8" r="1.35" fill="#fff" stroke="${STROKE}" stroke-width="0.6"/>` +
         `<circle cx="19.7" cy="16.9" r="0.6" fill="${INK}"/>`,
+    ),
+  },
+  {
+    id: 'runner',
+    name: 'Neon Runner',
+    feather: '#7bdcff',
+    icon: icon(
+      `<path d="M18 11 24 8 24 21 18 24Z" fill="#3aa8d4" stroke="${STROKE}" stroke-width="1" stroke-linejoin="round"/>` +
+        `<path d="M8 11 18 11 24 8 14 8Z" fill="#d8f6ff" stroke="${STROKE}" stroke-width="1" stroke-linejoin="round"/>` +
+        `<path d="M8 11h10v13H8Z" fill="#7bdcff" stroke="${STROKE}" stroke-width="1.1"/>` +
+        `<path d="M8 15.2h10v2.6H8Z" fill="#ff4bd8"/>` +
+        `<ellipse cx="13" cy="26.2" rx="7" ry="2.1" fill="#ffd166" stroke="${STROKE}" stroke-width="0.9"/>`,
     ),
   },
 ];
@@ -872,6 +885,17 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     body.circle(13.2, -1.8, 2.45).fill(0xfff6d0).stroke({ ...OUTLINE, width: 1.5 });
     body.circle(13.7, -1.7, 1.15).fill(0x1c1720);
     body.circle(13.15, -2.25, 0.42).fill(0xffffff);
+    return;
+  }
+
+  if (id === 'runner') {
+    wing.rotation = 0;
+    body.poly([6, -11, 13, -16, 13, 9, 6, 14], true).fill(0x3aa8d4).stroke(OUTLINE);
+    body.poly([-8, -11, 6, -11, 13, -16, -1, -16], true).fill(0xd8f6ff).stroke(OUTLINE);
+    body.poly([-8, -11, 6, -11, 6, 14, -8, 14], true).fill(0x7bdcff).stroke(OUTLINE);
+    body.poly([-8, -4, 6, -4, 6, -0.5, -8, -0.5], true).fill(0xff4bd8);
+    body.ellipse(-1, 17.5, 11, 3.4).fill(0xffd166).stroke(OUTLINE);
+    body.ellipse(-1, 17.2, 6.5, 1.5).fill(0xfff0b8);
     return;
   }
 

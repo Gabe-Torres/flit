@@ -5,6 +5,7 @@ import { WORLD, courseEdge, flightFacts, groundY, medalForScore, pipeSpacing, po
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
 import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
+import { RAMP_RISE, RAMP_RUN, rampLip, runnerRideY, type RunnerRide } from './runner.ts';
 
 export type Particle = {
   x: number;
@@ -28,6 +29,7 @@ export type RenderState = {
   particles: Particle[];
   bird: BirdId;
   cannon: CannonLaunch | null;
+  runner: RunnerRide | null;
   controls: ControlHints;
   theme: ThemeId;
   modeName: string;
@@ -587,8 +589,10 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       fx.circle(WORLD.birdX, run.bird.y, 26).stroke({ width: 2.4, color: CREAM, alpha: 0.85 });
     }
 
-    const altitude = Math.max(0, floor - run.bird.y);
+    const ramp = runnerRamp(state, floor);
+    const altitude = Math.max(0, floor - (ramp?.riding ? ramp.y : run.bird.y));
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });
+    if (ramp) drawRamp(fx, ramp.toeX, ramp.lipX, floor);
     const cannon = kittenCannon(state, floor);
     if (cannon) drawKittenCannon(fx, cannon);
     for (const p of state.particles) {
@@ -609,7 +613,10 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       dino.position.set(0, 0);
       bird.position.set(WORLD.birdX, run.bird.y);
       bird.rotation = run.bird.rot;
-      if (cannon?.loaded) {
+      if (ramp?.riding) {
+        bird.position.set(WORLD.birdX, ramp.y);
+        bird.rotation = ramp.rot;
+      } else if (cannon?.loaded) {
         bird.position.set(cannon.seatX, cannon.seatY);
         bird.rotation = cannon.angle;
       } else if (cannon && state.cannon && !state.cannon.boosted) {
@@ -776,6 +783,24 @@ function drawCannonLip(g: Graphics, pose: CannonPose): void {
     g.circle(pose.muzzleX, pose.muzzleY, 14).fill({ color: 0xfff1c2, alpha: pose.flash * 0.8 });
     g.circle(pose.muzzleX, pose.muzzleY, 6).fill({ color: 0xf08a2a, alpha: pose.flash });
   }
+}
+
+function runnerRamp(state: RenderState, floor: number): { toeX: number; lipX: number; y: number; rot: number; riding: boolean } | null {
+  if (state.bird !== 'runner' || state.run.phase === 'snatched') return null;
+  const started = state.runner != null && state.run.phase !== 'ready';
+  const lipX = rampLip(state.run.scroll, started ? state.runner!.scroll : null);
+  if (started && state.runner!.launched && lipX < state.run.viewLeft - 80) return null;
+  const pose = runnerRideY(floor, lipX);
+  const riding = state.run.phase === 'ready' || (started && !state.runner!.launched);
+  return { toeX: lipX - RAMP_RUN, lipX, y: pose.y, rot: pose.rot, riding };
+}
+
+function drawRamp(g: Graphics, toeX: number, lipX: number, floor: number): void {
+  const top = floor - RAMP_RISE;
+  g.poly([toeX, floor - 2, lipX, top, lipX + 22, top, lipX + 28, floor - 2], true).fill(0x241433).stroke({ width: 3, color: INK, join: 'round' });
+  g.poly([toeX + 8, floor - 8, lipX - 4, top + 6, lipX + 10, top + 6, toeX + 16, floor - 8], true).fill(0x3a2458);
+  g.moveTo(toeX + 10, floor - 10).lineTo(lipX - 2, top + 5).stroke({ width: 3.2, color: 0xff4bd8, cap: 'round' });
+  g.moveTo(toeX + 14, floor - 16).lineTo(lipX + 2, top + 8).stroke({ width: 2.2, color: 0x7bdcff, cap: 'round' });
 }
 
 function drawGround(
@@ -1036,7 +1061,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, clearTop: number, lab
   labels.overStats.visible = over;
   labels.retry.visible = over;
   const controls = state.controls;
-  labels.flyHint.text = controls.fly;
+  labels.flyHint.text = state.bird === 'runner' ? (controls.touch ? 'tap to roll' : 'click or space to roll') : controls.fly;
   labels.flyHint.style.fontSize = controls.touch ? 26 : 22;
   labels.pauseHint.text = controls.resume;
   labels.pauseHint.style.fontSize = controls.touch ? 20 : 18;

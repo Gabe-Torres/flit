@@ -2,6 +2,7 @@ import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
 import { BIRDS, birdById, birdOffered, isBirdId, type BirdId } from './birds.ts';
 import { CANNON_LAUNCH, cannonMouth, createStage, playfield, type CannonLaunch, type Particle, type Stage } from './draw.ts';
+import { RAMP_LAUNCH, rampLip, runnerRideY, type RunnerRide } from './runner.ts';
 import { MODES, WORLD, createRun, flap, flightFacts, groundY, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
 import { fieldName, holidayForDate } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
@@ -51,6 +52,7 @@ let particles: Particle[] = [];
 let lastStatus = '';
 let stage: Stage | null = null;
 let cannon: CannonLaunch | null = null;
+let ride: RunnerRide | null = null;
 
 function mixSeed(): number {
   return (Date.now() ^ Math.floor(Math.random() * 0x100000000)) >>> 0 || 1;
@@ -395,9 +397,35 @@ function coastCannon(): void {
   run.bird.rot = -0.25;
 }
 
+function armRunner(): void {
+  if (birdId !== 'runner') return;
+  ride = { scroll: run.scroll, launched: false };
+  const pose = runnerRideY(groundY(), rampLip(run.scroll, ride.scroll));
+  run.bird.y = pose.y;
+  run.bird.vy = 0;
+  run.bird.rot = 0;
+}
+
+function coastRunner(): void {
+  if (birdId !== 'runner' || !ride || ride.launched || run.phase !== 'play') return;
+  const pose = runnerRideY(groundY(), rampLip(run.scroll, ride.scroll));
+  if (pose.launch) {
+    ride.launched = true;
+    run.bird.y = pose.y;
+    run.bird.vy = RAMP_LAUNCH;
+    run.bird.rot = pose.rot;
+    audio.flap();
+    return;
+  }
+  run.bird.y = pose.y;
+  run.bird.vy = 0;
+  run.bird.rot = pose.rot;
+}
+
 function resetRun(andFly: boolean): void {
   run = createRun(mixSeed(), modeId);
   cannon = null;
+  ride = null;
   particles = [];
   pop = 0;
   squash = 0;
@@ -409,6 +437,7 @@ function resetRun(andFly: boolean): void {
   }
   flap(run);
   armCannon();
+  armRunner();
   squash = 1;
   audio.unlock();
   audio.flap();
@@ -444,9 +473,13 @@ function onFly(): void {
     return;
   }
   const starting = run.phase === 'ready';
+  if (birdId === 'runner' && ride && !ride.launched && !starting) return;
   const charges = run.power?.kind === 'gun' ? run.power.shots : 0;
   if (!flap(run)) return;
-  if (starting) armCannon();
+  if (starting) {
+    armCannon();
+    armRunner();
+  }
   const left = run.power?.kind === 'gun' ? run.power.shots : 0;
   if (charges > left) audio.shot();
   squash = 1;
@@ -631,6 +664,7 @@ function frame(now: number): void {
       if (cannon.age > 1.8) cannon = null;
     }
     coastCannon();
+    coastRunner();
   }
 
   const moved = run.scroll - scrolled;
@@ -701,6 +735,7 @@ function frame(now: number): void {
     particles,
     bird: birdId,
     cannon,
+    runner: ride,
     controls: hints(),
     theme: themeId,
     modeName: modeName(modeId),
