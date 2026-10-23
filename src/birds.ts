@@ -21,6 +21,7 @@ export const BIRD_IDS = [
   'bat',
   'kitten',
   'runner',
+  'printer',
 ] as const;
 
 export type BirdId = (typeof BIRD_IDS)[number];
@@ -354,6 +355,27 @@ export const BIRDS: readonly BirdKind[] = [
         `<path d="M8 11h10v13H8Z" fill="#7bdcff" stroke="${STROKE}" stroke-width="1.1"/>` +
         `<path d="M8 15.2h10v2.6H8Z" fill="#ff4bd8"/>` +
         `<ellipse cx="13" cy="26.2" rx="7" ry="2.1" fill="#ffd166" stroke="${STROKE}" stroke-width="0.9"/>`,
+    ),
+  },
+  {
+    id: 'printer',
+    name: 'Printer',
+    feather: '#e6e2da',
+    icon: icon(
+      `<path d="M1.5 18.5 7 16.2 7 21.2 1.5 22.8Z" fill="#fffdf6" stroke="${STROKE}" stroke-width="0.8" stroke-linejoin="round"/>` +
+        `<path d="M2 16.4 7 14.4 7 17.6 2.2 19.2Z" fill="#f7f4ee" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<rect x="6.5" y="13" width="16" height="10" rx="1.4" fill="#d5d2cb" stroke="${STROKE}" stroke-width="1.1"/>` +
+        `<rect x="6.5" y="19.2" width="16" height="3.8" fill="#b5b1a8"/>` +
+        `<rect x="7.4" y="10.2" width="13" height="3.6" rx="1" fill="#f6f3ec" stroke="${STROKE}" stroke-width="0.9"/>` +
+        `<path d="M26.2 11.6 31.4 9.6 31.4 11.4 26.2 13.4Z" fill="#fffdf6" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<path d="M22.3 14.5 26.6 13 26.6 14.8 22.3 16.3Z" fill="#fffdf6" stroke="${STROKE}" stroke-width="0.7" stroke-linejoin="round"/>` +
+        `<path d="M27.4 11.6 30.2 10.6M23.2 15.2 25.6 14.4" stroke="#c8c2b6" stroke-width="0.55" stroke-linecap="round"/>` +
+        `<rect x="19.2" y="14.2" width="3.2" height="2.2" rx="0.3" fill="#241c16"/>` +
+        `<rect x="8.2" y="16.4" width="1.8" height="3.4" rx="0.3" fill="#3ec4ef" stroke="${STROKE}" stroke-width="0.45"/>` +
+        `<rect x="10.6" y="16.4" width="1.8" height="3.4" rx="0.3" fill="#ff4bd8" stroke="${STROKE}" stroke-width="0.45"/>` +
+        `<rect x="13" y="16.4" width="1.8" height="3.4" rx="0.3" fill="#ffd166" stroke="${STROKE}" stroke-width="0.45"/>` +
+        `<rect x="15.4" y="16.4" width="1.8" height="3.4" rx="0.3" fill="#2b2118" stroke="${STROKE}" stroke-width="0.45"/>` +
+        `<rect x="14.2" y="11" width="4.6" height="2" rx="0.4" fill="#163044"/>`,
     ),
   },
 ];
@@ -885,6 +907,57 @@ export function drawSpecies(body: Graphics, wing: Graphics, wingPhase: number, i
     body.circle(13.2, -1.8, 2.45).fill(0xfff6d0).stroke({ ...OUTLINE, width: 1.5 });
     body.circle(13.7, -1.7, 1.15).fill(0x1c1720);
     body.circle(13.15, -2.25, 0.42).fill(0xffffff);
+    return;
+  }
+
+  if (id === 'printer') {
+    wing.rotation = 0;
+    body.poly([-30, 4, -15, 0, -15, 7, -30, 9], true).fill(0xfffdf6).stroke({ ...OUTLINE, width: 1.5 });
+    body.poly([-29, 1.4, -15, -2.2, -15, 3.4, -29, 6], true).fill(0xf7f4ee).stroke({ ...OUTLINE, width: 1.4 });
+    body.poly([-28, -1, -15, -4.4, -15, 0.6, -28, 3], true).fill(0xfffdf6).stroke({ ...OUTLINE, width: 1.4 });
+    body.moveTo(-26, 0.4).lineTo(-18, -1.5).stroke({ width: 0.9, color: 0xc8c2b6, cap: 'round' });
+    body.moveTo(-26, 2.2).lineTo(-18, 0.4).stroke({ width: 0.9, color: 0xc8c2b6, cap: 'round' });
+    body.roundRect(-16, -5, 34, 15, 2).fill(0xd5d2cb);
+    body.roundRect(-16, 5, 34, 5, 1).fill(0xb5b1a8);
+    body.roundRect(-16, -5, 34, 15, 2).stroke(OUTLINE);
+    body.roundRect(-14, -11, 28, 7, 2).fill(0xf6f3ec).stroke(OUTLINE);
+    body.moveTo(-12, -6.5).lineTo(12, -6.5).stroke({ width: 1.3, color: 0xc8c2b6, cap: 'round' });
+    body.roundRect(12, -3, 8, 13, 1.4).fill(0xc9c5bd).stroke({ ...OUTLINE, width: 1.8 });
+    const feed = (flapAngle + 1) / 2;
+    const pages = [0, 1, 2].map((i) => (feed + i / 3) % 1).sort((a, b) => b - a);
+    for (const t of pages) {
+      const dist = 3 + t * 32;
+      const len = 9;
+      const thick = 3.2;
+      const ang = -0.08 - t * 0.5;
+      const c = Math.cos(ang);
+      const s = Math.sin(ang);
+      const x = 17 + dist;
+      const y = 0.1 - t * 11;
+      const corners = [
+        [0, -thick / 2],
+        [len, -thick / 2],
+        [len, thick / 2],
+        [0, thick / 2],
+      ].map(([px, py]) => [x + px * c - py * s, y + px * s + py * c]);
+      body.poly(corners.flat(), true).fill(0xfffdf6).stroke({ ...OUTLINE, width: 1.35 });
+      const rule = (along: number, across: number) => {
+        const rot = (px: number, py: number) => [x + px * c - py * s, y + px * s + py * c];
+        const a = rot(along, across);
+        const b = rot(along + 3.4, across);
+        body.moveTo(a[0], a[1]).lineTo(b[0], b[1]).stroke({ width: 0.8, color: 0xc8c2b6, cap: 'round' });
+      };
+      rule(1.5, -0.35);
+      rule(1.5, 0.45);
+    }
+    body.roundRect(14, -1.6, 6.5, 3.1, 0.5).fill(0x241c16);
+    body.circle(16.4, -0.05, 1.05).fill(0x5c564e);
+    body.roundRect(-10, 1.6, 3.3, 6.2, 0.5).fill(0x3ec4ef).stroke({ ...OUTLINE, width: 1.2 });
+    body.roundRect(-5.6, 1.6, 3.3, 6.2, 0.5).fill(0xff4bd8).stroke({ ...OUTLINE, width: 1.2 });
+    body.roundRect(-1.2, 1.6, 3.3, 6.2, 0.5).fill(0xffd166).stroke({ ...OUTLINE, width: 1.2 });
+    body.roundRect(3.2, 1.6, 3.3, 6.2, 0.5).fill(0x2b2118).stroke({ ...OUTLINE, width: 1.2 });
+    body.roundRect(1, -10.2, 9, 3.4, 0.7).fill(0x163044).stroke({ ...OUTLINE, width: 1.2 });
+    body.moveTo(2.4, -8.5).lineTo(8.4, -8.5).stroke({ width: 1, color: 0x7dcec8, cap: 'round' });
     return;
   }
 

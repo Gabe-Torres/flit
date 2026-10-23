@@ -2,6 +2,7 @@ import { createAudio } from './audio.ts';
 import { controlHints } from './controls.ts';
 import { BIRDS, birdById, birdOffered, isBirdId, type BirdId } from './birds.ts';
 import { CANNON_LAUNCH, cannonMouth, createStage, playfield, type CannonLaunch, type Particle, type Stage } from './draw.ts';
+import { BLAST_VY, HEAT_TIME, printerPose, printerSeat, type PrinterHeat } from './printer.ts';
 import { RAMP_LAUNCH, rampLip, runnerRideY, type RunnerRide } from './runner.ts';
 import { MODES, WORLD, createRun, flap, flightFacts, groundY, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
 import { fieldName, holidayForDate } from './holiday.ts';
@@ -53,6 +54,7 @@ let lastStatus = '';
 let stage: Stage | null = null;
 let cannon: CannonLaunch | null = null;
 let ride: RunnerRide | null = null;
+let printer: PrinterHeat | null = null;
 
 function mixSeed(): number {
   return (Date.now() ^ Math.floor(Math.random() * 0x100000000)) >>> 0 || 1;
@@ -331,7 +333,13 @@ function describe(): void {
   }
   if (run.phase === 'ready') {
     const name = birdById(birdId).name;
-    const lead = `Flit. ${name}. ${modeName(modeId)}. ${themeName(themeId)}. ${sky}. ${controls.speak}`;
+    const speak =
+      birdId === 'printer'
+        ? controls.touch
+          ? 'Tap to heat up.'
+          : 'Click, or press Space, Up, or W, to heat up.'
+        : controls.speak;
+    const lead = `Flit. ${name}. ${modeName(modeId)}. ${themeName(themeId)}. ${sky}. ${speak}`;
     const modeBest = bests[modeId];
     setStatus(modeBest > 0 ? `${lead} ${bestLine(modeBest)}.` : lead);
     return;
@@ -381,7 +389,7 @@ function armCannon(): void {
 }
 
 function coastCannon(): void {
-  if (!cannon || cannon.boosted) return;
+  if (!cannon || cannon.boosted || run.phase === 'over' || run.phase === 'snatched') return;
   const mouth = cannonMouth(groundY());
   if (cannon.age < CANNON_LAUNCH) {
     const t = cannon.age / CANNON_LAUNCH;
@@ -395,6 +403,49 @@ function coastCannon(): void {
   cannon.boosted = true;
   run.bird.vy = WORLD.flap;
   run.bird.rot = -0.25;
+}
+
+function armPrinter(): void {
+  if (birdId !== 'printer') return;
+  printer = { scroll: run.scroll, age: 0, launched: false };
+  run.bird.y = printerSeat(groundY());
+  run.bird.vy = 0;
+  run.bird.rot = 0;
+}
+
+function coastPrinter(): void {
+  if (birdId !== 'printer' || !printer || printer.launched || run.phase !== 'play') return;
+  const pose = printerPose(groundY(), run.time, run.scroll, printer);
+  if (printer.age >= HEAT_TIME) {
+    printer.launched = true;
+    run.bird.y = printerSeat(groundY());
+    run.bird.vy = BLAST_VY;
+    run.bird.rot = -0.45;
+    run.shake = 0.32;
+    squash = 1;
+    blowPrinter();
+    return;
+  }
+  run.bird.y = pose.y;
+  run.bird.vy = 0;
+  run.bird.rot = pose.rot;
+}
+
+function blowPrinter(): void {
+  audio.blast();
+  const scraps = ['#fffdf6', '#e6e2da', '#3ec4ef', '#ff4bd8', '#ffd166', '#ef5d4a', '#f08a2a'];
+  for (let i = 0; i < 18; i++) {
+    particles.push({
+      x: WORLD.birdX + (Math.random() - 0.3) * 24,
+      y: run.bird.y + (Math.random() - 0.5) * 12,
+      vx: (Math.random() - 0.4) * 320,
+      vy: -60 - Math.random() * 240,
+      life: 0.45 + Math.random() * 0.35,
+      max: 0.8,
+      r: 2.2 + Math.random() * 3.2,
+      color: scraps[i % scraps.length] ?? '#fffdf6',
+    });
+  }
 }
 
 function armRunner(): void {
@@ -426,6 +477,7 @@ function resetRun(andFly: boolean): void {
   run = createRun(mixSeed(), modeId);
   cannon = null;
   ride = null;
+  printer = null;
   particles = [];
   pop = 0;
   squash = 0;
@@ -438,6 +490,7 @@ function resetRun(andFly: boolean): void {
   flap(run);
   armCannon();
   armRunner();
+  armPrinter();
   squash = 1;
   audio.unlock();
   audio.flap();
@@ -474,11 +527,13 @@ function onFly(): void {
   }
   const starting = run.phase === 'ready';
   if (birdId === 'runner' && ride && !ride.launched && !starting) return;
+  if (birdId === 'printer' && printer && !printer.launched && !starting) return;
   const charges = run.power?.kind === 'gun' ? run.power.shots : 0;
   if (!flap(run)) return;
   if (starting) {
     armCannon();
     armRunner();
+    armPrinter();
   }
   const left = run.power?.kind === 'gun' ? run.power.shots : 0;
   if (charges > left) audio.shot();
@@ -663,12 +718,17 @@ function frame(now: number): void {
       cannon.age += dt;
       if (cannon.age > 1.8) cannon = null;
     }
+    if (printer) printer.age += dt;
     coastCannon();
     coastRunner();
+    coastPrinter();
   }
 
   const moved = run.scroll - scrolled;
-  if (run.phase === 'dying' && phase !== 'dying') {
+  if (
+    (run.phase === 'dying' && phase !== 'dying') ||
+    (run.phase === 'over' && phase === 'play' && run.snatchTime < 0)
+  ) {
     audio.hit();
     puff(14, 0.5, 160);
   }
@@ -707,7 +767,8 @@ function frame(now: number): void {
   if (!paused) {
     const boost = Math.max(0, 1 - run.sinceFlap / 0.28);
     const pace = run.phase === 'play' ? motionPace(run) : 1;
-    wing += dt * pace * ((run.phase === 'ready' ? 6 : 8) + boost * 26);
+    const boiling = birdId === 'printer' && printer != null && !printer.launched && run.phase === 'play';
+    wing += dt * pace * ((run.phase === 'ready' ? 6 : 8) + boost * 26 + (boiling ? 20 : 0));
     squash = Math.max(0, squash - dt * 3.2);
     pop = Math.max(0, pop - dt * 2.5);
     for (const p of particles) {
@@ -736,6 +797,7 @@ function frame(now: number): void {
     bird: birdId,
     cannon,
     runner: ride,
+    printer,
     controls: hints(),
     theme: themeId,
     modeName: modeName(modeId),

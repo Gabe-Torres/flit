@@ -5,6 +5,7 @@ import { WORLD, courseEdge, flightFacts, groundY, medalForScore, pipeSpacing, po
 import { drawThemedGate, type ThemeId } from './themes.ts';
 import { terrainFor } from './weather.ts';
 import { drawClouds, drawSeason, drawSky } from './weather-draw.ts';
+import { deskTop, printerPose, type PrinterHeat } from './printer.ts';
 import { RAMP_RISE, RAMP_RUN, rampLip, runnerRideY, type RunnerRide } from './runner.ts';
 
 export type Particle = {
@@ -30,6 +31,7 @@ export type RenderState = {
   bird: BirdId;
   cannon: CannonLaunch | null;
   runner: RunnerRide | null;
+  printer: PrinterHeat | null;
   controls: ControlHints;
   theme: ThemeId;
   modeName: string;
@@ -590,9 +592,12 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     }
 
     const ramp = runnerRamp(state, floor);
-    const altitude = Math.max(0, floor - (ramp?.riding ? ramp.y : run.bird.y));
+    const press = printerDesk(state, floor);
+    const visualY = press?.seated ? press.y : ramp?.riding ? ramp.y : run.bird.y;
+    const altitude = Math.max(0, floor - visualY);
     fx.ellipse(WORLD.birdX, floor - 2, Math.max(8, 20 - altitude * 0.03), 5).fill({ color: 0x462e16, alpha: 0.18 });
     if (ramp) drawRamp(fx, ramp.toeX, ramp.lipX, floor);
+    if (press) drawDesk(fx, press, floor, run.time);
     const cannon = kittenCannon(state, floor);
     if (cannon) drawKittenCannon(fx, cannon);
     for (const p of state.particles) {
@@ -603,6 +608,7 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     const carried = run.phase === 'snatched';
     bird.visible = !(run.phase === 'over' && run.snatchTime >= 0);
     bird.scale.set(1 + state.squash * 0.12, 1 - state.squash * 0.16);
+    bird.tint = 0xffffff;
     if (carried) {
       const pose = snatchPose(run.snatchTime, run.caughtY, box.right + 130);
       dino.position.set(pose.dinoX, pose.dinoY);
@@ -613,13 +619,17 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       dino.position.set(0, 0);
       bird.position.set(WORLD.birdX, run.bird.y);
       bird.rotation = run.bird.rot;
-      if (ramp?.riding) {
+      bird.tint = press?.seated ? warmTint(press.heat) : 0xffffff;
+      if (press?.seated) {
+        bird.position.set(WORLD.birdX, press.y);
+        bird.rotation = press.rot;
+      } else if (ramp?.riding) {
         bird.position.set(WORLD.birdX, ramp.y);
         bird.rotation = ramp.rot;
       } else if (cannon?.loaded) {
         bird.position.set(cannon.seatX, cannon.seatY);
         bird.rotation = cannon.angle;
-      } else if (cannon && state.cannon && !state.cannon.boosted) {
+      } else if (cannon && state.cannon && !state.cannon.boosted && run.phase !== 'over') {
         const t = Math.min(1, state.cannon.age / CANNON_LAUNCH);
         const along = t * t * (3 - 2 * t);
         bird.position.set(cannon.lipX + (WORLD.birdX - cannon.lipX) * along, run.bird.y);
@@ -629,6 +639,10 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     drawSpecies(body, wing, state.wing, state.bird);
     if (cannon && !carried) drawCannonLip(dino, cannon);
     gear.clear();
+    if (state.bird === 'printer' && !carried) {
+      const lamp = press?.seated ? press.heat : press && press.flash > 0 ? 1 : 0.2;
+      drawPrinterLamp(gear, lamp);
+    }
     if (run.mercy > 0) bird.alpha = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(run.time * 22));
     else bird.alpha = run.power?.kind === 'phase' ? 0.55 : 1;
     if (run.power?.kind === 'gun' && !carried) drawBlaster(gear);
@@ -785,13 +799,78 @@ function drawCannonLip(g: Graphics, pose: CannonPose): void {
   }
 }
 
+type DeskPose = {
+  x: number;
+  y: number;
+  rot: number;
+  heat: number;
+  flash: number;
+  seated: boolean;
+};
+
+function warmTint(heat: number): number {
+  const t = Math.max(0, Math.min(1, (heat - 0.12) / 0.7));
+  const mix = (from: number, to: number) => Math.round(from + (to - from) * t);
+  return (mix(255, 255) << 16) | (mix(255, 146) << 8) | mix(255, 96);
+}
+
+function printerDesk(state: RenderState, floor: number): DeskPose | null {
+  if (state.bird !== 'printer' || state.run.phase === 'snatched') return null;
+  const pose = printerPose(floor, state.run.time, state.run.scroll, state.printer);
+  const seated = (state.run.phase === 'ready' || state.run.phase === 'play') && !state.printer?.launched;
+  if (state.printer?.launched && pose.x < state.run.viewLeft - 100 && pose.flash <= 0) return null;
+  return { ...pose, seated };
+}
+
+function drawDesk(g: Graphics, pose: DeskPose, floor: number, time: number): void {
+  const top = deskTop(floor);
+  const left = pose.x - 52;
+  const width = 104;
+  g.roundRect(left + 8, top + 10, 9, Math.max(8, floor - top - 10), 2).fill(0x8d5a2b).stroke({ width: 2.5, color: INK });
+  g.roundRect(left + width - 17, top + 10, 9, Math.max(8, floor - top - 10), 2).fill(0x8d5a2b).stroke({ width: 2.5, color: INK });
+  g.roundRect(left, top, width, 14, 3).fill(0xc4894a).stroke({ width: 3, color: INK });
+  g.roundRect(left + 8, top + 3, width - 16, 4, 1).fill(0xd7a15c);
+  g.roundRect(pose.x - 10, top + 5, 20, 7, 1).fill(0xa86b32).stroke({ width: 1.6, color: 0x6a3d16 });
+  if (pose.seated) {
+    const glow = pose.heat > 0.62 ? 0xef5d4a : 0xf08a2a;
+    const alpha = pose.heat < 0.2 ? 0.1 : 0.18 + pose.heat * 0.5;
+    g.ellipse(WORLD.birdX, pose.y + 4, 22 + pose.heat * 20, 11 + pose.heat * 5).fill({ color: glow, alpha });
+  }
+  if (pose.seated && pose.heat > 0.28) {
+    const rise = (time * 36) % 28;
+    g.circle(WORLD.birdX + 12, pose.y - 20 - rise, 4.2).fill({ color: 0x5c564e, alpha: 0.34 * pose.heat * (1 - rise / 28) });
+    g.circle(WORLD.birdX - 6, pose.y - 16 - rise * 0.7, 3.2).fill({ color: 0x8a837a, alpha: 0.24 * pose.heat * (1 - rise / 36) });
+    g.circle(WORLD.birdX + 2, pose.y - 26 - rise * 0.4, 2.4).fill({ color: 0x6a6258, alpha: 0.2 * pose.heat });
+  }
+  if (pose.flash > 0) {
+    const since = (1 - pose.flash) * 0.26;
+    g.circle(pose.x, top - 6, 14 + since * 70).fill({ color: 0xfff1c2, alpha: pose.flash * 0.55 });
+    g.circle(pose.x, top - 6, 7 + since * 28).fill({ color: 0xf08a2a, alpha: pose.flash * 0.8 });
+    for (let i = 0; i < 4; i++) {
+      const ang = -2.4 + i * 0.7;
+      const dist = 12 + since * 150;
+      const px = pose.x + Math.cos(ang) * dist;
+      const py = top - 8 + Math.sin(ang) * dist * 0.55;
+      g.poly([px, py, px + 9, py - 3, px + 8, py + 4, px - 1, py + 5], true)
+        .fill({ color: CREAM, alpha: pose.flash })
+        .stroke({ width: 1.4, color: INK, alpha: pose.flash });
+    }
+  }
+}
+
+function drawPrinterLamp(g: Graphics, heat: number): void {
+  const color = heat > 0.82 ? 0xef5d4a : heat > 0.45 ? 0xf08a2a : 0x7dce6a;
+  g.circle(16, 5, 2.2).fill(color).stroke({ width: 1.3, color: INK });
+  if (heat > 0.28) g.circle(16, 5, 4).fill({ color, alpha: 0.22 + heat * 0.35 });
+}
+
 function runnerRamp(state: RenderState, floor: number): { toeX: number; lipX: number; y: number; rot: number; riding: boolean } | null {
   if (state.bird !== 'runner' || state.run.phase === 'snatched') return null;
   const started = state.runner != null && state.run.phase !== 'ready';
   const lipX = rampLip(state.run.scroll, started ? state.runner!.scroll : null);
   if (started && state.runner!.launched && lipX < state.run.viewLeft - 80) return null;
   const pose = runnerRideY(floor, lipX);
-  const riding = state.run.phase === 'ready' || (started && !state.runner!.launched);
+  const riding = state.run.phase === 'ready' || (state.run.phase === 'play' && started && !state.runner!.launched);
   return { toeX: lipX - RAMP_RUN, lipX, y: pose.y, rot: pose.rot, riding };
 }
 
@@ -1061,7 +1140,16 @@ function drawUi(g: Graphics, state: RenderState, box: Box, clearTop: number, lab
   labels.overStats.visible = over;
   labels.retry.visible = over;
   const controls = state.controls;
-  labels.flyHint.text = state.bird === 'runner' ? (controls.touch ? 'tap to roll' : 'click or space to roll') : controls.fly;
+  labels.flyHint.text =
+    state.bird === 'runner'
+      ? controls.touch
+        ? 'tap to roll'
+        : 'click or space to roll'
+      : state.bird === 'printer'
+        ? controls.touch
+          ? 'tap to heat up'
+          : 'click or space to heat up'
+        : controls.fly;
   labels.flyHint.style.fontSize = controls.touch ? 26 : 22;
   labels.pauseHint.text = controls.resume;
   labels.pauseHint.style.fontSize = controls.touch ? 20 : 18;

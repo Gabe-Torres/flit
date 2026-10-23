@@ -138,6 +138,22 @@ export function restY(): number {
   return groundY() - 32;
 }
 
+// Keep tumbling after the score card is up, until the flyer rests on the grass.
+function settle(run: Run, dt: number): void {
+  if (run.bird.y >= restY()) {
+    run.bird.y = restY();
+    run.bird.vy = 0;
+    return;
+  }
+  run.bird.vy = Math.min(WORLD.maxFall, run.bird.vy + WORLD.gravity * dt);
+  run.bird.y += run.bird.vy * dt;
+  run.bird.rot += (1.45 - run.bird.rot) * Math.min(1, dt * 6);
+  if (run.bird.y >= restY()) {
+    run.bird.y = restY();
+    run.bird.vy = 0;
+  }
+}
+
 export function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
@@ -197,9 +213,6 @@ const EASY_OPEN = 36;
 const HARD_SPACE = 64;
 const HARD_OPEN = 48;
 const MERCY = 1.25;
-// Long enough to see the tumble, short enough that a high crash does not
-// make you watch the whole drop.
-const CRASH_BEAT = 0.42;
 // A wide screen shows a couple of columns past the phone. Filling a big
 // monitor with gates is what makes a maximized window stutter.
 const LOOK_AHEAD = 2;
@@ -552,18 +565,8 @@ export function step(run: Run, dt: number): void {
   }
 
   if (run.phase === 'dying') {
-    run.time += dt;
-    run.sinceFlap += dt;
-    run.fall += dt;
-    run.bird.vy = Math.min(WORLD.maxFall, run.bird.vy + WORLD.gravity * dt);
-    run.bird.y += run.bird.vy * dt;
-    run.bird.rot += (1.45 - run.bird.rot) * Math.min(1, dt * 6);
-    const landed = run.bird.y >= restY();
-    if (landed) {
-      run.bird.y = restY();
-      run.bird.vy = 0;
-    }
-    if (landed || run.fall >= CRASH_BEAT) run.phase = 'over';
+    settle(run, dt);
+    run.phase = 'over';
     return;
   }
 
@@ -583,7 +586,11 @@ export function step(run: Run, dt: number): void {
     return;
   }
 
-  if (run.phase === 'over') return;
+  if (run.phase === 'over') {
+    // A snatch carries the flyer off. A crash leaves them tumbling behind the card.
+    if (run.snatchTime < 0) settle(run, dt);
+    return;
+  }
 
   run.time += dt;
   run.playTime += dt;
@@ -622,7 +629,7 @@ export function step(run: Run, dt: number): void {
       revive(run);
       return;
     }
-    run.phase = 'dying';
+    run.phase = 'over';
     run.fall = 0;
     run.bird.vy = Math.min(run.bird.vy, -240);
     run.shake = 0.32;
