@@ -55,6 +55,9 @@ let stage: Stage | null = null;
 let cannon: CannonLaunch | null = null;
 let ride: RunnerRide | null = null;
 let printer: PrinterHeat | null = null;
+// Taps that are already coming when the card appears must not start the next run.
+const RETRY_HOLD = 420;
+let retryAt = 0;
 
 function mixSeed(): number {
   return (Date.now() ^ Math.floor(Math.random() * 0x100000000)) >>> 0 || 1;
@@ -522,6 +525,7 @@ function onFly(): void {
     return;
   }
   if (run.phase === 'over') {
+    if (performance.now() < retryAt) return;
     resetRun(true);
     return;
   }
@@ -758,6 +762,7 @@ function frame(now: number): void {
     puff(10, 0.32, 80);
   }
   if (run.phase === 'over' && phase !== 'over') {
+    retryAt = performance.now() + RETRY_HOLD;
     if (run.score > bests[run.mode]) {
       bests[run.mode] = run.score;
       writeNumber(bestKey(run.mode), run.score);

@@ -191,7 +191,7 @@ function playable(): ReturnType<typeof createRun> {
   run.gates = [{ x: WORLD.birdX - 20, gapY: 320 + 150, open: WORLD.gap, scored: false }];
   assert(hits(run), 'the gate body is solid');
   step(run, 0);
-  assert(run.phase === 'over', 'hitting a gate ends the flight');
+  assert(run.phase === 'dying', 'hitting a gate ends the flight');
   assert(run.score === 0, 'a crash does not score');
 }
 
@@ -199,7 +199,7 @@ function playable(): ReturnType<typeof createRun> {
   const run = playable();
   run.bird.y = groundY() - WORLD.hitR + 3;
   step(run, 0);
-  assert(run.phase === 'over', 'the ground ends the flight');
+  assert(run.phase === 'dying', 'the ground ends the flight');
 }
 
 {
@@ -221,7 +221,7 @@ function playable(): ReturnType<typeof createRun> {
   run.mercy = 0;
   step(run, 0);
   const ended: string = run.phase;
-  assert(ended === 'over', 'the next hit ends the run');
+  assert(ended === 'dying', 'the next hit ends the run');
 
   const dirt = createRun(3, 'easy');
   dirt.phase = 'play';
@@ -250,7 +250,7 @@ function playable(): ReturnType<typeof createRun> {
   run.bird.y = 200;
   run.gates = [{ x: WORLD.birdX - WORLD.pipeW - 1, gapY: 420, open: WORLD.gap, scored: false }];
   step(run, 0);
-  assert(run.phase === 'over', 'overlapping the lip crashes');
+  assert(run.phase === 'dying', 'overlapping the lip crashes');
   assert(run.score === 0, 'crashing on the score line does not score');
 }
 
@@ -259,9 +259,12 @@ function playable(): ReturnType<typeof createRun> {
   run.bird.y = groundY() - WORLD.hitR + 3;
   step(run, 0);
   const crashed: string = run.phase;
-  assert(crashed === 'over', 'the score card is up on the hit');
+  assert(crashed === 'dying', 'a ground crash waits before the score card');
   assert(run.bird.y === restY(), 'a ground crash is already down');
-  assert(flap(run) === false, 'no flap while the card is up');
+  assert(flap(run) === false, 'no flap while falling');
+  for (let i = 0; i < 40; i++) step(run, 1 / 60);
+  const shown: string = run.phase;
+  assert(shown === 'over', 'the score card follows the crash');
   assert(flap(run) === false, 'no flap on the score card');
   assert(run.taps === 0, 'a flap on the score card does not count');
 }
@@ -273,7 +276,14 @@ function playable(): ReturnType<typeof createRun> {
   run.gates = [{ x: WORLD.birdX - 20, gapY: 400, open: WORLD.gap, scored: false }];
   step(run, 0);
   const early: string = run.phase;
-  assert(early === 'over', 'a high crash shows the score card immediately');
+  assert(early === 'dying', 'a high crash stays in the air before the card');
+  for (let i = 0; i < 26; i++) step(run, 1 / 60);
+  const waiting: string = run.phase;
+  assert(waiting === 'dying', 'taps during the tumble do not reach the score card');
+  assert(flap(run) === false, 'a tumble is not a flap');
+  for (let i = 0; i < 12; i++) step(run, 1 / 60);
+  const card: string = run.phase;
+  assert(card === 'over', 'the score card comes after the crash taps');
   assert(run.bird.y < restY() - 80, 'the card appears while the bird is still in the air');
   const high = run.bird.y;
   for (let i = 0; i < 180; i++) step(run, 1 / 60);
@@ -295,7 +305,7 @@ function playable(): ReturnType<typeof createRun> {
   run.bird.y = groundY() - WORLD.hitR + 3;
   run.bird.vy = 0;
   step(run, 0);
-  assert(run.phase === 'over', 'the ground ends this counted flight');
+  assert(run.phase === 'dying', 'the ground ends this counted flight');
   const taps = run.taps;
   const air = run.playTime;
   assert(flap(run) === false, 'a fall is not a tap');

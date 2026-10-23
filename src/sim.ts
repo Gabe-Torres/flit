@@ -213,6 +213,8 @@ const EASY_OPEN = 36;
 const HARD_SPACE = 64;
 const HARD_OPEN = 48;
 const MERCY = 1.25;
+// Long enough that the taps which caused the crash are finished before the card.
+const CRASH_BEAT = 0.55;
 // A wide screen shows a couple of columns past the phone. Filling a big
 // monitor with gates is what makes a maximized window stutter.
 const LOOK_AHEAD = 2;
@@ -565,8 +567,9 @@ export function step(run: Run, dt: number): void {
   }
 
   if (run.phase === 'dying') {
+    run.fall += dt;
     settle(run, dt);
-    run.phase = 'over';
+    if (run.fall >= CRASH_BEAT) run.phase = 'over';
     return;
   }
 
@@ -629,7 +632,7 @@ export function step(run: Run, dt: number): void {
       revive(run);
       return;
     }
-    run.phase = 'over';
+    run.phase = 'dying';
     run.fall = 0;
     run.bird.vy = Math.min(run.bird.vy, -240);
     run.shake = 0.32;
