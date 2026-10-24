@@ -214,7 +214,7 @@ const HARD_SPACE = 64;
 const HARD_OPEN = 48;
 const MERCY = 1.25;
 // Long enough that the taps which caused the crash are finished before the card.
-const CRASH_BEAT = 0.55;
+const CRASH_BEAT = 1.55;
 // A wide screen shows a couple of columns past the phone. Filling a big
 // monitor with gates is what makes a maximized window stutter.
 const LOOK_AHEAD = 2;

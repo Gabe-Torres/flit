@@ -262,7 +262,7 @@ function playable(): ReturnType<typeof createRun> {
   assert(crashed === 'dying', 'a ground crash waits before the score card');
   assert(run.bird.y === restY(), 'a ground crash is already down');
   assert(flap(run) === false, 'no flap while falling');
-  for (let i = 0; i < 40; i++) step(run, 1 / 60);
+  for (let i = 0; i < 100; i++) step(run, 1 / 60);
   const shown: string = run.phase;
   assert(shown === 'over', 'the score card follows the crash');
   assert(flap(run) === false, 'no flap on the score card');
@@ -277,20 +277,15 @@ function playable(): ReturnType<typeof createRun> {
   step(run, 0);
   const early: string = run.phase;
   assert(early === 'dying', 'a high crash stays in the air before the card');
-  for (let i = 0; i < 26; i++) step(run, 1 / 60);
+  for (let i = 0; i < 60; i++) step(run, 1 / 60);
   const waiting: string = run.phase;
   assert(waiting === 'dying', 'taps during the tumble do not reach the score card');
   assert(flap(run) === false, 'a tumble is not a flap');
-  for (let i = 0; i < 12; i++) step(run, 1 / 60);
+  assert(run.bird.y > 40, 'the bird falls during the extra second');
+  for (let i = 0; i < 40; i++) step(run, 1 / 60);
   const card: string = run.phase;
   assert(card === 'over', 'the score card comes after the crash taps');
-  assert(run.bird.y < restY() - 80, 'the card appears while the bird is still in the air');
-  const high = run.bird.y;
-  for (let i = 0; i < 180; i++) step(run, 1 / 60);
-  const later: string = run.phase;
-  assert(later === 'over', 'the card stays up while the bird falls');
-  assert(run.bird.y === restY(), 'the bird still reaches the ground behind the card');
-  assert(run.bird.y > high, 'the bird falls after the card is up');
+  assert(run.bird.y === restY(), 'the bird reaches the ground before the card');
 }
 
 {
