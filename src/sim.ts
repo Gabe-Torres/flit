@@ -214,7 +214,7 @@ const HARD_SPACE = 64;
 const HARD_OPEN = 48;
 const MERCY = 1.25;
 // Long enough that the taps which caused the crash are finished before the card.
-const CRASH_BEAT = 1.55;
+const CRASH_BEAT = 0.55;
 // A wide screen shows a couple of columns past the phone. Filling a big
 // monitor with gates is what makes a maximized window stutter.
 const LOOK_AHEAD = 2;
@@ -626,7 +626,15 @@ export function step(run: Run, dt: number): void {
     return;
   }
 
-  if (run.mercy > 0) run.mercy = Math.max(0, run.mercy - dt);
+  if (run.mercy > 0) {
+    run.mercy = Math.max(0, run.mercy - dt);
+    // The spare life bounces off the grass instead of sinking or stalling.
+    if (run.bird.y + WORLD.hitR > groundY()) {
+      run.bird.y = groundY() - WORLD.hitR;
+      run.bird.vy = WORLD.flap * 0.75;
+      run.bird.rot = -0.25;
+    }
+  }
   if (run.mercy <= 0 && hits(run)) {
     if (run.lives > 0) {
       revive(run);
