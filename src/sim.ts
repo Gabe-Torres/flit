@@ -65,7 +65,7 @@ export type Bolt = {
 
 export type Cue = 'pickup' | 'warp' | 'blast' | 'revive';
 
-// Test keeps the original gates. One power at a time: a new pickup replaces
+// Game keeps the original gates. One power at a time: a new pickup replaces
 // whatever you hold. Slow motion and pass-through wear off. The blaster is
 // three shots, a flap fires one, and each shot removes one pipe. A stargate is
 // a rare roll. After one appears, the next 20 pipes cannot have another. Flying
@@ -88,7 +88,7 @@ export const MODES: { id: ModeId; name: string }[] = [
   { id: 'easy', name: 'Easy' },
   { id: 'normal', name: 'Normal' },
   { id: 'hard', name: 'Hard' },
-  { id: 'test', name: 'Test' },
+  { id: 'test', name: 'Game' },
 ];
 
 export function isModeId(id: string): id is ModeId {
@@ -206,7 +206,7 @@ const TALON_Y = 40;
 
 // Easy is a little roomier than the original, and it stays that way.
 // The old course started much wider and only later matched this one.
-// Normal and Test stay on the original distance and opening.
+// Normal and Game stay on the original distance and opening.
 // Hard stays on that floor or tighter, and its hole can sit anywhere.
 const EASY_SPACE = 48;
 const EASY_OPEN = 36;

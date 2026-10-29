@@ -595,7 +595,7 @@ function clearedLayout(seed: number, mode: 'normal' | 'hard' | 'test', pipes: nu
   assert(THEMES.every((theme) => isThemeId(theme.id)), 'every map id is a map');
   assert(!isThemeId('mars') && !isThemeId('reef') && !isThemeId('colony') && !isThemeId('pipes'), 'unknown maps fall through');
   assert(MODES.map((mode) => mode.id).join() === 'easy,normal,hard,test', 'difficulties stay in menu order');
-  assert(MODES.find((mode) => mode.id === 'test')?.name === 'Test', 'test keeps its menu name');
+  assert(MODES.find((mode) => mode.id === 'test')?.name === 'Game', 'the powers course is called Game');
   assert(isModeId('easy') && !isModeId('random') && !isModeId('starter'), 'removed difficulties fall through');
 }
 
