@@ -22,6 +22,8 @@ export type Particle = {
 export type RenderState = {
   run: Run;
   best: number;
+  top: number[];
+  topAt: number;
   paused: boolean;
   wing: number;
   pop: number;
@@ -515,7 +517,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
   const overTitle = outlined('GAME OVER', 36, 0xef5d4a);
   const medalName = plain('', 16, 0x6d5848);
   const overScore = outlined('0', 54, INK, CREAM);
-  const overBest = plain('', 22, 0x6d5848);
+  const topRanks = ['1st', '2nd', '3rd'].map((rank) => plain(rank, 14, 0x8a7362));
+  const topScores = topRanks.map(() => outlined('', 26, INK, CREAM));
   const overStats = plain('', 18, 0x6d5848);
   overStats.style.lineHeight = 26;
   const retry = plain('tap to try again', 18, 0x8a7362);
@@ -532,7 +535,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
     overTitle,
     medalName,
     overScore,
-    overBest,
+    ...topRanks,
+    ...topScores,
     overStats,
     retry,
   );
@@ -659,7 +663,8 @@ export async function createStage(canvas: HTMLCanvasElement): Promise<Stage> {
       overTitle,
       medalName,
       overScore,
-      overBest,
+      topRanks,
+      topScores,
       overStats,
       retry,
     });
@@ -1093,7 +1098,8 @@ type Labels = {
   overTitle: Text;
   medalName: Text;
   overScore: Text;
-  overBest: Text;
+  topRanks: Text[];
+  topScores: Text[];
   overStats: Text;
   retry: Text;
 };
@@ -1136,7 +1142,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, clearTop: number, lab
   labels.overTitle.visible = over;
   labels.medalName.visible = false;
   labels.overScore.visible = over;
-  labels.overBest.visible = over;
+  for (const label of [...labels.topRanks, ...labels.topScores]) label.visible = over;
   labels.overStats.visible = over;
   labels.retry.visible = over;
   const controls = state.controls;
@@ -1222,7 +1228,7 @@ function drawUi(g: Graphics, state: RenderState, box: Box, clearTop: number, lab
   g.rect(box.left, box.top, wide, tall).fill({ color: 0x14283c, alpha: 0.28 });
   const award = medalForScore(run.score);
   const cardW = 304;
-  const cardH = award ? 388 : 300;
+  const cardH = award ? 420 : 332;
   const x = (WORLD.w - cardW) / 2;
   const y = award ? 48 : 124;
   card(g, x, y, cardW, cardH);
@@ -1238,14 +1244,23 @@ function drawUi(g: Graphics, state: RenderState, box: Box, clearTop: number, lab
   const scoreY = award ? y + 200 : y + 108;
   labels.overScore.text = String(run.score);
   labels.overScore.position.set(cx, scoreY);
-  labels.overBest.text = `BEST  ${state.best}`;
-  labels.overBest.position.set(cx, scoreY + 50);
-  const bestMedal = medalForScore(state.best);
+  const rowY = scoreY + 46;
+  g.roundRect(x + 22, rowY, cardW - 44, 62, 16).fill(0xf3e6cf);
+  for (let i = 0; i < labels.topRanks.length; i++) {
+    const colX = cx + (i - 1) * 86;
+    const fresh = i === state.topAt;
+    if (fresh) g.roundRect(colX - 38, rowY + 4, 76, 54, 12).fill(0xffe08a).stroke({ width: 2.5, color: INK });
+    const rank = labels.topRanks[i]!;
+    const score = labels.topScores[i]!;
+    rank.position.set(colX, rowY + 16);
+    score.text = String(state.top[i] ?? '-');
+    score.style.fill = fresh ? 0xef5d4a : INK;
+    score.position.set(colX, rowY + 40);
+  }
   const clock = sparkClock(state.reduceMotion);
-  if (bestMedal) drawHudMedal(g, cx + labels.overBest.width / 2 + 16, scoreY + 50, bestMedal, clock, state.reduceMotion);
   if (hudMedal && hudMedalAt) drawHudMedal(g, hudMedalAt.x, hudMedalAt.y, hudMedal, clock, state.reduceMotion);
   const facts = flightFacts(run);
   labels.overStats.text = `${facts.taps}  ·  ${facts.pipes}\n${facts.seconds}`;
-  labels.overStats.position.set(cx, scoreY + 100);
+  labels.overStats.position.set(cx, scoreY + 140);
   labels.retry.position.set(cx, y + cardH - 30);
 }

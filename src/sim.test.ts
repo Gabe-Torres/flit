@@ -28,6 +28,7 @@ import { RAMP_RISE, rampLip, runnerRideY, runnerSkim } from './runner.ts';
 import { holidayForDate } from './holiday.ts';
 import { seasonForDate } from './season.ts';
 import { THEMES, isThemeId } from './themes.ts';
+import { addTopScore, readTop } from './scores.ts';
 import { terrainFor } from './weather.ts';
 
 declare const process: { exit: (code: number) => never };
@@ -38,6 +39,26 @@ function assert(cond: boolean, msg: string): void {
   if (cond) return;
   failed += 1;
   console.error(`FAIL ${msg}`);
+}
+
+{
+  assert(readTop(null, 0).length === 0, 'no runs, no top scores');
+  assert(readTop(null, 30).join() === '30', 'an old best starts the list');
+  assert(readTop('[12, 40, 7, 25]', 30).join() === '40,25,12', 'the list keeps the three highest');
+  assert(readTop('[20, 10]', 30).join() === '30,20,10', 'a best missing from the list leads it');
+  assert(readTop('not json', 5).join() === '5', 'a broken list falls back to the best');
+  assert(readTop('[0, -3, "9", 4]', 0).join() === '4', 'only real scores stay');
+
+  const first = addTopScore([], 9);
+  assert(first.top.join() === '9' && first.at === 0, 'the first run is first');
+  const mid = addTopScore([30, 20, 10], 25);
+  assert(mid.top.join() === '30,25,20' && mid.at === 1, 'a score slots in by rank');
+  const tie = addTopScore([30, 20, 10], 20);
+  assert(tie.top.join() === '30,20,20' && tie.at === 2, 'a tie goes below the earlier score');
+  const low = addTopScore([30, 20, 10], 10);
+  assert(low.top.join() === '30,20,10' && low.at === -1, 'a score below the top three is left off');
+  const zero = addTopScore([], 0);
+  assert(zero.top.length === 0 && zero.at === -1, 'a zero is not a top score');
 }
 
 function playable(): ReturnType<typeof createRun> {

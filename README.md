@@ -22,7 +22,7 @@ The bird falls. You keep it in the air.
 - Each gate you clear is one point.
 - A gate or the ground ends the run. On Easy, the first one brings you back.
 - Each run has a 1 in 100 chance a pterodactyl flies in after you clear the first pipe, grabs you, and carries you away. The chance lasts until you clear 25 pipes.
-- After the score card, flap again to fly. The card lists your taps, the pipes you cleared, and your time in the air.
+- After the score card, flap again to fly. The card lists your three best scores on that difficulty, your taps, the pipes you cleared, and your time in the air. A run that makes the top three is highlighted.
 
 ## Controls
 

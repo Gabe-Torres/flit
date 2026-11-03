@@ -7,6 +7,7 @@ import { RAMP_LAUNCH, rampLip, runnerRideY, type RunnerRide } from './runner.ts'
 import { MODES, WORLD, createRun, flap, flightFacts, groundY, isModeId, medalForScore, motionPace, powerLabel, shoot, step, type ModeId, type Run } from './sim.ts';
 import { fieldName, holidayForDate } from './holiday.ts';
 import { THEMES, isThemeId, type ThemeId } from './themes.ts';
+import { addTopScore, readTop } from './scores.ts';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#view');
 const statusEl = document.querySelector<HTMLElement>('#status');
@@ -43,6 +44,8 @@ let modeId = readMode();
 let themeId = readTheme();
 let run: Run = createRun(mixSeed(), modeId);
 let bests = readBests();
+let tops = readTops();
+let topAt = -1;
 let birdId = readBird();
 let paused = false;
 let menuOpen = false;
@@ -180,6 +183,29 @@ function readBests(): Record<ModeId, number> {
     hard: readNumber(bestKey('hard')),
     test: readNumber(bestKey('test')),
   };
+}
+
+function topKey(id: ModeId): string {
+  return `flit-top-${id}`;
+}
+
+function readTops(): Record<ModeId, number[]> {
+  const read = (id: ModeId): number[] => {
+    try {
+      return readTop(localStorage.getItem(topKey(id)), bests[id]);
+    } catch {
+      return readTop(null, bests[id]);
+    }
+  };
+  return { easy: read('easy'), normal: read('normal'), hard: read('hard'), test: read('test') };
+}
+
+function writeTop(id: ModeId): void {
+  try {
+    localStorage.setItem(topKey(id), JSON.stringify(tops[id]));
+  } catch {
+    // The list still shows for this visit.
+  }
 }
 
 function shownBest(): number {
@@ -355,7 +381,8 @@ function describe(): void {
     const facts = flightFacts(run);
     const seconds = facts.seconds.replace(/s$/, ' seconds');
     const lead = run.snatchTime >= 0 ? 'A pterodactyl snatched you. ' : 'Game over. ';
-    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. ${bestLine(bests[run.mode])}. ${modeName(run.mode)}. ${themeName(themeId)}. ${sky}. ${controls.againSpeak}`);
+    const top = tops[run.mode].length > 0 ? ` Top scores ${tops[run.mode].join(', ')}.` : '';
+    setStatus(`${lead}${facts.taps}, ${facts.pipes}, ${seconds}. ${bestLine(bests[run.mode])}.${top} ${modeName(run.mode)}. ${themeName(themeId)}. ${sky}. ${controls.againSpeak}`);
     return;
   }
   const held = powerLabel(run);
@@ -767,6 +794,10 @@ function frame(now: number): void {
       bests[run.mode] = run.score;
       writeNumber(bestKey(run.mode), run.score);
     }
+    const added = addTopScore(tops[run.mode], run.score);
+    tops[run.mode] = added.top;
+    topAt = added.at;
+    if (added.at >= 0) writeTop(run.mode);
   }
 
   if (!paused) {
@@ -793,6 +824,8 @@ function frame(now: number): void {
   stage?.render({
     run,
     best: shownBest(),
+    top: tops[run.mode],
+    topAt,
     paused,
     wing,
     pop,
